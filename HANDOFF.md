@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Påskägget formatera om datorn, sedan testagenternas småfynd, enligt BACKLOG.md
+nextAction: Testagenternas småfynd, sedan nästa paket, enligt BACKLOG.md
 blockers: []
 reviewedAt: 2026-10-17
 ---
@@ -10,6 +10,8 @@ reviewedAt: 2026-10-17
 # Handoff: ./terminal
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.
+
+**2026-10-17, formatera om datorn.** Påskägget byggt: krasch, ominstallation i fyra steg, ny nyckel `term-crash`, integritetstexten i ai-repot version 2.7. Verifierat i Chromium och Firefox (krasch, kvar efter F5, fel steg börjar om, ominstallation, Ctrl+F5, vanlig `rm -rf /` orörd).
 
 **2026-10-17, bossfrågan.** Varje ny nivå ställer en fråga ur quizet på buildapp.se/ai; frågorna ligger sedan i dag i `ai/quiz-data.js`, som båda sidorna läser. Rätt svar ger en `clear`-laddning. Verifierat med `bosscheck.js` i Chromium och Firefox (nivå upp, frysta block, rätt, fel, inga upprepningar) och quizet oförändrat mot den publicerade versionen.
 

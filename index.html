@@ -29,6 +29,7 @@ svg{display:block}
 .pop{position:fixed;z-index:50;min-width:250px;padding:4px;background:#1F1F1F;border:1px solid #454545;border-radius:6px;box-shadow:0 2px 8px #000a;font-size:13px}
 .pop button{display:flex;width:100%;gap:2em;justify-content:space-between;padding:3px 10px;border-radius:4px;color:var(--fg);text-align:left}.pop button:hover,.pop button:focus{background:var(--accent);color:#fff;outline:0}.pop kbd{color:var(--dim);font:inherit}.pop button:hover kbd,.pop button:focus kbd{color:#fff}.pop hr{border:0;border-top:1px solid #454545;margin:4px 0}
 .q{width:min(100%,60ch);font:inherit;color:var(--fg);background:#313131;border:1px solid var(--accent);border-radius:4px;padding:3px 8px;margin:.6em 0}
+.crash{position:fixed;inset:0;z-index:100;padding:24px;overflow:auto;font:15px/1.5 var(--mono);white-space:pre-wrap;background:#000;color:#ccc}.crash.bsod{background:#0078D7;color:#fff;font-family:var(--ui);font-size:20px;padding:10vh 10vw}.crash.bsod big{font-size:120px;line-height:1;display:block;margin-bottom:.3em}.crash input{font:inherit;color:inherit;background:none;border:0;outline:0;width:60ch;max-width:100%}
 .zen .titlebar,.zen .activity,.zen .editor,.zen .status{display:none}
 .cmdcenter{flex:0 1 380px;margin:0 auto;height:24px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #3C3C3C;border-radius:6px;background:#222;color:var(--dim)}
 .winctl{display:flex;height:100%}
@@ -1259,6 +1260,7 @@ function run(raw) {
     return fail();
   }
 
+  if (WIPE.test(line.trim())) { echo(raw, new Set()); return crash(); }
   const who = segs.length === 1 && segs[0].length === 1 && segs[0][0].toLowerCase();
   if (!S.agent && Object.hasOwn(AGENTS, who)) { echo(raw, new Set()); return enterAgent(who); }
   const andor = S.ps && segs.find(g => g.op === '&&' || g.op === '||')?.op;
@@ -1537,6 +1539,79 @@ screen.addEventListener('click', e => {
   ({start, share, menu, bossEnd, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
   cmd.focus();
 });
+
+// ---------- påskägg: formatera om datorn ----------
+// rm -rf / med --no-preserve-root eller /*, dd, mkfs, format C:, Remove-Item C:\ ... låtsas krascha datorn.
+// Kraschen sparas (term-crash) och sitter kvar efter vanlig F5. Ut kommer man genom att installera om exakt rätt,
+// genom hård omladdning (Ctrl+F5, Ctrl+Shift+R) eller genom att rensa webbplatsdata.
+const CRASH = 'term-crash';
+const WIPE = /^(sudo\s+)?rm\s+(-\S+\s+)*(\/\*|--no-preserve-root\s+(-\S+\s+)*\/|\/\s+(-\S+\s+)*--no-preserve-root)(\s|$)|^(sudo\s+)?(dd\s+if=\/dev\/(zero|random|urandom)\s+of=\/dev\/sd|mkfs)|^format\s+c:|^(remove-item|rm|ri|del|erase|rd|rmdir)\s+c:\\\*?\s+.*-r|^del\s+\/s\s+\/q\s+c:\\/i;
+const SETUP = ps => [
+  ['boot usb', 'Ingen startbar enhet hittades. Sätt i installations-USB:n och skriv: boot usb'],
+  ['select disk 0', 'Installationsprogrammet startat. Välj disken: select disk 0'],
+  ['create partition primary', 'Disk 0 är tom. Skapa en partition: create partition primary'],
+  [ps ? 'new-localuser du' : 'useradd du', `Partition skapad, systemet installerat. Skapa din användare: ${ps ? 'New-LocalUser du' : 'useradd du'}`],
+];
+let crashEl = null;
+function crash() {
+  const ps = S.ps;
+  well.querySelectorAll('.blk').forEach(e => e.remove());
+  S = null; mode = 'crash';
+  try { snd()?.stop(); } catch {}
+  save(CRASH, {ps, step: 0});
+  crashEl?.remove();
+  crashEl = document.createElement('div');
+  crashEl.className = 'crash' + (ps ? ' bsod' : '');
+  crashEl.setAttribute('role', 'alert');
+  document.body.append(crashEl);
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (ps) {
+    let pct = calm ? 100 : 0;
+    const draw = () => { crashEl.innerHTML = `<big>:(</big>Datorn stötte på ett problem och måste startas om. Vi samlar in lite felinformation och startar sedan om åt dig.<br><br>${pct} % klart<br><br><small>Stoppkod: CRITICAL_PROCESS_DIED<br>Det som misslyckades: C:\\ (allt)</small>`; };
+    draw();
+    const t = setInterval(() => { pct = Math.min(100, pct + 7); draw(); if (pct === 100) { clearInterval(t); setTimeout(() => reboot({ps, step: 0}), 900); } }, 180);
+  } else {
+    crashEl.textContent = `[    4.204242] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+[    4.204243] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 6.8.0-buildapp #1
+[    4.204244] Call Trace:
+[    4.204245]  dump_stack+0x42/0x66
+[    4.204246]  panic+0xdeadbeef
+[    4.204247]  rm_rf_slash+0x2a/0x2a
+[    4.204248] ---[ end Kernel panic - not syncing: allt är borta ]---`;
+    setTimeout(() => reboot({ps, step: 0}), calm ? 600 : 2600);
+  }
+}
+// Efter kraschen: en svart skärm som vill bli ominstallerad, ett kommando i taget
+function reboot(st) {
+  mode = 'crash';
+  crashEl?.remove();
+  crashEl = document.createElement('div');
+  crashEl.className = 'crash';
+  crashEl.innerHTML = `<div id="crashlog"></div><label>&gt; <input id="crashin" autocomplete="off" spellcheck="false" aria-label="Skriv kommando"></label>`;
+  document.body.append(crashEl);
+  const logEl = crashEl.querySelector('#crashlog'), inp = crashEl.querySelector('#crashin');
+  const line = (t, c = '') => logEl.insertAdjacentHTML('beforeend', `<div class="${c}">${esc(t)}</div>`);
+  const steps = SETUP(st.ps);
+  line(steps[st.step][1]);
+  inp.focus();
+  crashEl.onclick = () => inp.focus();
+  inp.onkeydown = e => {
+    if (e.key !== 'Enter') return;
+    const v = inp.value.trim().replace(/\s+/g, ' ').toLowerCase();
+    line('> ' + inp.value); inp.value = '';
+    if (v !== steps[st.step][0]) {
+      st.step = 0; save(CRASH, st);
+      line(`${v ? `'${v}' gick inte.` : ''} Installationen avbröts. Börja om från början.`, 'err');
+      return line(steps[0][1]);
+    }
+    if (++st.step < steps.length) { save(CRASH, st); return line(steps[st.step][1]); }
+    try { localStorage.removeItem(CRASH); } catch {}
+    line(st.ps ? 'Windows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.' : 'Ubuntu 24.04 LTS buildapp tty1\n\nbuildapp login: du', 'dim');
+    line('# Välkommen tillbaka. På en riktig dator hade allt varit borta: ingen papperskorg, ingen ångra. Det enda som räddar dig är en backup.', 'cmt');
+    inp.disabled = true;
+    setTimeout(() => { crashEl.remove(); crashEl = null; menu(); cmd.focus(); }, 2500);
+  };
+}
 
 // ---------- bossfrågan: quizet mellan nivåerna ----------
 // Frågorna kommer från quizet (/ai/quiz-data.js, en källa för båda sidorna). Flerval tas som de är,
@@ -1825,6 +1900,10 @@ document.addEventListener('click', e => {
   act.startsWith('#') ? say(act) : DO[act]();
   if (!$('#q')) cmd.focus();
 });
+document.addEventListener('keydown', e => {
+  const hard = (e.key === 'F5' && (e.ctrlKey || e.shiftKey)) || (e.key.toLowerCase() === 'r' && e.ctrlKey && e.shiftKey);
+  if (hard) try { localStorage.removeItem(CRASH); } catch {}
+}, true);
 document.addEventListener('mouseover', e => { const m = e.target.closest('[data-menu]'); if (m && !pop.hidden && m.getAttribute('aria-expanded') !== 'true') openMenu(m); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
@@ -1914,6 +1993,7 @@ function frame(now) {
 
 setSound(soundOn);
 if (prefs.shell) { applyShell(); menu(); } else { askShell(); applyShell(); }
+if (load(CRASH, null)) reboot(load(CRASH, null)); // kraschen sitter kvar efter vanlig F5
 sync();
 cmd.focus();
 requestAnimationFrame(frame);

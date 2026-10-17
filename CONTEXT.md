@@ -51,8 +51,9 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 - **Bossfrågan:** varje ny nivå ställer en fråga ur quizet, `<script src="/ai/quiz-data.js">` (ai-repot, samma fil som `quiz.html` läser). Flerval tas som de är, para ihop blir "vilken beskrivning passar X" med två felsvar ur samma omgång. Rätt svar ger en `clear`-laddning (max 3), fel kostar inget och visar förklaringen. Läget `boss` fryser blocken; blad och inställningar är spärrade under tiden. Saknas filen (lokalt utan `/ai/`) blir det ingen bossfråga. Lokalt test: Playwright skickar `/ai/quiz-data.js` till `C:\dev\ai\quiz-data.js` (`bosscheck.js`).
 - **Ljud:** `terminal-ljud.js`; `?ljud=gemini` laddar `terminal-ljud-gemini.js` (samma
   gränssnitt), `?ljud=mp3` spelar Lyria-spåren i `_musik/` (bara lokalt, gitignorerat).
+- **Påskägget formatera om datorn:** `WIPE` fångar `rm -rf / --no-preserve-root`, `rm -rf /*`, `dd ... of=/dev/sd`, `mkfs`, `format C:`, `Remove-Item C:\ -Recurse`, `del /s /q C:\`. Vanlig `rm -rf /` ger fortfarande GNU:s spärr. bash ger kernel panic, PowerShell blåskärm med procent; sedan en svart skärm där man installerar om i fyra steg (`SETUP`), fel steg börjar om. Steget sparas i `term-crash`, så vanlig F5 startar i kraschen igen. Ctrl+F5 och Ctrl+Shift+R fångas i `keydown` och rensar nyckeln innan omladdningen (efteråt syns ingen skillnad mot F5); Shift-klick på omladdningsknappen går inte att se, rensad webbplatsdata fungerar alltid. Reducerad rörelse hoppar över procenträkningen. Test: `crashcheck.js`, `wipecheck.js` i scratchpad.
 - **Lagring:** `localStorage` på `buildapp.se`: `term-highscores`, `term-sound`,
-  `term-shell` (plus `prefs`-fälten i samma nycklar). Ursprunget är delat med `/ai/`, så data
+  `term-shell`, `term-crash` (plus `prefs`-fälten i samma nycklar). Ursprunget är delat med `/ai/`, så data
   följde med flytten. Nycklarna redovisas i `buildapp.se/ai/integritet.html`; en ny nyckel
   kräver att den sidan uppdateras.
 
