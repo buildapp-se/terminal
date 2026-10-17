@@ -4,10 +4,10 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 ## Prioritet (2026-10-17)
 
-1. **Straffar rätt svar:** likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i  (Brain).
+1. **Straffar rätt svar:** likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i `explain` (Brain).
 2. **Låtsasskalet och småfel:** PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
 3. **Större bygg:** mer git i världen (agent B efter steg 1), Bit och dcg, Vad Claude gör ur loggarna, idéerna ur granskningen.
-4. **Underhåll:** PS-tabellerna samlade, mer logik in i  och testad. Efter agenterna, eftersom det rör samma kod.
+4. **Underhåll:** PS-tabellerna samlade, mer logik in i `pure` och testad. Efter agenterna, eftersom det rör samma kod.
 5. **Sist:** programspråk, delad topplista, mp3 (Lyrias villkor).
 
 ## Spelet
