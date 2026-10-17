@@ -6,3 +6,6 @@ _musik/
 
 # Playwright-MCP:s skärmbilder och loggar
 .playwright-mcp/
+
+# Agenternas worktrees (Claude Code)
+.claude/
