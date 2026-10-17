@@ -658,7 +658,7 @@ const lvOf = (t, ps) => (Array.isArray(t[1]) ? t[1][+!!ps] : t[1]);
 function maxLvFor(pack, ps, level) {
   const mine = TASKS.filter(t => (pack === 'all' || t[0] === pack) && (!ps || t[5]));
   let lv = Math.min(5, Math.ceil(level / 2));
-  while (lv < 5 && mine.filter(t => lvOf(t, ps) <= lv).length < 8) lv++;
+  while (lv < 5 && mine.filter(t => lvOf(t, ps) <= lv).length < 7) lv++; // 7: git har precis 7 lätta och ska börja med dem
   return lv;
 }
 
@@ -1799,6 +1799,7 @@ function spawn() {
   // Filer & mappar: ett block i taget, i ordning. Ny mapp: lista först, kör programmen som finns där, gå sedan in i en mapp.
   const story = S.pack === 'fs', here = S.cwd.join('/');
   if (story && S.blocks.some(b => !b.landed)) return false;
+  if (S.blocks.filter(b => !b.landed).length > S.level) return false; // högst nivå + 1 i luften: lugn början utan lugnt läge (Patrik 2026-10-17)
   const maxLv = maxLvFor(S.pack, S.ps, S.level);
   const fits = t => (S.pack === 'all' || t[0] === S.pack) && lvOf(t, S.ps) <= maxLv && (!S.ps || t[5]);
   let pool = TASKS.filter(t => fits(t) && !S.recent.includes(t));

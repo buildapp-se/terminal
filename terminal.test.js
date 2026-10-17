@@ -284,12 +284,12 @@ assert.ok(/README\.md:1:# projekt/.test(o('Select-String projekt README.md')));
 assert.ok(/spel\\spel\.py:1:import random/.test(o('Get-ChildItem -Recurse | Select-String random')));
 sh.bad('cat < notes.txt', /reserved for future use/);
 
-// Små paket får minst 8 olika uppgifter redan på nivå 1, i båda skalen
+// Små paket får minst 7 olika uppgifter redan på nivå 1, i båda skalen
 for (const ps of [false, true]) for (const pack of Object.keys(PACKS)) {
   const lv = maxLvFor(pack, ps, 1), n = TASKS.filter(t => (pack === 'all' || t[0] === pack) && (!ps || t[5]) && lvOf(t, ps) <= lv).length;
-  assert.ok(n >= 8, `${pack} ${ps ? 'ps' : 'bash'}: bara ${n} uppgifter på nivå 1`);
+  assert.ok(n >= 7, `${pack} ${ps ? 'ps' : 'bash'}: bara ${n} uppgifter på nivå 1`);
 }
-assert.strictEqual(maxLvFor('fs', false, 1), 1, 'stora paket börjar fortfarande med det lättaste');
+assert.strictEqual(maxLvFor('git', false, 1), 1, 'git börjar med de 7 lätta'); assert.strictEqual(maxLvFor('fs', false, 1), 1, 'stora paket börjar fortfarande med det lättaste');
 
 // Inget svar i Filer & mappar säger 'Missing an argument' i en ny värld (PowerShell)
 for (const t of TASKS) if (t[0] === 'fs' && t[5]) for (const st of fill(t, a => a[0], true).steps) {
