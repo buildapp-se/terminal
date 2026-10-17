@@ -1608,6 +1608,41 @@ function makeQuiz(pack, ps) {
   return ['vilket', 'vad', 'vilket', 'vad', 'par', 'vilket', 'vad', 'vilket', 'vad', 'par']
     .map(kind => (kind === 'par' ? quizPairs(pool) : pool.length ? quizQuestion(items, pool.shift(), kind) : null)).filter(Boolean);
 }
+// Grenarna som riktig git: lokala i g.branches, GitHubs (POOLS.b) under remotes/origin/ tills man byter till dem.
+// Ändrar g, ger utskriften (undefined: OUT svarar) eller kastar gits riktiga fel. inRepo false: mappen är inte ett repo.
+const REMOTE = ['main', ...POOLS.b], NEEDREPO = new Set(['status', 'add', 'commit', 'log', 'branch', 'switch', 'checkout', 'merge', 'diff', 'restore', 'stash', 'reset', 'push', 'pull', 'remote', 'blame']);
+function gitRefs(u, g, inRepo = true) {
+  if (u[0] !== 'git') return;
+  if (u[1] === '-C') u = ['git', ...u.slice(3)];
+  else if (u.includes('-C') && !['commit', 'branch', 'rebase'].includes(u[1])) throw new Error("error: unknown switch `C'"); // -C gäller git bara före underkommandot
+  const sub = u[1], args = u.slice(2).filter(t => !t.startsWith('-')), n = args[0], br = g.branches;
+  if (!inRepo && NEEDREPO.has(sub)) throw new Error('fatal: not a git repository (or any of the parent directories): .git');
+  const fresh = x => { if (br.has(x)) throw new Error(`fatal: a branch named '${x}' already exists`); br.add(x); };
+  const sw = (sub === 'switch' && u.includes('-c')) || (sub === 'checkout' && u.includes('-b'));
+  if (sw && n) { fresh(n); g.branch = n; return; }
+  if (n && (sub === 'switch' || (sub === 'checkout' && !u.includes('--') && (br.has(n) || REMOTE.includes(n))))) {
+    if (n === g.branch) return `Already on '${n}'`;
+    if (br.has(n)) { g.branch = n; return; }
+    if (!REMOTE.includes(n)) throw new Error(`fatal: invalid reference: ${n}`);
+    br.add(n); g.branch = n; // en gren som bara finns på GitHub blir lokal när man byter till den
+    return `branch '${n}' set up to track 'origin/${n}'.\nSwitched to a new branch '${n}'`;
+  }
+  if (sub === 'merge' && n) {
+    if (n === g.branch) return 'Already up to date.';
+    if (!br.has(n) && !(n.startsWith('origin/') && REMOTE.includes(n.slice(7)))) throw new Error(`merge: ${n} - not something we can merge`);
+    return;
+  }
+  if (sub !== 'branch') return;
+  if (u.some(t => /^-[dD]$|^--delete$/.test(t))) {
+    const lines = args.map(x => (x === g.branch ? `error: cannot delete branch '${x}' used by worktree at '${g.ps ? 'C:/Users/du' : '/home/du'}/projekt'`
+      : !br.has(x) ? `error: branch '${x}' not found.` : (br.delete(x), `Deleted branch ${x} (was ${g.commits?.[0]?.id ?? '3f9c2a1'}).`)));
+    if (lines.some(l => l.startsWith('error'))) throw new Error(lines.join('\n'));
+    return lines.join('\n');
+  }
+  if (n) { fresh(n); return ''; }
+  const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...[...REMOTE].sort().map(x => '  remotes/origin/' + x)];
+  return (u.includes('-a') ? [...local, ...remote] : u.includes('-r') ? remote.map(l => l.replace('remotes/', '')) : local).join('\n');
+}
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
 for (const o of [PACKS, POOLS, VALS, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
@@ -1751,7 +1786,7 @@ function start() {
 function fresh() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main', ...POOLS.b]), commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main']), base: structuredClone(WORLD), commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
 }
@@ -1769,7 +1804,7 @@ function draw(pool, dup = false) {
   };
   for (let i = 0; i < 40; i++) {
     const t = rnd(weighted), b = fill(t, t[0] === 'fs' ? (list, k) => rnd(names(list, k)) : rnd, S.ps);
-    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] !== 'fs' || doable(b))) return b;
+    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b))) return b;
   }
   return null;
 }
@@ -2208,7 +2243,8 @@ const OUT = {
   // git och gh
   // git status, log och branch läser världen, så att terminalen och källkontrollen säger samma sak
   'git status': () => {
-    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], rel = p => p.join('/'), mod = ch.filter(c => c[1] !== 'U'), neu = ch.filter(c => c[1] === 'U');
+    const root = S && (repoOf(S.cwd) ?? ['projekt']), ch = S ? repoChanges(root) : [], mod = ch.filter(c => c[1] !== 'U'), neu = ch.filter(c => c[1] === 'U');
+    const rel = p => relTo(S.cwd, [...root, ...p]) + (typeof look(S.fs, [...root, ...p], S.ps).node === 'object' ? '/' : ''); // otrackad mapp: budget/
     return [`On branch ${S?.branch ?? 'main'}`,
       ...(mod.length ? ['Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)', ...mod.map(([p, st]) => `        ${st === 'D' ? 'deleted: ' : 'modified:'}   ${rel(p)}`), ''] : []),
       ...(neu.length ? ['Untracked files:', '  (use "git add <file>..." to include in what will be committed)', ...neu.map(([p]) => `        ${rel(p)}`), ''] : []),
@@ -2492,13 +2528,15 @@ function run(raw) {
       let r = null;
       try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps, S.env); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
       if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
-      gitWorld(u); // före utskriften, som visar commitens hash
+      // git före utskriften, som visar commitens hash. Gits fel (okänd gren, grenen finns redan) är fel, även för ett block.
+      let g;
+      try { g = gitWorld(u); } catch (e) { errs++; msgs.push(e.message); continue; }
       // Det världen svarade vinner över den påhittade utskriften i OUT; tom utskrift med note (inga träffar) visar noten
-      const said = r && (r.out.length ? r.out : r.note ? [r.note] : null);
+      const said = g !== undefined ? (g ? g.split('\n') : [QUIET]) : r && (r.out.length ? r.out : r.note ? [r.note] : null);
       if (!b) {
         if (r) { notes.push(...(said ?? (mode === 'play' ? [] : [QUIET]))); continue; }
         if (toy(u, notes) || editorCmd(u, notes)) continue;
-        const guess = sample(u, S.ps);
+        const guess = said ?? sample(u, S.ps);
         if (mode !== 'play' && guess.length) { notes.push(...guess); continue; } // i quizet får man prova fritt
         // Ett riktigt kommando som inget block bad om: visa vad det hade gjort, men det kostar ändå (låst beslut, mellanläge Patrik 2026-10-17)
         if (guess.length) { notes.push(...guess, '# rätt kommando, men inget block bad om det. Läs blocken först.'); errs++; continue; }
@@ -2933,29 +2971,64 @@ function commit(u) {
   else S.commits.unshift({msg, id: Math.random().toString(16).slice(2, 9).padEnd(7, '0')});
   S.base = structuredClone(S.fs);
 }
-// git ändrar också världen: clone ger en mapp, init ett repo, commit en rad i källkontrollen
+// Repot i mappen: närmaste mapp uppåt med .git, null utanför alla repon
+function repoOf(cwd) {
+  for (let i = cwd.length; i >= 0; i--) { const n = look(S.fs, cwd.slice(0, i), S.ps).node; if (n && typeof n === 'object' && Object.hasOwn(n, '.git')) return cwd.slice(0, i); }
+  return null;
+}
+// Vad git status visar för repot: sökvägarna från repots rot. Källkontrollen visar projekt när du står utanför alla repon.
+function repoChanges(root = repoOf(S.cwd) ?? ['projekt']) {
+  const a = look(S.base, root, S.ps).node, b = look(S.fs, root, S.ps).node;
+  return b && typeof b === 'object' ? changes(a && typeof a === 'object' ? a : {}, b) : [];
+}
+// Sökvägen to sedd från mappen from, som git status skriver den: ../notes.txt från en undermapp
+const relTo = (from, to) => { let i = 0; while (i < from.length && from[i] === to[i]) i++; return [...Array(from.length - i).fill('..'), ...to.slice(i)].join('/'); };
+// git -C mapp kör i mappen. ponytail: saknas mappen körs det här, blocken med -C räknar med att repot finns
+function gitCwd(u) {
+  if (u[1] !== '-C') return S.cwd;
+  const at = resolve(S.cwd, u[2] ?? '.');
+  return typeof look(S.fs, at, S.ps).node === 'object' ? at : S.cwd;
+}
+const cloneName = args => args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
+// git ändrar också världen: clone ger en mapp, init ett repo, commit en rad i källkontrollen, grenarna i gitRefs.
+// Ger utskriften när den beror på hur världen såg ut före kommandot (undefined: OUT svarar) och kastar gits riktiga fel.
 function gitWorld(u) {
   if (u[0] !== 'git') return;
+  const cwd = gitCwd(u), said = gitRefs(u, S, !!repoOf(cwd));
+  if (said !== undefined) return said;
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
-  const here = look(S.fs, S.cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), br = S.branches;
+  const here = look(S.fs, cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-'));
   if (u[1] === 'commit') return commit(u);
-  // grenar: skapa, byta, ta bort (aldrig den du står på)
-  const creates = (u[1] === 'switch' && u.includes('-c')) || (u[1] === 'checkout' && u.includes('-b'));
-  if (creates && args[0]) { br.add(args[0]); S.branch = args[0]; }
-  else if ((u[1] === 'switch' || u[1] === 'checkout') && br.has(args[0])) S.branch = args[0];
-  if (u[1] === 'branch' && u.some(t => /^-[dD]$|^--delete$/.test(t))) args.forEach(b => b !== S.branch && br.delete(b));
-  else if (u[1] === 'branch' && args[0]) br.add(args[0]);
   if (typeof here !== 'object') return;
   // restore och checkout -- f: filen som den var vid senaste commit
-  if (u[1] === 'restore' || (u[1] === 'checkout' && !creates && !br.has(args[0]))) for (const f of args) {
-    const p = resolve(S.cwd, f), was = look(S.base ?? WORLD, p, S.ps).node, dir = look(S.fs, p.slice(0, -1), S.ps).node;
+  if (u[1] === 'restore' || (u[1] === 'checkout' && (u.includes('--') || !REMOTE.includes(args[0]) && !S.branches.has(args[0])))) for (const f of args) {
+    const p = resolve(cwd, f), was = look(S.base, p, S.ps).node, dir = look(S.fs, p.slice(0, -1), S.ps).node;
     if (typeof was === 'string' && typeof dir === 'object') own(dir, p.at(-1), was);
   }
   if (u[1] === 'clone' && args[0]) {
-    const name = args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
-    if (!Object.hasOwn(here, name)) own(here, name, {'.git': {}, 'README.md': `# ${name}\n`});
+    const name = cloneName(args), repo = {'.git': {}, 'README.md': `# ${name}\n`}, base = look(S.base, cwd, S.ps).node;
+    if (Object.hasOwn(here, name)) throw new Error(`fatal: destination path '${name}' already exists and is not an empty directory.`);
+    own(here, name, repo);
+    if (base && typeof base === 'object') own(base, name, structuredClone(repo)); // klonen är redan committad: git status där inne är ren
+    return `Cloning into '${name}'...\nremote: Enumerating objects: 42, done.\nReceiving objects: 100% (42/42), 18.20 KiB | 1.82 MiB/s, done.`;
   }
-  if (u[1] === 'init' && !Object.hasOwn(here, '.git')) own(here, '.git', {});
+  if (u[1] === 'init') {
+    const again = Object.hasOwn(here, '.git');
+    if (!again) own(here, '.git', {});
+    return `${again ? 'Reinitialized existing' : 'Initialized empty'} Git repository in ${[S.ps ? 'C:/Users/du' : '/home/du', ...cwd].join('/')}/.git/`;
+  }
+}
+// Går blockets git att köra i världen som den är nu? Grenarna provkörs på en kopia, clone vill ha en ledig mapp.
+function gitOk(b) {
+  const g = {branch: S.branch, branches: new Set(S.branches), commits: S.commits, ps: S.ps}, here = look(S.fs, S.cwd, S.ps).node;
+  try {
+    for (const st of b.steps) {
+      const u = tokenize(st[0].raw, S.ps), args = u.slice(2).filter(t => !t.startsWith('-'));
+      gitRefs(u, g, !!repoOf(gitCwd(u)));
+      if (u[0] === 'git' && u[1] === 'clone' && args[0] && here && Object.hasOwn(here, cloneName(args))) return false;
+    }
+    return true;
+  } catch { return false; }
 }
 // Commit-knappen och Enter i rutan kör git commit -m med meddelandet, genom samma rättning som terminalen
 function sideCommit() {
@@ -2981,7 +3054,7 @@ const VIEWS = {
   search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon">
     ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
   scm: () => {
-    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], log = S?.commits ?? [];
+    const ch = S ? repoChanges() : [], log = S?.commits ?? [];
     return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Enter för commit på '${esc(S?.branch ?? 'main')}')" aria-label="Commit-meddelande"></textarea>
       <button type="button" class="btn" data-side="commit">&#10003; Commit</button>
       <div class="sec open"><span class="tw">${CHEV}</span>Changes<span class="badge" data-n="${ch.length}">${ch.length}</span></div>
