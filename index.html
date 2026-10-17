@@ -401,6 +401,7 @@ const TASKS = [
   ['stop', 2, 'Installera Git med winget', ['winget install --id Git.Git -e', 'winget install -e --id Git.Git', 'winget install Git.Git'], 'Agenten stannar: installationen ber om administratörsrätt i en ruta den inte når. -e = exakt id.', '='],
   ['stop', 3, 'Skicka grenen {b} första gången och koppla den till origin', ['git push -u origin {b}', 'git push --set-upstream origin {b}'], 'Agenten stannar: grenen blir synlig på GitHub. -u kopplar ihop den, sedan räcker git push.', '='],
   ['stop', 3, 'Pusha repot i mappen {repo} utan att gå in i mappen', 'git -C {repo} push', 'Agenten stannar före varje push. -C kör git som om du stod i mappen.', '='],
+  ['stop', 4, 'Kasta allt lokalt i repot {repo} och gör det exakt som main på GitHub, utan att gå in i mappen', 'git -C {repo} reset --hard origin/main', 'Agenten stannar: reset --hard raderar ändringar och commits som inte är pushade, och det går inte att ångra. origin/main är GitHub-versionen som git senast hämtade.', '='],
   ['stop', 3, 'Radera den lokala grenen {b}, även om den inte är ihopslagen', ['git branch -D {b}', 'git branch --delete --force {b}'], 'Agenten stannar: -D tvingar fram raderingen, och det som bara fanns på grenen är borta.', '='],
   ['stop', 3, 'Slå ihop pull request 8 som en enda commit', ['gh pr merge 8 --squash', 'gh pr merge 8 -s'], 'Agenten stannar: en merge hamnar direkt på basgrenen, oftast main. --squash gör alla commits till en.', '='],
   ['stop', 4, 'Slå ihop pull request 8 i repot Elwyndaz/forskning med en merge-commit', ['gh pr merge 8 -R Elwyndaz/forskning --merge', 'gh pr merge 8 --repo Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning -m'], 'Agenten stannar: en merge går ut på main direkt, och att ångra den kräver en revert-commit. -R = vilket repo, så du slipper stå i mappen.', '='],
@@ -671,7 +672,7 @@ const GLOSS = {
   '|': 'pipe: skickar utskriften från kommandot före in i kommandot efter', '>': 'skriv utskriften till en fil i stället för skärmen, och skriv över filen',
   '>>': 'lägg till utskriften sist i en fil', '&&': 'kör nästa kommando bara om det förra lyckades',
   '.': 'mappen du står i', '..': 'mappen ovanför den du står i', '~': 'din hemmapp. Skrivs med AltGr + ¨ och sedan mellanslag', '*': 'alla filer och mappar här',
-  '*.js': 'alla filnamn som slutar på .js. * matchar vad som helst', 'ERROR': 'texten som söks efter', 'HEAD~1': 'commiten före den senaste. HEAD är där du står nu', 'HEAD~': 'samma som HEAD~1: commiten före den senaste',
+  '*.js': 'alla filnamn som slutar på .js. * matchar vad som helst', 'ERROR': 'texten som söks efter', 'HEAD~1': 'commiten före den senaste. HEAD är där du står nu', '--hard': 'skriv över filerna också: ocommittade ändringar försvinner för gott', 'origin/main': 'main som den såg ut på GitHub när git senast hämtade (fetch eller pull)', 'HEAD~': 'samma som HEAD~1: commiten före den senaste',
   'origin': 'namnet på remoten, alltså GitHub-repot du klonade från', '{any}': 'ditt commit-meddelande, valfri text', 'deploy.sh': 'skriptet, en fil full av kommandon', 'node': 'programmet node',
   // filer och mappar
   'pwd': 'print working directory: skriver ut mappen du står i', 'ls': 'list: visar filer och mappar', 'cd': 'change directory: byter mapp', 'mkdir': 'make directory: skapar en mapp',
