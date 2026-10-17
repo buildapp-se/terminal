@@ -65,7 +65,7 @@ svg{display:block}
 .log{flex:none;height:9.8em;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;white-space:pre-wrap;word-break:break-word}
 .prompt{flex:none;display:flex;flex-wrap:wrap;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
 .u{color:var(--green);font-weight:700}.p{color:var(--blue);font-weight:700}
-.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
+.agent{color:#D97757;font-weight:700}.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
 .line.bad{animation:shake .25s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .cmdbox{position:relative;flex:1 1 12ch;min-width:0}
@@ -963,7 +963,7 @@ function mp3Music(a) {
 // ---------- tillstånd ----------
 const prefs = {pack: 'fs', level: 1, shell: load(SHELL, null)};
 const isPS = () => prefs.shell === 'ps';
-const promptHTML = (ps, cwd = ['projekt']) => ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
+const promptHTML = (ps, cwd = ['projekt']) => S?.agent ? '<span class="agent">&gt;</span> ' : ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
   `<span class="u">du@buildapp</span>:<span class="p">${esc(['~', ...cwd].join('/'))}</span>$ `;
 let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, shared = '';
 
@@ -1173,14 +1173,18 @@ function explain(u, bad, msgs) {
 function run(raw) {
   if (!raw.trim()) return echo(raw, new Set());
   hist.push(raw); hpos = hist.length;
+  if (S.agent && !raw.trimStart().startsWith('!')) return agentSay(raw);
+  const line = S.agent ? raw.trimStart().slice(1) : raw; // ! kör skalet, som i Claude Code
   let segs;
-  try { segs = segments(tokenize(raw, S.ps)); }
+  try { segs = segments(tokenize(line, S.ps)); }
   catch (e) {
     echo(raw, new Set());
     out(S.ps ? 'The string is missing the terminator: ' + e.message + '.' : `bash: unexpected EOF while looking for matching \`${e.message}'`, 'err');
     return fail();
   }
 
+  const who = segs.length === 1 && segs[0].length === 1 && segs[0][0].toLowerCase();
+  if (!S.agent && Object.hasOwn(AGENTS, who)) { echo(raw, new Set()); return enterAgent(who); }
   const andor = S.ps && segs.find(g => g.op === '&&' || g.op === '||')?.op;
   if (andor) {
     echo(raw, new Set());
@@ -1456,6 +1460,83 @@ screen.addEventListener('click', e => {
   cmd.focus();
 });
 
+// ---------- påskägg: gå in i en agent ----------
+// claude, codex och de andra byter prompten mot agentens >. Text går till agenten, som svarar roligt men inte hjälper.
+// Bara ! före ett kommando kör skalet. Lärdomen: i Claude Code pratar du med agenten, ! pratar med datorn.
+const AGENTS = {
+  claude: {name: 'Claude Code', spin: ['Funderar', 'Grubblar', 'Klurar', 'Mumlar', 'Vibbar', 'Puttrar']},
+  codex: {name: 'Codex', spin: ['Tänker', 'Resonerar', 'Planerar', 'Sandlådar']},
+  opencode: {name: 'opencode', spin: ['Tänker', 'Laddar modell', 'Byter modell']},
+  gemini: {name: 'Gemini CLI', spin: ['Tänker', 'Söker på Google', 'Tänker lite till']},
+};
+function enterAgent(who) {
+  S.agent = {who, ...AGENTS[who]};
+  applyShell();
+  out(`✻ Välkommen till ${S.agent.name}`, 'agent');
+  out(`  cwd: ${where(S.cwd, S.ps)}`, 'dim');
+  out('# Nu pratar du med agenten, inte med skalet. ! före ett kommando kör det i skalet, som !ls. /exit går ut.', 'cmt');
+}
+function leaveAgent() {
+  if (!S?.agent) return;
+  agentStop(true);
+  S.agent = null;
+  applyShell();
+  out(`# tillbaka i ${S.ps ? 'PowerShell' : 'bash'}`, 'cmt');
+}
+function agentStop(quiet) {
+  const A = S?.agent;
+  if (!A?.busy) return;
+  clearInterval(A.timer); clearTimeout(A.done);
+  A.busy = false;
+  A.line.textContent = quiet ? '' : '  ⎿ Avbrutet av dig. Vad ska jag göra i stället?';
+}
+// Det agenten svarar: aldrig hjälp, men alltid något att lära
+function agentReply() {
+  const b = S.blocks.filter(x => !x.landed).sort((x, y) => y.y - x.y)[0], A = S.agent;
+  const ans = b && show(b.steps[b.step][0].raw), other = b?.other && show(b.other);
+  const all = [
+    'Du har helt rätt!',
+    'Bra fråga. Låt mig först skriva en plan i PLAN.md. Och en plan för planen.',
+    `Jag har läst hela kodbasen. Den är fin. Vad var frågan?`,
+    `Jag ser ${S.blocks.length} block. Ska jag skriva ett test för dem först?`,
+    ...(other ? [`Kommandot du letar efter är ${other}. (Fast det är för ${S.ps ? 'bash' : 'PowerShell'}, och du kör ${S.ps ? 'PowerShell' : 'bash'}. Läs alltid vad agenten föreslår.)`] : []),
+    ...(ans ? [`Vill du att jag kör ${ans} åt dig? (y/n)`] : []),
+    ...(A.who === 'codex' ? ['Jag körde det i en sandlåda. Sandlådan har inget nätverk, inga filer och ingen terminal. Klart!'] : []),
+    ...(A.who === 'gemini' ? ['Jag hittade 1 240 000 resultat. Det första är en annons.'] : []),
+  ];
+  const r = all[Math.floor(Math.random() * all.length)];
+  if (r.endsWith('(y/n)')) A.ask = b;
+  return r;
+}
+function agentSay(raw) {
+  echo(raw, new Set());
+  const t = raw.trim(), A = S.agent;
+  if (/^\/?(exit|quit)$/i.test(t)) return leaveAgent();
+  if (A.busy) return out('# agenten tänker fortfarande. Esc avbryter.', 'dim');
+  if (A.ask) {
+    const b = A.ask;
+    A.ask = null;
+    if (!/^(y|yes|j|ja)$/i.test(t)) return out('⏺ Okej, jag gör ingenting. Det kan jag.', 'agent');
+    if (S.blocks.includes(b) && !b.landed) { remove(b); S.cleared++; sfx('clear'); }
+    out('⏺ Klart, ett block borta.', 'agent');
+    out(`Du har nått din användningsgräns. Den återställs kl 03.00.`, 'err');
+    out('# Agenter kostar. Resten får du skriva själv.', 'cmt');
+    return leaveAgent();
+  }
+  const line = document.createElement('div');
+  line.className = 'line dim';
+  log.append(line);
+  const t0 = performance.now(), word = A.spin[Math.floor(Math.random() * A.spin.length)];
+  const tick = () => { line.textContent = `✻ ${word}… (${Math.floor((performance.now() - t0) / 1000)} s · esc för att avbryta)`; };
+  tick();
+  Object.assign(A, {busy: true, line, timer: setInterval(tick, 250), done: setTimeout(() => {
+    if (S?.agent !== A) return;
+    clearInterval(A.timer); A.busy = false;
+    line.className = 'line agent';
+    line.textContent = '⏺ ' + agentReply();
+  }, 2000 + Math.random() * 3000)});
+}
+
 // ---------- VS Code-ramen: menyer, vyer och påskägg ----------
 // Allt klickbart har data-do (en rad i DO) eller data-menu (en lista i MENUS). Skämten ska lära något.
 const say = t => setTimeout(() => out(t, 'cmt'));
@@ -1492,7 +1573,7 @@ const EGGS = {
   bugg: '1 träff: du.\n# Skämt. Läs felmeddelandet en gång till, svaret står ofta där.', bug: '1 träff: du.',
   sudo: '# Sökningen kräver inte sudo. Den här gången.', google: '# Det här är inte Google, men svaret är närmare.',
   vim: '# Du hittade vim. Nu hittar du aldrig ut.\n# :q! stänger utan att spara, :wq sparar och stänger.',
-  stackoverflow: '# Frågan är stängd som dubblett.', claude: '# Jag kan inte spela åt dig. Men sökrutan hjälper.',
+  stackoverflow: '# Frågan är stängd som dubblett.', claude: '# Jag kan inte spela åt dig. Men skriv claude i terminalen mitt i en runda, så får du träffa mig.',
   'hur avslutar jag vim': '# :q! och Enter. Du är inte ensam: frågan har setts över tre miljoner gånger.',
 };
 // Vardagsord och engelska till orden uppgifterna använder, så att "radera mapp" hittar "Ta bort mappen"
@@ -1663,12 +1744,15 @@ cmd.addEventListener('keydown', e => {
   }
   if (mode === 'pause') { if (k === 'Escape' || k === 'Enter') { e.preventDefault(); pause(false); } else if (typing(e)) e.preventDefault(); return; } // inget förskrivet svar under paus
   if (k === 'Enter') { e.preventDefault(); const v = cmd.value; cmd.value = ''; run(v); }
-  else if (k === 'Escape') pause(true);
+  else if (k === 'Escape') S?.agent?.busy ? agentStop() : pause(true);
   else if (k === 'ArrowUp' || k === 'ArrowDown') {
     e.preventDefault();
     hpos = Math.max(0, Math.min(hist.length, hpos + (k === 'ArrowUp' ? -1 : 1)));
     cmd.value = hist[hpos] ?? '';
     cmd.setSelectionRange(cmd.value.length, cmd.value.length);
+  } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd) && S?.agent && !cmd.value) {
+    e.preventDefault();
+    if (performance.now() - (S.agent.cc || 0) < 2000) leaveAgent(); else { S.agent.cc = performance.now(); out('Tryck Ctrl+C igen för att avsluta.', 'dim'); }
   } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd)) {
     e.preventDefault(); echo(cmd.value, new Set(), '^C'); cmd.value = '';
   } else if (e.ctrlKey && k === 'l') { e.preventDefault(); log.replaceChildren(); }
