@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger, STEPTEXT, chainParts} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger, STEPTEXT, chainParts};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -500,3 +500,15 @@ sh('Add-Content todo.md "- [ ] ny"'); assert.ok(sh.out('Get-Content todo.md').en
 sh('echo "- [ ] två" >> todo.md'); assert.ok(sh.out('cat todo.md').endsWith('\n- [ ] två'));
 
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);
+// Kedjor faller som block efter varandra: en text per steg, samma ifyllda namn i alla delar
+for (const task of TASKS) for (const ps of task[5] ? [false, true] : [false]) {
+  const b = fill(task, l => l[0], ps);
+  if (b.steps.length === 1) { assert.deepStrictEqual(chainParts(b), [b]); continue; }
+  assert.strictEqual(STEPTEXT[task[2]]?.length, b.steps.length, 'en text per steg: ' + task[2]);
+  const ps2 = chainParts(b);
+  assert.deepStrictEqual(ps2.map(x => x.steps.length), b.steps.map(() => 1));
+  ps2.forEach((x, i) => { assert.ok(x.text.endsWith(` (${i + 1} av ${b.steps.length})`) && !/\{\w+\}/.test(x.text), x.text); assert.strictEqual(x.steps[0], b.steps[i]); });
+}
+{ const b = fill(TASKS.find(t => t[2].startsWith('Skapa mappen {d}, gå in')), l => l[0], false), [a, , c] = chainParts(b);
+  assert.ok(c.text.includes(a.text.slice('Skapa mappen '.length, a.text.indexOf(' ('))), 'samma mapp i steg 1 och 3'); }
+

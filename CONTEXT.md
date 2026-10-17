@@ -81,7 +81,7 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   `S.score = ...` eller `best = ...` som man skriver själv ger fusklarmet med den inskrivna siffran, okänt ger `ReferenceError`. Test `alarmcheck.js`.
 - **Svårighet per skal:** `t[1]` får vara `[bash, PowerShell]` (läses via `lvOf`) när PowerShell-svaret är en pipe där bash har ett kort kommando.
   Sökning i alla filer är `[1, 3]`: Patrik tyckte `Get-ChildItem -Recurse | Select-String TODO` var svårt på nivå 1 (2026-10-17). Test `lvcheck.js`.
-- **Hello world** (Patriks krav 2026-10-17): två kedjeblock i Filer & mappar (svårighet 2), JavaScript och Python: skapa filen, skriv koden, kör. Kedjeblock faller med farten delad med antal steg (2026-10-17, Patrik hann inte tre långa PowerShell-rader på ett blocks tid).
+- **Hello world** (Patriks krav 2026-10-17): två kedjeblock i Filer & mappar (svårighet 2), JavaScript och Python: skapa filen, skriv koden, kör. Alla kedjor (Patrik 2026-10-17): först ett block per steg efter varandra (`STEPTEXT`, `chainParts`, nästa släpps när steget före är löst, så a && b && c på en rad löser alla), från nivå svårighet + 2 ett samlat block med "steg x av y" som faller med farten delad med antal steg.
   `node`/`python`/`bash` på en fil som inte finns i `PROGS` kör det som står i filen (`runFile`: bara utskriftsrader, console.log, print, echo,
   Write-Output), så egna ändringar i redigeraren syns när man kör. PowerShell rättas i gemener, men låtsasskalet får originaltexten
   (`canon(u, ps, keep)`), annars blev det hello world i filen. Test `hellocheck.js` (trädet, redigeraren, utskriften, löst block, egen text).

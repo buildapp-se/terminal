@@ -118,6 +118,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:
 .blk{position:absolute;top:0;padding:.55em .9em .5em;border:1px solid var(--c);background:var(--bg);will-change:transform;transition:opacity .3s,border-color .3s}
 .blk .tag{position:absolute;top:-.75em;left:.7em;padding:0 .35em;background:var(--bg);color:var(--c);font-size:12px}
 .blk p{color:#E7E7E7}
+
 .blk .prog{color:var(--c);font-size:12px;margin-top:.2em}
 .blk .ans{display:none;color:var(--dim);font-size:13px;margin-top:.25em}
 .blk.landed{border-color:#4A4A4A;--c:#6E6E6E}
@@ -478,6 +479,22 @@ const TASKS = [
   ['stop', 4, 'Avsluta processen 4821 från bash, med PowerShell', ['powershell -Command "Stop-Process -Id 4821"', 'powershell.exe -Command "Stop-Process -Id 4821"'], 'Agenten stannar: att döda en process kan stoppa något du jobbar med. -Command kör en rad PowerShell och går tillbaka.'],
   ['stop', 5, 'Gå in i mappen {repo} och radera grenarna {b} och {b2}', [['cd {repo}'], ['git branch -D {b} {b2}']], 'Agenten stannar: -D raderar även grenar som inte är sammanslagna. Flera grenar går i samma kommando.', [['Set-Location {repo}', 'cd {repo}'], ['git branch -D {b} {b2}']], "Agenten stannar: -D raderar även grenar som inte är sammanslagna. git fungerar likadant i PowerShell."],
 ];
+
+// Kedjor faller som block efter varandra (Patrik 2026-10-17: "skapa filen, skriv i filen, kör filen").
+// En text per steg; "(1 av 3)" läggs till av chainParts. Nyckeln är uppgiftens text.
+const STEPTEXT = {
+  'Hello world i JavaScript: skapa hello.js, skriv console.log("Hello world") i den och kör den med node':
+    ['Hello world i JavaScript: skapa filen hello.js', 'Hello world i JavaScript: skriv console.log("Hello world") i hello.js', 'Hello world i JavaScript: kör hello.js med node'],
+  'Hello world i Python: skapa hello.py, skriv print("Hello world") i den och kör den med python':
+    ['Hello world i Python: skapa filen hello.py', 'Hello world i Python: skriv print("Hello world") i hello.py', 'Hello world i Python: kör hello.py med python'],
+  'Skapa mappen {d}, gå in i den och skapa filen {f}': ['Skapa mappen {d}', 'Gå in i den nya mappen {d}', 'Skapa filen {f} i {d}'],
+  'Lägg upp projektet {repo} på GitHub. Mappen är inte ett git-repo än.':
+    ['Lägg upp {repo} på GitHub: gör mappen till ett git-repo', 'Lägg upp {repo} på GitHub: lägg till alla filer', 'Lägg upp {repo} på GitHub: committa med ett meddelande', 'Lägg upp {repo} på GitHub: skapa repot och skicka upp'],
+  'Spara allt med meddelandet "{msg}" och skicka till GitHub': ['Lägg till alla ändringar', 'Committa med meddelandet "{msg}"', 'Skicka commiten till GitHub'],
+  'Skapa grenen {b}, byt till den och skicka den till GitHub': ['Skapa grenen {b} och byt till den', 'Skicka grenen {b} till GitHub'],
+  'Ta reda på vad som håller port 3000 och tvinga det att avsluta': ['Ta reda på vad som håller port 3000', 'Tvinga processen 4821 att avsluta'],
+  'Gå in i mappen {repo} och radera grenarna {b} och {b2}': ['Gå in i mappen {repo}', 'Radera grenarna {b} och {b2}'],
+};
 
 const OPS = new Set(['|', '>', '>>', '&&', ';', '||']);
 const ANY = '{any}';
@@ -858,8 +875,15 @@ function fill(task, pick, ps = false) {
   // other: svaret i det andra skalet, som hjälpkortet visar under ditt
   const first = (a, sep) => (Array.isArray(a) && Array.isArray(a[0]) ? a.map(x => alts(x)[0]).join(sep) : alts(a)[0]);
   const other = !psAns || psAns === '=' ? null : ps ? sub(first(bashAns, ' && ')) : sub(first(psAns, '; '));
-  return {task, pack, lv, text: sub(text), why: sub(why), other,
+  const oa = ps ? bashAns : psAns, others = other && Array.isArray(oa) && Array.isArray(oa[0]) ? oa.map(x => sub(alts(x)[0])) : null;
+  return {task, pack, lv, text: sub(text), texts: (STEPTEXT[text] || []).map(sub), others, why: sub(why), other,
     steps: steps.map(s => s.map(x => { const raw = sub(x); return {raw, key: canon(tokenize(raw, ps), ps)}; }))};
+}
+
+// En kedja blir ett block per steg, med samma ifyllda namn; nästa släpps när steget före är löst
+function chainParts(b) {
+  const n = b.steps.length;
+  return n === 1 ? [b] : b.steps.map((st, i) => ({...b, steps: [st], text: `${b.texts[i]} (${i + 1} av ${n})`, other: b.others?.[i] ?? null}));
 }
 
 // Hjälpkortet: vad varje del av ett svar betyder. Nyckeln är "kommando del" (eller "git branch -d"),
@@ -2174,7 +2198,11 @@ function spawn() {
   if (story && enters(b.task)) S.went.add(here);
   S.recent.push(b.task);
   if (S.recent.length > Math.min(8, pool.length - 1)) S.recent.shift();
-
+  const [first, ...rest] = S.level > b.lv + 1 ? [b] : chainParts(b); // först tre block efter varandra, senare ett block med alla stegen (Patrik 2026-10-17)
+  release(Object.assign(first, {then: rest}), lane);
+  return true;
+}
+function release(b, lane) {
   const el = document.createElement('div');
   el.className = 'blk';
   el.style.setProperty('--c', PACKS[b.pack].c);
@@ -2187,7 +2215,6 @@ function spawn() {
   Object.assign(b, {el, lane, step: 0, landed: false, h: el.offsetHeight});
   b.y = -b.h;
   S.blocks.push(b);
-  return true;
 }
 
 function land(b) {
@@ -2215,7 +2242,7 @@ function tick(dt) {
       floor = b.y;
     }
     for (const b of inLane.filter(b => !b.landed).sort((a, c) => c.y - a.y)) {
-      b.y += speed * dt / b.steps.length; // kedjeblock: samma tid per steg som ett vanligt block, inte en tredjedel
+      b.y += speed * dt / b.steps.length; // samlat kedjeblock: samma tid per steg som ett vanligt block
       if (b.y + b.h >= floor) {
         b.y = floor - b.h;
         land(b);
@@ -2923,7 +2950,8 @@ function run(raw) {
       notes.push(...(said ?? (r || b.pack === 'fs' ? [QUIET] : sample(u, S.ps)))); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
-      else { b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`; if (b.landed) { b.el.querySelector('.ans').textContent = sig() + show(b.steps[b.step][0].raw); b.h = b.el.offsetHeight; } }
+      else if (b.step < b.steps.length) { b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`; if (b.landed) { b.el.querySelector('.ans').textContent = sig() + show(b.steps[b.step][0].raw); b.h = b.el.offsetHeight; } }
+      if (b.then?.length) { const [next, ...rest] = b.then; b.then = null; release(Object.assign(next, {then: rest}), b.lane); }
     } finally { S.env['?'] = errs > e0 ? '1' : '0'; } }
     prevOk = errs === errsBefore;
   }
@@ -3137,8 +3165,8 @@ function help(b) {
   pause(true);
   const step = b.steps[b.step];
   screen.innerHTML = `<p class="cmt"># ${esc(b.text)}</p>
-    ${b.steps.length > 1 ? `<p class="dim">steg ${b.step + 1} av ${b.steps.length}</p>` : ''}
     <p>${sig()}${esc(show(step[0].raw))}</p>
+    ${b.steps.length > 1 ? `<p class="dim">steg ${b.step + 1} av ${b.steps.length}</p>` : ''}
     ${b.other ? `<p class="dim"># i ${S.ps ? 'bash' : 'PowerShell'}: ${esc(show(b.other))}</p>` : ''}
     <dl class="parts">${parts(step[0].raw, S.ps).map(([p, d]) => `<dt>${esc(show(p))}</dt><dd>${esc(d || '')}</dd>`).join('')}</dl>
     ${step.length > 1 ? `<p class="dim">godkänns också: ${step.slice(1, 3).map(a => esc(show(a.raw))).join(' · ')}</p>` : ''}
