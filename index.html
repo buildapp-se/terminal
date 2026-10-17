@@ -140,7 +140,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:
 .cols{display:grid;gap:0 6ch}
 .screen{container-type:inline-size}@container (min-width:1000px){.cols{grid-template-columns:auto minmax(0,64ch)}} /* terminalens bredd, inte fönstrets: Bits panel tar 270 px */
 .screen p{max-width:76ch}
-.opts{display:flex;flex-direction:column;align-items:flex-start}
+.opts{display:flex;flex-direction:column;align-items:flex-start}.opts.row{flex-direction:row;flex-wrap:wrap;gap:0 2ch}
 .opt{padding:1px 6px;margin-left:-6px;text-align:left;white-space:pre}
 .opt[aria-pressed=true]{background:#264F78;color:#fff}
 .opt:hover{background:#2A2D2E}
@@ -242,7 +242,7 @@ kbd{font:inherit;color:var(--yellow)}
       <button type="button" data-do="run" title="Kör och felsök" aria-label="Kör och felsök"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 5 11 7-11 7z"/></svg></button>
       <button type="button" data-do="ext" title="Tillägg" aria-label="Tillägg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 10h6v10H4zM10 14h6v6h-6zM14 4h6v6h-6z"/></svg></button>
       <button class="acct" type="button" data-do="account" title="Konton" aria-label="Konton"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 19c1.2-3 3.7-4.5 6.5-4.5s5.3 1.5 6.5 4.5"/><circle cx="12" cy="12" r="9"/></svg></button>
-      <button class="gear" id="gear" type="button" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></button>
+      <button class="gear" id="gear" type="button" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path stroke-linejoin="round" d="M19.3 10.6L21.9 10.8L21.9 13.2L19.3 13.4L18.2 16.1L19.9 18.2L18.2 19.9L16.1 18.2L13.4 19.3L13.2 21.9L10.8 21.9L10.6 19.3L7.9 18.2L5.8 19.9L4.1 18.2L5.8 16.1L4.7 13.4L2.1 13.2L2.1 10.8L4.7 10.6L5.8 7.9L4.1 5.8L5.8 4.1L7.9 5.8L10.6 4.7L10.8 2.1L13.2 2.1L13.4 4.7L16.1 5.8L18.2 4.1L19.9 5.8L18.2 7.9Z"/><circle cx="12" cy="12" r="3"/></svg></button>
     </nav>
     <aside class="side" id="side" hidden><div class="side-h"><span id="sidet"></span><span class="dim" aria-hidden="true">&#8943;</span><button type="button" class="x" data-side="close" aria-label="Stäng sidofältet">&times;</button></div><div class="side-b" id="sideb"></div></aside>
 
@@ -257,7 +257,7 @@ kbd{font:inherit;color:var(--yellow)}
       <section class="panel">
         <div class="ptabs">
           <button type="button" data-do="problems">PROBLEMS<span class="badge" id="problems" data-n="0">0</span></button><button type="button" data-do="output">OUTPUT</button><button type="button" data-do="debug">DEBUG CONSOLE</button><button type="button" class="on" data-do="terminal">TERMINAL</button><button type="button" data-do="ports">PORTS</button>
-          <div class="mob"><button type="button" class="pz" data-do="pause" title="Pausa eller fortsätt (Esc)" aria-label="Pausa eller fortsätt"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><button type="button" data-do="settings" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></button></div>
+          <div class="mob"><button type="button" class="pz" data-do="pause" title="Pausa eller fortsätt (Esc)" aria-label="Pausa eller fortsätt"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><button type="button" data-do="settings" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linejoin="round" d="M19.3 10.6L21.9 10.8L21.9 13.2L19.3 13.4L18.2 16.1L19.9 18.2L18.2 19.9L16.1 18.2L13.4 19.3L13.2 21.9L10.8 21.9L10.6 19.3L7.9 18.2L5.8 19.9L4.1 18.2L5.8 16.1L4.7 13.4L2.1 13.2L2.1 10.8L4.7 10.6L5.8 7.9L4.1 5.8L5.8 4.1L7.9 5.8L10.6 4.7L10.8 2.1L13.2 2.1L13.4 4.7L16.1 5.8L18.2 4.1L19.9 5.8L18.2 7.9Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
           <div class="pright" aria-hidden="true"><span id="shname">bash</span><span>+</span><span>&#8943;</span></div>
         </div>
         <div class="term" id="term">
@@ -3081,9 +3081,9 @@ function settings() {
     <h2># skal <span class="dim">${locked ? '(byts när rundan är slut)' : '(s byter)'}</span></h2>
     <div class="opts">${shellOpts(prefs.shell, locked)}</div>
     <h2># ljud</h2>
-    <div class="opts"><button class="opt" data-snd="1" aria-pressed="${soundOn}">på</button><button class="opt" data-snd="0" aria-pressed="${!soundOn}">av</button></div>
+    <div class="opts row"><button class="opt" data-snd="1" aria-pressed="${soundOn}">på</button><button class="opt" data-snd="0" aria-pressed="${!soundOn}">av</button></div>
     <h2># ljudmotor <span class="dim">(laddar om sidan)</span></h2>
-    <div class="opts">${LJUD.map(([k, name]) => `<button class="opt" data-ljud="${k}" aria-pressed="${k === ljud}">${name}</button>`).join('')}</div>
+    <div class="opts row">${LJUD.map(([k, name]) => `<button class="opt" data-ljud="${k}" aria-pressed="${k === ljud}">${name}</button>`).join('')}</div>
     <div class="actions"><button data-act="back"><kbd>Esc</kbd> tillbaka</button></div>`;
   screen.hidden = false;
 }
