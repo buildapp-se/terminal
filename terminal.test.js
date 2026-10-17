@@ -4,9 +4,11 @@ const assert = require('assert');
 const fs = require('fs');
 
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
+// Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
+new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -294,5 +296,31 @@ for (const t of TASKS) if (t[0] === 'fs' && t[5]) for (const st of fill(t, a => 
   const s = shell(true);
   try { s(st[0].raw); } catch (e) { assert.ok(!/Missing an argument|positional parameter/.test(e.message), `${st[0].raw}: ${e.message}`); }
 }
+
+// Tab: kommandon, filer, mappar med /, dolda bara med punkt, gemensam början, PowerShell utan hänsyn till skiftläge
+{
+  const w = structuredClone(WORLD), cmds = ['git', 'grep', 'gh', 'ls'];
+  assert.deepStrictEqual(complete(w, ['projekt'], 'gr', false, cmds), {line: 'grep ', list: ['grep'], base: ''});
+  assert.strictEqual(complete(w, ['projekt'], 'g', false, cmds).line, 'g', 'flera träffar utan gemensam början: raden står kvar');
+  assert.deepStrictEqual(complete(w, ['projekt'], 'g', false, cmds).list, ['gh', 'git', 'grep']);
+  assert.strictEqual(complete(w, ['projekt'], 'cd mu', false, cmds).line, 'cd musik/');
+  assert.strictEqual(complete(w, ['projekt'], 'cat spel/sp', false, cmds).line, 'cat spel/spel.py ');
+  assert.strictEqual(complete(w, ['projekt'], 'cat no', false, cmds).line, 'cat notes.txt ');
+  assert.ok(!complete(w, ['projekt'], 'ls ', false, cmds).list.some(n => n.startsWith('.')), 'dolda syns inte utan punkt');
+  assert.ok(complete(w, ['projekt'], 'ls .e', false, cmds).line === 'ls .env ', 'dolda med punkt');
+  assert.strictEqual(complete(w, ['projekt'], 'cd MU', true, cmds).line, 'cd musik\\', 'PowerShell: skiftläge spelar ingen roll, mappar får \\');
+  assert.strictEqual(complete(w, ['projekt'], 'cat nope/x', false, cmds).list.length, 0);
+  assert.strictEqual(complete(w, ['projekt'], 'Get-Ch', true, ['Get-ChildItem', 'Get-Content']).line, 'Get-ChildItem ');
+}
+// Bit: stadierna är tvåpotenserna från 1, och binärt räknas i hela nibbles
+assert.deepStrictEqual(PET_STAGES.map(s => s[0]), [0, ...Array.from({length: PET_STAGES.length - 1}, (_, i) => 2 ** i)], 'Bit växer vid 1, 2, 4, 8 ...');
+assert.deepStrictEqual([0, 1, 3, 4, 7, 8, 9, 1024, 5000].map(petStage), [0, 1, 2, 3, 3, 4, 4, PET_STAGES.length - 1, PET_STAGES.length - 1]);
+assert.deepStrictEqual([0, 1, 2, 3, 4].map(binStr), ['0000', '0001', '0010', '0011', '0100']);
+assert.strictEqual(binStr(18), '0001 0010'); assert.strictEqual(binStr(255), '1111 1111');
+assert.strictEqual(binParts(13), '8 + 4 + 1'); assert.strictEqual(binParts(0), '0'); assert.strictEqual(binParts(16), '16');
+for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(text), 'svensk text: inga tankstreck, decimalkomma: ' + text);
+// PowerShell frågar om mappen inte är tom
+sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');
+sh.bad('Remove-Item tom', /Confirm\n[\s\S]*tom has children[\s\S]*\): N\n# spelet svarar N/);
 
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);

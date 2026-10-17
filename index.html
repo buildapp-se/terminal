@@ -162,9 +162,33 @@ kbd{font:inherit;color:var(--yellow)}
 .status .sp{margin-left:auto}
 .status>button:hover{background:#2A2D2E}
 
+.term{position:relative}
+.pet{position:absolute;right:12px;bottom:26px;width:56px;height:56px;padding:0;z-index:4;cursor:pointer}
+.pet svg{display:block;width:100%;height:100%;transform:scale(var(--s,1));transform-origin:50% 100%;overflow:visible}
+.pet:hover svg{transform:scale(var(--s,1)) rotate(-4deg)}
+.pet:focus-visible{outline:1px solid var(--accent)}
+.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#3C3C3C;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
+.pet .body{transform-box:fill-box;transform-origin:50% 100%;animation:breathe 2.6s ease-in-out infinite}
+.pet .egg{transform-box:fill-box;transform-origin:50% 100%;animation:wobble 3s ease-in-out infinite}
+.pet.eat .body,.pet.happy .body{animation:boing .32s ease-in-out 3}.pet.scared .body{animation:shiver .12s linear infinite}.pet.sad .body{animation:none;transform:scaleY(.94)}
+.pet.sleep .body{animation-duration:4.5s}.pet .zz{animation:zz 3s ease-in-out infinite}
+.pet .chomp{transform-box:fill-box;transform-origin:center;animation:chomp .18s ease-in-out infinite alternate}
+.pet .wave{transform-box:fill-box;transform-origin:50% 100%;animation:wave .3s ease-in-out infinite alternate}
+.pet .blink{animation:blink 1s steps(1) infinite}.pet .twinkle{transform-box:fill-box;transform-origin:center;animation:twinkle 1.6s ease-in-out infinite}.pet .eye{transform-box:fill-box;transform-origin:center;animation:eyes 5s infinite}
+.pet .fly{position:absolute;left:50%;top:40%;font:700 11px var(--mono);color:#8FE3C8;pointer-events:none;animation:munch .7s ease-in both}
+.pet .fly.heart{color:#FF4F8B;font-size:14px;animation:float 1.1s ease-out both}
+@keyframes breathe{50%{transform:scale(1.03,.97)}}@keyframes wobble{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-7deg)}86%{transform:rotate(6deg)}93%{transform:rotate(-3deg)}}
+@keyframes boing{50%{transform:translateY(-14%) scale(.95,1.06)}}@keyframes shiver{50%{transform:translateX(3%)}}
+@keyframes chomp{to{transform:scaleY(.25)}}@keyframes wave{to{rotate:25deg}}@keyframes blink{50%{opacity:0}}@keyframes twinkle{50%{transform:scale(.7) rotate(20deg);opacity:.7}}
+@keyframes eyes{0%,94%,100%{transform:none}97%{transform:scaleY(.1)}}@keyframes zz{50%{translate:2px -3px;opacity:.5}}
+@keyframes munch{from{translate:var(--x) -18px;opacity:0}30%{opacity:1}to{translate:-4px 4px;opacity:0;scale:.4}}
+@keyframes float{from{translate:0 0;opacity:0}20%{opacity:1}to{translate:var(--x) -46px;opacity:0;scale:1.4}}
+@media (max-width:700px){.pet{width:46px;height:46px}.pet .bin{right:48px}}
+.bubble{position:absolute;right:10px;bottom:86px;z-index:5;max-width:min(320px,calc(100% - 20px));padding:6px 10px;border:1px solid #454545;border-radius:6px;background:#252526;color:var(--fg);font:12px/1.45 var(--ui);box-shadow:0 2px 8px #0008}
+.bubble::after{content:'';position:absolute;right:22px;bottom:-6px;width:10px;height:10px;background:#252526;border:solid #454545;border-width:0 1px 1px 0;transform:rotate(45deg)}
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
 @media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
-@media (prefers-reduced-motion:reduce){.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
+@media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
 <body>
@@ -209,6 +233,7 @@ kbd{font:inherit;color:var(--yellow)}
           <div class="well" id="well"><div class="screen" id="screen"></div></div>
           <div class="log" id="log" aria-live="polite"></div>
           <div class="prompt"><span id="ps1"></span><span class="cmdbox"><span id="mirror"></span><input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Skriv kommando"></span></div>
+          <div class="bubble" id="bubble" role="status" hidden></div><button type="button" class="pet" id="pet"></button>
         </div>
       </section>
     </div>
@@ -294,12 +319,12 @@ const TASKS = [
   // Hello world: skapa filen, skriv koden i den, kör den. Filen syns i trädet och redigeraren, och programmet skriver det som står i filen (runFile).
   ['fs', 2, `Hello world i JavaScript: skapa hello.js, skriv console.log("Hello world") i den och kör den med node`, [['touch hello.js'], [`echo 'console.log("Hello world")' > hello.js`, `echo "console.log('Hello world')" > hello.js`], ['node hello.js']],
     'Det klassiska första programmet. touch skapar filen, echo med > skriver koden i den och node kör den. Enkla citattecken runt koden gör att de dubbla inuti följer med.',
-    [['New-Item hello.js'], [`Set-Content hello.js 'console.log("Hello world")'`, `Write-Output 'console.log("Hello world")' > hello.js`], ['node hello.js']],
-    'Det klassiska första programmet. New-Item skapar filen, Set-Content skriver koden i den och node kör den.'],
+    [['New-Item hello.js'], [`Set-Content hello.js 'console.log("Hello world")'`], ['node hello.js']],
+    'Det klassiska första programmet. New-Item skapar filen, Set-Content skriver koden i den och node kör den. Inte > här: Windows PowerShell 5.1 skriver då filen som UTF-16, och node svarar SyntaxError.'],
   ['fs', 2, `Hello world i Python: skapa hello.py, skriv print("Hello world") i den och kör den med python`, [['touch hello.py'], [`echo 'print("Hello world")' > hello.py`, `echo "print('Hello world')" > hello.py`], ['python hello.py', 'python3 hello.py']],
     'Samma tre steg i Python: skapa filen, skriv koden, kör. python läser filen rad för rad.',
-    [['New-Item hello.py'], [`Set-Content hello.py 'print("Hello world")'`, `Write-Output 'print("Hello world")' > hello.py`], ['python hello.py']],
-    'Samma tre steg i Python: New-Item skapar, Set-Content skriver koden, python kör.'],
+    [['New-Item hello.py'], [`Set-Content hello.py 'print("Hello world")'`], ['python hello.py']],
+    'Samma tre steg i Python: New-Item skapar, Set-Content skriver koden, python kör. Med > blir filen UTF-16 i PowerShell 5.1, och python svarar SyntaxError: source code cannot contain null bytes.'],
   ['fs', 5, 'Skapa mappen {d}, gå in i den och skapa filen {f}', [['mkdir {d}'], ['cd {d}'], ['touch {f}']], 'Med && körs nästa kommando bara om det förra lyckades.', [["New-Item -ItemType Directory {d}"], ["Set-Location {d}"], ["New-Item {f}"]], "Med ; körs kommandona efter varandra. && finns bara i PowerShell 7."],
   ['fs', 5, 'Visa de 5 största filerna och mapparna här', ['du -sh * | sort -h | tail -n 5', 'du -sh * | sort -h | tail -5'], 'Tre program med | emellan: mät, sortera efter storlek, visa de sista fem.'],
 
@@ -388,19 +413,19 @@ const TASKS = [
   // Cloudflare och Firebase: verktygen som publicerar sajterna
   ['moln', 1, 'Visa vilket Cloudflare-konto du är inloggad på', ['npx wrangler whoami', 'wrangler whoami'], 'whoami visar konto och behörigheter. Kör det innan en deploy, så att den hamnar rätt.', '='],
   ['moln', 1, 'Starta workern lokalt', ['npx wrangler dev', 'wrangler dev'], 'Workern körs på localhost:8787. Inget går ut på riktigt förrän du kör deploy.', '='],
-  ['moln', 1, 'Logga in på Firebase', ['firebase login', 'npx firebase login'], 'Webbläsaren öppnas och du godkänner med ditt Google-konto. Inloggningen sparas på datorn.', '='],
+  ['moln', 1, 'Logga in på Firebase', ['firebase login', 'npx firebase-tools login'], 'Webbläsaren öppnas och du godkänner med ditt Google-konto. Inloggningen sparas på datorn.', '='],
   ['moln', 2, 'Publicera workern', ['npx wrangler deploy', 'wrangler deploy'], 'deploy laddar upp workern, och den är live för alla direkt.', '='],
   ['moln', 2, 'Följ workerns loggar medan den körs', ['npx wrangler tail', 'wrangler tail'], 'Varje anrop och varje console.log syns medan det händer. Ctrl+C slutar.', '='],
-  ['moln', 2, 'Välj Firebase-projektet {proj}', ['firebase use {proj}', 'npx firebase use {proj}'], 'use bestämmer vilket projekt kommandona gäller. Att publicera till fel projekt är ett vanligt misstag.', '='],
+  ['moln', 2, 'Välj Firebase-projektet {proj}', ['firebase use {proj}', 'npx firebase-tools use {proj}'], 'use bestämmer vilket projekt kommandona gäller. Att publicera till fel projekt är ett vanligt misstag.', '='],
   ['moln', 2, 'Starta ett nytt Cloudflare-projekt', ['npm create cloudflare@latest', 'npm create cloudflare'], 'create-cloudflare ställer några frågor och sätter upp ett färdigt projekt med wrangler.', '='],
-  ['moln', 3, 'Publicera bara webbsidan till Firebase', ['firebase deploy --only hosting', 'npx firebase deploy --only hosting'], '--only hosting låter funktioner och databasregler vara. Utan det publiceras allt i firebase.json.', '='],
-  ['moln', 3, 'Starta Firebase-emulatorerna', ['firebase emulators:start', 'npx firebase emulators:start'], 'Databas, inloggning och funktioner körs på din dator, så du kan testa utan att röra riktiga data.', '='],
+  ['moln', 3, 'Publicera bara webbsidan till Firebase', ['firebase deploy --only hosting', 'npx firebase-tools deploy --only hosting'], '--only hosting låter funktioner och databasregler vara. Utan det publiceras allt i firebase.json.', '='],
+  ['moln', 3, 'Starta Firebase-emulatorerna', ['firebase emulators:start', 'npx firebase-tools emulators:start'], 'Databas, inloggning och funktioner körs på din dator, så du kan testa utan att röra riktiga data.', '='],
   ['moln', 3, 'Lista D1-databaserna i ditt konto', ['npx wrangler d1 list', 'wrangler d1 list'], 'D1 är Cloudflares SQL-databas. Namnet i listan är det du skriver efter execute.', '='],
   ['moln', 3, 'Kör schema.sql mot den lokala kopian av D1-databasen db', ['npx wrangler d1 execute db --local --file=schema.sql', 'wrangler d1 execute db --local --file=schema.sql', 'npx wrangler d1 execute db --file=schema.sql', 'wrangler d1 execute db --file=schema.sql'], 'Lokalt är standard: utan --remote rörs bara kopian på din dator.', '='],
   ['moln', 4, 'Lista hemligheterna i workern', ['npx wrangler secret list', 'wrangler secret list'], 'Bara namnen syns. Värdena går inte att läsa tillbaka, bara skriva över.', '='],
   ['moln', 4, 'Visa workerns senaste versioner', ['npx wrangler deployments list', 'wrangler deployments list'], 'Varje deploy blir en version med id, tid och vem som gjorde den.', '='],
   ['moln', 4, 'Gå tillbaka till workerns förra version', ['npx wrangler rollback', 'wrangler rollback'], 'rollback tar fram förra versionen på sekunder. Snabbare än att laga och publicera igen.', '='],
-  ['moln', 5, 'Publicera bara databasreglerna för Firestore', ['firebase deploy --only firestore:rules', 'npx firebase deploy --only firestore:rules'], 'Reglerna bestämmer vem som får läsa och skriva. Testa dem i emulatorn först.', '='],
+  ['moln', 5, 'Publicera bara databasreglerna för Firestore', ['firebase deploy --only firestore:rules', 'npx firebase-tools deploy --only firestore:rules'], 'Reglerna bestämmer vem som får läsa och skriva. Testa dem i emulatorn först.', '='],
   // Vibe-kodaren (förr När agenten stannar): kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
   ['stop', 1, 'Logga in på GitHub, i webbläsaren', ['gh auth login', 'gh auth login -w', 'gh auth login -h github.com -w', 'gh auth login --web'], 'Agenten stannar: inloggningen sker i webbläsaren, och där kan den inte klicka. -w = web.', '='],
   ['stop', 1, 'Logga in på Cloudflare med wrangler', ['npx wrangler login', 'wrangler login'], 'Agenten stannar: wrangler öppnar webbläsaren och vill att du godkänner.', '='],
@@ -619,6 +644,48 @@ function syntax(tk, ps) {
   return null;
 }
 
+// Tab fyller i sista ordet: först på raden ett kommando, annars en fil eller mapp där du står (mappar får / eller \).
+// Dolda namn bara när ordet börjar med punkt, som i bash. list = alla träffar, för listan vid andra Tab.
+function complete(fs, cwd, line, ps, cmds) {
+  const [, head, word] = line.match(/^(.*?)(\S*)$/), sep = ps ? '\\' : '/';
+  const cut = Math.max(word.lastIndexOf('/'), word.lastIndexOf('\\')) + 1, dir = word.slice(0, cut), part = word.slice(cut);
+  const starts = n => (ps ? n.toLowerCase().startsWith(part.toLowerCase()) : n.startsWith(part));
+  let list;
+  if (!head.trim() && !cut) list = [...new Set(cmds)].filter(starts).sort();
+  else {
+    const node = look(fs, resolve(cwd, dir), ps).node;
+    if (typeof node !== 'object') return {line, list: [], base: head + dir};
+    list = Object.keys(node).filter(n => starts(n) && (part.startsWith('.') || !n.startsWith('.'))).sort().map(n => (typeof node[n] === 'object' ? n + sep : n));
+  }
+  const base = head + dir;
+  if (!list.length) return {line, list, base};
+  if (list.length === 1) return {line: base + list[0] + (list[0].endsWith(sep) ? '' : ' '), list, base};
+  let p = list[0];
+  while (!list.every(n => n.toLowerCase().startsWith(p.toLowerCase()))) p = p.slice(0, -1);
+  return {line: base + (p.length > part.length ? p : part), list, base};
+}
+
+// Bit, terminaldjuret: äter en bit per löst steg och växer vid varje tvåpotens, 1, 2, 4, 8 och så vidare (Patrik 2026-10-17). Varje stadium lär ut något om bitar.
+const PET_STAGES = [
+  [0, 'Ägg', 'Ett ägg. Det kläcks när du löser ditt första steg.'],
+  [1, 'Bit', '1 bit: en etta eller en nolla, på eller av. Allt i datorn är byggt av sådana, även jag.'],
+  [2, 'Tvåbit', 'Binärt räknar man 0000, 0001, 0010, 0011, 0100. Platserna är värda 8, 4, 2 och 1 från vänster, precis som 1 000, 100, 10 och 1 i vanliga tal. 0010 betyder alltså en tvåa och inga ettor. Varje gång ettan längst till vänster flyttar ett steg växer jag.'],
+  [4, 'Nibble', '4 bitar heter en nibble (engelska för nafsa). En hexsiffra, 0 till F, är precis en nibble: git-hashen a3f9c2e är sju nibbles.'],
+  [8, 'Byte', '8 bitar är en byte, 256 olika värden. Bokstaven A är 65, och å tar två byte i UTF-8. Därför räknar wc -c fler tecken än du ser.'],
+  [16, 'Port', '16 bitar räcker till 65 536 värden. Portnummer, som 3000 och 8080, är 16 bitar, därför tar de slut vid 65 535.'],
+  [32, 'IPv4', '32 bitar är en IPv4-adress: fyra byte, som 192.168.1.10. Det finns bara drygt 4 miljarder, och de tog slut 2011.'],
+  [64, 'Processor', '64 bitar räknar din processor med åt gången. Därav 64-bitars Windows, och x64 i filnamnen du laddar ner.'],
+  [128, 'IPv6', '128 bitar är en IPv6-adress, som ::1 (din egen dator). Den räcker till fler adresser än det finns sandkorn på jorden.'],
+  [256, 'SHA-256', '256 bitar är hashen SHA-256. Ändra en enda bit i filen så ändras ungefär hälften av hashens bitar.'],
+  [512, 'chmod', '512 är 8 × 8 × 8: alla sätt att sätta rättigheter med chmod. Varje siffra i chmod 755 är tre bitar: r = 4, w = 2, x = 1.'],
+  [1024, 'Kibibit', '1 024 bitar är en kibibit. Kilo betyder 1 000, kibi 1 024. ls -lh och du -h räknar med 1 024.'],
+];
+const petStage = bits => PET_STAGES.findLastIndex(([n]) => bits >= n);
+// Ett tal som summan av platsvärdena där binärtalet har en etta: 13 = 1101 = 8 + 4 + 1
+// Binärt i hela nibbles med inledande nollor, som lampor i ett register: 5 = 0101, 18 = 0001 0010 (Patrik 2026-10-17)
+const binStr = n => { const b = n.toString(2); return b.padStart(Math.ceil(b.length / 4) * 4, '0').replace(/(.{4})(?=.)/g, '$1 '); };
+const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).join(' + ') || '0';
+
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
   const [pack, , text, bashAns, bashWhy, psAns, psWhy] = task, lv = lvOf(task, ps), v = {};
@@ -664,7 +731,7 @@ const GLOSS = {
   'git branch --force': 'tvinga, även om grenen inte är ihopslagen',
   'db': 'databasens namn',
   'Git.Git': 'Gits id i winget',
-  'firebase': 'Firebases terminalverktyg', 'firebase login': 'logga in med Google i webbläsaren', 'firebase use': 'välj vilket projekt kommandona gäller',
+  'firebase': 'Firebases terminalverktyg', 'firebase-tools': 'npm-paketet med Firebases terminalverktyg. npx hämtar det, och kommandot det ger heter firebase', 'firebase login': 'logga in med Google i webbläsaren', 'firebase use': 'välj vilket projekt kommandona gäller',
   'firebase deploy': 'publicera', 'firebase deploy --only': 'bara det som följer, resten lämnas orört', 'firebase deploy hosting': 'webbsidan, Firebase Hosting',
   'firebase deploy firestore:rules': 'databasens säkerhetsregler', 'firebase emulators:start': 'starta emulatorerna: databas, inloggning och funktioner på din dator',
   'wrangler whoami': 'vilket konto du är inloggad på', 'wrangler dev': 'kör workern lokalt, på localhost:8787', 'wrangler deploy': 'ladda upp och publicera workern',
@@ -820,6 +887,7 @@ function parts(raw, ps = false) {
     if (OPS.has(t)) { d = GLOSS[t] || 'kör kommandona efter varandra'; toFile = t[0] === '>'; path = []; }
     else if (!path.length && !toFile) { d = GLOSS[t]; path = [t]; }
     else if (toFile) d = POOLOF[t] || GLOSS[t] ? 'filen som utskriften hamnar i' : null;
+    else if (path.join() === 'npx' && t === 'firebase-tools') { d = GLOSS[t]; path = ['firebase']; } // paketet heter inte som kommandot
     else if (look(t)) { d = look(t); if (!t.startsWith('-') && GLOSS[path.join(' ') + ' ' + t]) path.push(t); }
     else if (/^-\d+$/.test(t) && NUMS[path[0]]) d = `${NUMS[path[0]]}: ${t.slice(1)}`;
     else if (/^\d+$/.test(t) && NUMS[path[0]]) d = NUMS[path[0]];
@@ -1220,7 +1288,10 @@ function fake(fs, cwd, key, ps, env = {}) {
       const empty = typeof node === 'object' && !Object.keys(node).length;
       if (typeof node === 'object') {
         if (op === 'rmdir' && !empty) fail(`rmdir: failed to remove '${a0}': Directory not empty`);
-        if (ps && !empty && !has('-recurse')) fail('', `The item at ${full(a0)} has children and the Recurse parameter was not specified.`);
+        if (ps && !empty && !has('-recurse')) throw new Error(`Confirm
+The item at ${full(a0)} has children and the Recurse parameter was not specified. If you continue, all children will be removed with the item. Are you sure you want to continue?
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): N
+# spelet svarar N åt dig. Med -Recurse frågar PowerShell inte.`);
         if (!ps && op === 'rm' && !has('-r', '-R') && !(has('-d') && empty)) fail(`rm: cannot remove '${a0}': ${has('-d') ? 'Directory not empty' : 'Is a directory'}`);
       } else if (op === 'rmdir') fail(`rmdir: failed to remove '${a0}': Not a directory`);
       del(real);
@@ -1638,6 +1709,8 @@ function start() {
   cmd.value = ''; sync(); cmd.focus();
   music();
   render();
+  petFeel('happy', 1200);
+  if (!pet.hello) { pet.hello = true; save(PET, pet); petSay('Hej, jag är Bit! Jag äter en bit för varje steg du löser och växer vid 1, 2, 4, 8 och så vidare. Klicka på mig så ser du hur det går.', 12000); }
 }
 // Ny värld: filsystemet, mappen, git och en tom logg. Spelet och quizet börjar båda här.
 function fresh() {
@@ -1759,6 +1832,7 @@ function tick(dt) {
   }
   for (const b of S.blocks) b.el.style.transform = `translateY(${b.y}px)`;
   stats();
+  petIdle();
 }
 
 function remove(b) {
@@ -1804,7 +1878,15 @@ function target(key) {
 
 // Fel kommando: skriv det bash hade skrivit, eller rödmarkera det som skiljer mot närmaste block
 // Vanliga kommandon som spelet inte har block för svarar ändå, utan att räknas som fel
+// Versionen: första felsökningen, och aldrig fel. Flaggan skiljer sig: python -v betyder verbose, -V är versionen.
+const VERS = {git: ['--version', '-v', 'version'], node: ['--version', '-v'], npm: ['--version', '-v'], python: ['--version', '-V'], python3: ['--version', '-V'], gh: ['--version', 'version'], uv: ['--version', '-V', 'version']};
 function toy(u, notes) {
+  const v0 = u[0].toLowerCase().replace(/.exe$/, '');
+  if (u.length === 2 && VERS[v0]?.includes(u[1]) && !(S.ps && v0 === 'python3')) {
+    notes.push({git: S.ps ? 'git version 2.47.1.windows.1' : 'git version 2.47.1', node: 'v24.14.0', npm: '10.9.2', python: 'Python 3.13.1', python3: 'Python 3.13.1',
+      gh: 'gh version 2.63.0 (2024-11-27)\nhttps://github.com/cli/cli/releases/tag/v2.63.0', uv: 'uv 0.5.11'}[v0]);
+    return true;
+  }
   const [c] = u, names = u.slice(c === 'command' ? 2 : 1).filter(t => !t.startsWith('-'));
   // which, type och command -v: var programmet ligger. Bara det spelet känner till finns i PATH. Git Bash svarar som här.
   if (!S.ps && names.length && (c === 'which' || c === 'type' || (c === 'command' && u[1] === '-v'))) {
@@ -1856,6 +1938,148 @@ function editorCmd(u, notes) {
     notepad: '# notepad öppnar Anteckningar i ett eget fönster. Här öppnas filen i redigeraren ovanför i stället. Ctrl+S sparar.'}[c]);
   return true;
 }
+
+// ---------- Bit, terminaldjuret ----------
+// Äter en bit per löst steg (hjälp ger ingen mat, som inga poäng), växer vid tvåpotenserna i PET_STAGES och sparas i term-pet.
+// Pratar sparsamt: när den växer, ett tips om en flagga du inte använde, när du kört fast, och när du skriver något farligt.
+const PET = 'term-pet';
+const pet = load(PET, {bits: 0, last: '', hello: false});
+const petEl = $('#pet'), bubble = $('#bubble');
+let petMood = '', petT = 0, bubbleT = 0, petSaid = 0, tabHinted = false;
+const PET_COLORS = ['#FFF1DC', '#C9F2E0', '#A8E6CF', '#8FE3C8', '#9AD0F5', '#B8C4FF', '#D3B8FF', '#F2B8FF', '#FFB3D9', '#FFC4A8', '#FFE08A', '#FFF0A0']; // pastell, från mint till guld
+function petSVG(st, mood) {
+  const ink = '#3A2E39', blush = '<ellipse cx="11" cy="25.5" rx="2.8" ry="1.6" fill="#FF7AA2" opacity=".6"/><ellipse cx="29" cy="25.5" rx="2.8" ry="1.6" fill="#FF7AA2" opacity=".6"/>';
+  const shade = c => `style="fill:color-mix(in srgb, ${c} 72%, #3A2E39)"`;
+  if (!st) // ägget sover och väntar på första steget
+    return `<ellipse cx="20" cy="38" rx="9" ry="1.8" fill="#000" opacity=".35"/><g class="egg"><path d="M20 6c7 0 11.5 11 11.5 19S26.5 38 20 38 8.5 33 8.5 25 13 6 20 6z" fill="#FFF1DC"/>`
+      + `<path d="M12 20l3 2.5 3-2.5 4 2.5 3-2.5 3.5 2" fill="none" stroke="#E8CFA8" stroke-width="1.2" stroke-linejoin="round"/>`
+      + `<circle cx="15" cy="13" r="1.6" fill="#A8E6CF"/><circle cx="26" cy="31" r="2" fill="#A8E6CF"/><circle cx="12" cy="30" r="1.2" fill="#FFB3D9"/>`
+      + `<path d="M15 26.5q1.5 1.3 3 0M22 26.5q1.5 1.3 3 0" fill="none" stroke="${ink}" stroke-width="1.2" stroke-linecap="round"/>${blush.replace(/25\.5/g, '29')}`
+      + `<ellipse cx="15" cy="11" rx="2" ry="3" fill="#fff" opacity=".7" transform="rotate(25 15 11)"/></g>`;
+  const c = PET_COLORS[st], round = `fill="none" stroke="${ink}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"`;
+  const shine = (x, y) => `<circle cx="${x + 1}" cy="${y - 1.3}" r="1.1" fill="#fff"/><circle cx="${x - .9}" cy="${y + 1.2}" r=".5" fill="#fff"/>`;
+  const eyes = {
+    happy: `<path d="M12.5 21.5q2.5-3 5 0M22.5 21.5q2.5-3 5 0" ${round}/>`,
+    eat: `<path d="M12.5 21.5q2.5-3 5 0M22.5 21.5q2.5-3 5 0" ${round}/>`,
+    sleep: `<path d="M12.5 20.5q2.5 2.5 5 0M22.5 20.5q2.5 2.5 5 0" ${round}/>`,
+    scared: `<circle cx="15" cy="20.5" r="3.6" fill="#fff"/><circle cx="25" cy="20.5" r="3.6" fill="#fff"/><circle cx="15" cy="20.5" r="1.4" fill="${ink}"/><circle cx="25" cy="20.5" r="1.4" fill="${ink}"/><path d="M33 13q1.6 2.6 0 3.6q-1.6-1 0-3.6z" fill="#7FC8FF"/>`,
+    love: `<path d="M15 23.6l-3-3a1.8 1.8 0 0 1 3-1.9 1.8 1.8 0 0 1 3 1.9zM25 23.6l-3-3a1.8 1.8 0 0 1 3-1.9 1.8 1.8 0 0 1 3 1.9z" fill="#FF4F8B"/>`,
+    sad: `<ellipse cx="15" cy="21" rx="2.4" ry="3" fill="${ink}"/><ellipse cx="25" cy="21" rx="2.4" ry="3" fill="${ink}"/>${shine(15, 21)}${shine(25, 21)}<path d="M11.5 17.6l4.2-1.6M28.5 17.6l-4.2-1.6" ${round}/><path d="M12.6 24.5q-.9 2 0 2.6q.9-.6 0-2.6z" fill="#7FC8FF"/>`,
+  }[mood] ?? `<g class="eye"><ellipse cx="15" cy="21" rx="2.6" ry="3.3" fill="${ink}"/><ellipse cx="25" cy="21" rx="2.6" ry="3.3" fill="${ink}"/>${shine(15, 21)}${shine(25, 21)}</g>`;
+  const mouth = {
+    eat: `<ellipse class="chomp" cx="20" cy="27" rx="2.6" ry="2.2" fill="${ink}"/><ellipse cx="20" cy="28.2" rx="1.5" ry=".8" fill="#FF7AA2"/>`,
+    happy: `<path d="M17 25.5q3 4 6 0z" fill="${ink}" stroke="${ink}" stroke-width="1" stroke-linejoin="round"/><path d="M18.6 27.4q1.4.8 2.8 0" fill="none" stroke="#FF7AA2" stroke-width="1"/>`,
+    love: `<path d="M17.5 26q1.25 1.5 2.5 0q1.25 1.5 2.5 0" ${round}/>`,
+    scared: `<path d="M17 27.5q1-1.2 2-0q1 1.2 2 0q1-1.2 2 0" ${round} stroke-width="1.2"/>`,
+    sad: `<path d="M17.5 27.5q2.5-2 5 0" ${round}/>`,
+    sleep: `<circle cx="20" cy="27" r="1.1" fill="${ink}"/>`,
+  }[mood] ?? `<path d="M17.5 26q1.25 1.5 2.5 0q1.25 1.5 2.5 0" ${round} stroke-width="1.3"/>`; // en liten w-mun
+  const arms = mood === 'happy' || mood === 'love'
+    ? `<g class="wave"><ellipse cx="6.5" cy="21" rx="2.2" ry="3.2" ${shade(c)} transform="rotate(-35 6.5 21)"/></g><g class="wave r"><ellipse cx="33.5" cy="21" rx="2.2" ry="3.2" ${shade(c)} transform="rotate(35 33.5 21)"/></g>`
+    : `<ellipse cx="6.8" cy="26" rx="2" ry="3" ${shade(c)} transform="rotate(20 6.8 26)"/><ellipse cx="33.2" cy="26" rx="2" ry="3" ${shade(c)} transform="rotate(-20 33.2 26)"/>`;
+  return `<ellipse cx="20" cy="38.2" rx="11" ry="1.8" fill="#000" opacity=".35"/>`
+    + (st >= 5 && st < 10 ? `<path d="M20 9q-1.5-3 .5-5.5" fill="none" stroke="${ink}" stroke-width="1.2" stroke-linecap="round"/><path class="twinkle" d="M20.5 .2l1 2.2 2.4.3-1.8 1.6.5 2.4-2.1-1.2-2.1 1.2.5-2.4-1.8-1.6 2.4-.3z" fill="#FFD84D"/>` : '')
+    + (st >= 1 && st < 5 ? `<path d="M20 9.5q0-2.5 1-3.5" fill="none" stroke="#5FBF8F" stroke-width="1.2" stroke-linecap="round"/><path d="M21 6q3-2.5 4.5 0q-2.5 2-4.5 0z" fill="#7ED9A6"/>${st >= 3 ? '<path d="M20.3 7.5q-3-2-4.2.4q2.5 1.6 4.2-.4z" fill="#7ED9A6"/>' : ''}` : '')
+    + (st >= 11 ? `<g class="twinkle" fill="#FFE58A"><path d="M4 9l.6 1.6 1.6.6-1.6.6L4 13.4l-.6-1.6-1.6-.6 1.6-.6z"/><path d="M36 13l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z"/><path d="M34 3l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4z"/></g>` : '')
+    + `<ellipse cx="14.5" cy="36.6" rx="3.6" ry="2" ${shade(c)}/><ellipse cx="25.5" cy="36.6" rx="3.6" ry="2" ${shade(c)}/>`
+    + `<g class="body">${arms}<path d="M20 8.5c9.5 0 14.5 7.5 14.5 15.5S29 37 20 37 5.5 32 5.5 24 10.5 8.5 20 8.5z" fill="${c}"/>`
+    + `<ellipse cx="20" cy="30.5" rx="8" ry="5" fill="#fff" opacity=".28"/><ellipse cx="13" cy="13.5" rx="3.2" ry="1.8" fill="#fff" opacity=".55" transform="rotate(-30 13 13.5)"/>`
+    + (st >= 4 ? `<rect class="blink" x="18.6" y="30" width="2.8" height="3.6" rx=".5" fill="${ink}" opacity=".45"/>` : '') // markören på magen
+    + blush + eyes + mouth
+    + (st >= 7 ? `<g fill="none" stroke="${ink}" stroke-width=".9" opacity=".8"><circle cx="15" cy="21" r="4.4"/><circle cx="25" cy="21" r="4.4"/><path d="M19.4 20.5q.6-.8 1.2 0"/></g>` : '')
+    + (st >= 10 ? `<path d="M13.5 10.5l1.2-5 3 3 2.3-4.5 2.3 4.5 3-3 1.2 5z" fill="#FFD84D" stroke="#E0A800" stroke-width=".6" stroke-linejoin="round" transform="rotate(-8 20 8)"/>` : '')
+    + `</g>` + (mood === 'sleep' ? `<g class="zz" font-family="var(--mono)" fill="#B8B5FF"><text x="31" y="12" font-size="6">z</text><text x="35" y="6" font-size="4.5">z</text></g>` : '');
+}
+function petBase() {
+  if (mode === 'menu' || mode === 'over') return 'sleep';
+  return S && mode === 'play' && S.blocks.some(b => b.landed && b.y < S.H * .35) ? 'scared' : 'idle'; // högen når snart toppen
+}
+function petDraw(mood) {
+  if (mood === petMood && petEl.dataset.bits === String(pet.bits)) return;
+  petEl.dataset.bits = pet.bits;
+  const st = petStage(pet.bits);
+  petMood = mood;
+  petEl.className = 'pet ' + mood;
+  petEl.style.setProperty('--s', .78 + st * .02);
+  petEl.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${petSVG(st, mood)}</svg><span class="bin" aria-hidden="true">${[...binStr(pet.bits)].map(d => (d === '1' ? '<b>1</b>' : d)).join('')}</span>`;
+  petEl.setAttribute('aria-label', `Bit, ${PET_STAGES[st][1]}, ${bitar(pet.bits)} uppätna. Klicka för att klappa.`);
+}
+// Ett humör en stund, sedan tillbaka till grundläget (petIdle i tick)
+function petFeel(mood, ms = 1500) {
+  clearTimeout(petT);
+  petDraw(mood);
+  petT = setTimeout(() => { petT = 0; petDraw(petBase()); }, ms);
+}
+const bitar = n => `${fmt(n)} ${n === 1 ? 'bit' : 'bitar'}`;
+const petIdle = () => { if (!petT) petDraw(petBase()); };
+// Små saker som flyger: ettor och nollor in i munnen när Bit äter, hjärtan upp när man klappar
+function petFly(kind, n) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.className = 'fly ' + kind;
+    s.textContent = kind === 'heart' ? '♥' : Math.random() < .5 ? '0' : '1';
+    s.style.setProperty('--x', (kind === 'heart' ? (Math.random() * 30 - 15) : -40 - Math.random() * 30) + 'px');
+    s.style.animationDelay = i * 110 + 'ms';
+    petEl.append(s);
+    setTimeout(() => s.remove(), 1200 + i * 110);
+  }
+}
+function petSay(text, ms = 7000) {
+  bubble.textContent = text;
+  bubble.hidden = false;
+  petSaid = performance.now();
+  clearTimeout(bubbleT);
+  bubbleT = setTimeout(() => { bubble.hidden = true; }, ms);
+}
+// Tips om en flagga till kommandot du just löste med, som du inte använde. Ur hjälpkortets förklaringar.
+function petTip(u) {
+  const c = S.ps ? PSNAME[psCmd(u[0])] || u[0] : u[0], used = u.map(t => t.toLowerCase());
+  const keys = Object.keys(GLOSS).filter(k => k.toLowerCase().startsWith(c.toLowerCase() + ' -') && !used.includes(k.slice(c.length + 1).toLowerCase()));
+  if (!keys.length) return null;
+  const k = keys[Math.floor(Math.random() * keys.length)];
+  return `Mums, ${c}! Prova ${k} nästa gång (${GLOSS[k].replace(/\.$/, '')}).`;
+}
+function petFeed(n, u) {
+  if (!n) return;
+  const before = petStage(pet.bits);
+  pet.bits += n; pet.last = new Date().toISOString().slice(0, 10);
+  save(PET, pet);
+  if (S) S.fed = (S.fed || 0) + n;
+  const now = petStage(pet.bits);
+  if (now > before) {
+    const [, name, fact] = PET_STAGES[now];
+    petFeel('happy', 3000);
+    const n0 = PET_STAGES[now][0], why = `${fmt(n0)} är ${binStr(n0)} binärt: ettan har flyttat ett steg åt vänster, och varje steg åt vänster är värt dubbelt.`;
+    petSay(`${before ? 'Jag växte' : 'Jag kläcktes'}: ${name}! ${now > 1 ? why + ' ' : ''}${fact}`, 16000);
+    out(`# Bit ${before ? 'växte till' : 'kläcktes:'} ${name}. ${now > 1 ? why + ' ' : ''}${fact}`, 'hot');
+    return sfx('levelUp');
+  }
+  petFeel('eat', 900);
+  petFly('bit', Math.min(n, 6));
+  if (performance.now() - petSaid < 30000 || Math.random() < .5) return;
+  const b = binStr(pet.bits), tip = u && Math.random() < .6 && petTip(u);
+  petSay(tip || `Nu har jag ätit ${bitar(pet.bits)}. Binärt ${b}, alltså ${binParts(pet.bits)}.`);
+}
+// Farliga kommandon: Bit blir rädd och säger varför. Bara lärdomar, inget stopp.
+const PET_FEAR = [
+  [/\brm\b.*\s-(\w*r\w*f|\w*f\w*r)\b/, 'rm -rf frågar aldrig och har ingen papperskorg. Jag gömmer mig!'],
+  [/remove-item\b.*-r(ecurse)?\b.*-fo(rce)?\b|remove-item\b.*-fo(rce)?\b.*-r(ecurse)?\b/i, '-Recurse -Force: ingen papperskorg i PowerShell heller. Jag gömmer mig!'],
+  [/^sudo\b/, 'sudo kör kommandot som administratör, med rätt att förstöra allt. Läs raden en gång till först.'],
+  [/\bpush\b.*\s(--force|-f)(\s|$)/, '--force skriver över andras commits. --force-with-lease vägrar om någon annan har pushat under tiden.'],
+  [/\breset\s+--hard\b/, 'reset --hard slänger allt du inte har committat. Det går inte att ångra med git.'],
+];
+function petWatch(raw) {
+  const hit = PET_FEAR.find(([re]) => re.test(raw));
+  if (hit) { petFeel('scared', 2500); petSay(hit[1]); }
+}
+function petPat() {
+  const st = petStage(pet.bits), [, name, fact] = PET_STAGES[st], next = PET_STAGES[st + 1];
+  petFeel('love', 1600);
+  petFly('heart', 4);
+  petSay(`${name} · ${bitar(pet.bits)} uppätna, binärt ${binStr(pet.bits)} (${binParts(pet.bits)}) · ${next ? `${fmt(next[0] - pet.bits)} till ${next[1]}, ${binStr(next[0])} binärt` : 'fullvuxen'}. ${fact}`, 14000);
+}
+petEl.addEventListener('click', () => { petPat(); if (mode === 'play') cmd.focus(); });
 
 // ---------- utskrifter: det ett rätt kommando hade visat ----------
 // Filer & mappar har låtsasfilsystemet. De andra paketen får en kort, typisk utskrift när blocket löses,
@@ -2172,7 +2396,7 @@ function run(raw) {
         if (u[0] === 'git') notes.push(...guess); // git gjorde det ändå, men det löste inget block
         errs++; explain(u, bad, msgs); continue;
       }
-      progressed = true;
+      progressed = true; S.lastU = u;
       notes.push(...(said ?? (r || b.pack === 'fs' ? [QUIET] : sample(u, S.ps)))); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
@@ -2181,6 +2405,7 @@ function run(raw) {
     prevOk = errs === errsBefore;
   }
   echo(raw, bad, '', at);
+  petWatch(raw);
   render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
@@ -2196,10 +2421,16 @@ function run(raw) {
     remove(b);
   }
   if (n > 1) { out(`# kombo x${n}`, 'hot'); sfx('combo', n); } else if (n || progressed) sfx('clear');
+  if (progressed) S.stuck = 0;
+  petFeed(hits.reduce((s, b) => s + (b.helped ? 0 : b.steps.length), 0), S.lastU);
 
   const lv = S.start + Math.floor(S.cleared / 10);
   if (lv > S.level) { S.level = lv; out(`# nivå ${lv}: tempot ökar`, 'hot'); sfx('levelUp'); music(); setTimeout(boss, 700); }
   if (errs) fail(errs); // varje fel räknas, så att ett makro med ; inte lönar sig
+  if (errs && !progressed) {
+    petFeel('sad', 1200);
+    if (++S.stuck === 3 && !S.nudged) { S.nudged = true; petSay('Kört fast? Klicka på ett block, så visar hjälpkortet svaret. Blocket ger 0 poäng, men du lär dig kommandot.', 10000); }
+  }
   stats();
 }
 
@@ -2245,6 +2476,7 @@ function menu() {
   document.body.className = 'menu-on';
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = null;
+  petFeel('sleep', 1);
   const scores = scoresLoad(), quizKind = prefs.kind === 'quiz';
   screen.innerHTML = `<pre class="logo" aria-label="./terminal">${BANNER}</pre>
     <p>Uppgifter faller som block. Skriv rätt kommando innan de når botten.</p>
@@ -2352,6 +2584,7 @@ function gameOver() {
   stats();
   try { snd()?.stop(); } catch {}
   sfx(place === 1 && S.score > 0 ? 'newHighscore' : 'gameOver');
+  if (S.fed) petSay(`Jag åt ${bitar(S.fed)} den här rundan. Tack!`);
   shared = `./terminal · ${PACKS[S.pack].name} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/terminal/`;
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
@@ -2406,6 +2639,25 @@ function sync() {
   mirror.innerHTML = `${esc(v.slice(0, i))}<span class="cur">${esc(v[i] ?? ' ')}</span>${esc(v.slice(i + 1))}`;
 }
 cmd.addEventListener('input', sync);
+// Tab: bash fyller i så långt det är entydigt och listar träffarna vid andra Tab. PowerShell bläddrar bland träffarna.
+let tabbed = null;
+function tab() {
+  if (!S || S.agent || S.vim) return;
+  const v = cmd.value;
+  if (S.ps && tabbed?.out === v) {
+    tabbed.i = (tabbed.i + 1) % tabbed.list.length;
+    cmd.value = tabbed.out = tabbed.base + tabbed.list[tabbed.i];
+    return;
+  }
+  const cmds = S.ps ? [...Object.values(PSNAME), ...[...KNOWNPS].filter(k => !k.includes('-'))] : [...KNOWN];
+  const r = complete(S.fs, S.cwd, v, S.ps, cmds);
+  if (!r.list.length) return;
+  if (S.ps && r.list.length > 1) { tabbed = {base: r.base, list: r.list, i: 0}; cmd.value = tabbed.out = r.base + r.list[0]; }
+  else if (r.line !== v) { cmd.value = r.line; tabbed = {out: r.line}; }
+  else if (tabbed?.out === v) { echo(v, new Set()); out(r.list.join('  ')); }
+  else tabbed = {out: v};
+  if (cmd.value !== v && !tabHinted) { tabHinted = true; petSay('Tab fyller i åt dig. Proffsen trycker Tab hela tiden: färre stavfel, och du ser vad som finns.'); }
+}
 document.addEventListener('selectionchange', () => document.activeElement === cmd && sync());
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
 cmd.addEventListener('blur', () => term.classList.add('blur'));
@@ -2479,7 +2731,7 @@ function quizAnswer(i) {
   if (q.done || q.pairs || !q.options[i]) return;
   q.done = true;
   const right = i === q.answer;
-  if (right) Q.right++; else Q.missed.push(q.it);
+  if (right) { Q.right++; petFeed(1); } else { Q.missed.push(q.it); petFeel('sad', 1200); }
   sfx(right ? 'combo' : 'error', 2);
   screen.insertAdjacentHTML('beforeend', answerHTML(q, i) + '<div class="actions"><button data-act="quizNext"><kbd>Enter</kbd> nästa</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>');
 }
@@ -2510,6 +2762,7 @@ function quizMatch(d) {
   q.done = true;
   const first = q.pairs.length - q.miss.size;
   Q.right += first;
+  petFeed(first);
   Q.missed.push(...q.pairs.filter((_, i) => q.miss.has(i)));
   screen.insertAdjacentHTML('beforeend', `<p class="hot">${first} av ${q.pairs.length} rätt på första försöket</p>
     <dl class="parts">${q.pairs.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.why)}</dd>`).join('')}</dl>
@@ -3342,7 +3595,7 @@ cmd.addEventListener('keydown', e => {
   } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd)) {
     e.preventDefault(); echo(cmd.value, new Set(), '^C'); cmd.value = '';
   } else if (e.ctrlKey && k === 'l') { e.preventDefault(); log.replaceChildren(); }
-  else if (k === 'Tab') e.preventDefault();
+  else if (k === 'Tab') { e.preventDefault(); tab(); }
   else return;
   sync();
 });
@@ -3364,6 +3617,8 @@ if (prefs.shell) { applyShell(); menu(); } else { askShell(); applyShell(); }
 showEditor('stats');
 resized();
 if (editor.offsetHeight) editor.style.height = editor.offsetHeight + 'px';
+if (pet.last && Date.now() - Date.parse(pet.last) > 3 * 864e5) petSay('Där är du! Jag har saknat dig. Lite terminal varje vecka håller kommandona i fingrarna.');
+petDraw(petBase());
 if (load(CRASH, null)) reboot(load(CRASH, null)); // kraschen sitter kvar efter vanlig F5
 sync();
 cmd.focus();
