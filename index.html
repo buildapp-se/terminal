@@ -102,7 +102,7 @@ body:not(.play) .mob .pz{display:none} /* smal skärm saknar Esc och aktivitetsf
 @keyframes sl{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
 html.crt{filter:sepia(1) hue-rotate(65deg) saturate(4) brightness(.95)}
 html.crt::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.28) 2px 3px)}
-html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
+html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:var(--green)}.hunk{color:#29B8DB}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
 .line.bad{animation:shake .25s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .cmdbox{position:relative;flex:1 1 12ch;min-width:0}
@@ -758,6 +758,42 @@ const binStr = n => { const b = n.toString(2); return b.padStart(Math.ceil(b.len
 const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).map(v => v.toLocaleString('sv-SE')).join(' + ') || '0';
 // Lekytans fyra lampor 8 4 2 1: summan, och de tre lägsta bitarna som en chmod-siffra (4 = r, 2 = w, 1 = x)
 const lampSum = n => { const d = n.toString(2).padStart(4, '0').split('').join(' '), p = binParts(n); return p.includes('+') ? `${d} = ${p} = ${n}` : `${d} = ${n}`; };
+// git diff för en fil: a och b är texten före och efter (undefined: filen finns inte). Raderna paras ihop med längsta
+// gemensamma delföljd, borttaget före tillagt, tre rader sammanhang runt varje ändring, som git. ponytail: O(n·m), filerna är små.
+// Gits "\ No newline at end of file" skippas, spelets filer har ingen avslutande radbrytning.
+function udiff(path, a, b) {
+  const A = a === undefined || a === '' ? [] : a.split('\n'), B = b === undefined || b === '' ? [] : b.split('\n');
+  const L = Array.from({length: A.length + 1}, () => new Array(B.length + 1).fill(0));
+  for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ops = []; // [tecken, rad, rader före i a, rader före i b]
+  for (let i = 0, j = 0; i < A.length || j < B.length;) {
+    if (i < A.length && j < B.length && A[i] === B[j]) ops.push([' ', A[i], i++, j++]);
+    else if (i < A.length && (j === B.length || L[i + 1][j] >= L[i][j + 1])) ops.push(['-', A[i], i++, j]);
+    else ops.push(['+', B[j], i, j++]);
+  }
+  const hash = s => (s === undefined ? '0000000' : ([...s].reduce((h, c) => Math.imul(h ^ c.codePointAt(0), 16777619) >>> 0, 2166136261) >>> 0).toString(16).padStart(8, '0').slice(0, 7));
+  const out = [`diff --git a/${path} b/${path}`, ...(a === undefined ? ['new file mode 100644'] : b === undefined ? ['deleted file mode 100644'] : []),
+    `index ${hash(a)}..${hash(b)}${a !== undefined && b !== undefined ? ' 100644' : ''}`, a === undefined ? '--- /dev/null' : `--- a/${path}`, b === undefined ? '+++ /dev/null' : `+++ b/${path}`];
+  const ch = ops.flatMap((o, k) => (o[0] === ' ' ? [] : [k]));
+  for (let g = 0; g < ch.length;) {
+    let e = g;
+    while (e + 1 < ch.length && ch[e + 1] - ch[e] <= 7) e++; // högst sex oförändrade rader emellan: samma stycke
+    const hunk = ops.slice(Math.max(0, ch[g] - 3), Math.min(ops.length, ch[e] + 4)), n = t => hunk.filter(o => o[0] !== t).length;
+    const at = (k, c) => (c ? hunk[0][k] + 1 : hunk[0][k]) + (c === 1 ? '' : ',' + c); // git skriver -1 för en rad och -0,0 för ingen
+    out.push(`@@ -${at(2, n('+'))} +${at(3, n('-'))} @@`, ...hunk.map(o => o[0] + o[1]));
+    g = e + 1;
+  }
+  return out;
+}
+// Färgen per rad i en utskrift: diffens - rött, + grönt, @@ blått. Bara inne i en diff, annars är "- [ ] punkt" i cat också rött.
+function diffCls(lines) {
+  let on = false;
+  return lines.map(l => {
+    if (l.startsWith('diff --git ')) on = true;
+    else if (on && !/^([-+ @\\]|index |new file|deleted file)/.test(l)) on = false;
+    return !on || /^(---|\+\+\+) /.test(l) ? '' : l[0] === '-' ? 'err' : l[0] === '+' ? 'add' : l.startsWith('@@') ? 'hunk' : '';
+  });
+}
 const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
 
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
@@ -2517,7 +2553,6 @@ const OUT = {
       .concat(a.includes('-a') ? ['  remotes/origin/HEAD -> origin/main', '  remotes/origin/main'] : []).join('\n'),
   'git switch': a => a.includes('-c') ? `Switched to a new branch '${a.at(-1)}'` : `Switched to branch '${a.at(-1)}'`,
   'git checkout': a => a.includes('-b') ? `Switched to a new branch '${a.at(-1)}'` : POOLOF[a.at(-1)] === 'f' || a.includes('--') ? 'Updated 1 path from the index' : `Switched to branch '${a.at(-1)}'`,
-  'git diff': 'diff --git a/index.html b/index.html\n--- a/index.html\n+++ b/index.html\n@@ -12,7 +12,7 @@\n-  <h1>Välkommen</h1>\n+  <h1>Välkommen hem</h1>',
   'git merge': a => `Updating 3f9c2a1..9e8f7a6\nFast-forward\n style.css | 12 ++++++++++--\n 1 file changed, 10 insertions(+), 2 deletions(-)`,
   'git stash': a => a[2] === 'pop' ? 'On branch main\nChanges not staged for commit:\n        modified:   index.html\nDropped refs/stash@{0} (5b6c7d8e9f0a)' : 'Saved working directory and index state WIP on main: 3f9c2a1 lägg till sök',
   'git reset': a => a.includes('--hard') ? 'HEAD is now at 3f9c2a1 lägg till sök' : a.includes('--soft') ? '' : `Unstaged changes after reset:\nM       ${/^HEAD/.test(a.at(-1)) ? 'index.html' : a.at(-1)}`,
@@ -2834,7 +2869,8 @@ function run(raw) {
   render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
-  notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : /^(error|fatal): /.test(l) ? 'err' : ''));
+  const shown = notes.join('\n').split('\n'), dc = diffCls(shown);
+  shown.forEach((l, i) => out(l, dc[i] || (l.startsWith('#') ? 'cmt' : /^(error|fatal): /.test(l) ? 'err' : '')));
   S.typed += typed;
 
   const n = hits.length;
@@ -3308,6 +3344,14 @@ function gitWorld(u) {
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
   const here = look(S.fs, cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), R = repoOf(cwd) ?? cwd, top = S.commits[0];
   if (u[1] === 'commit') return commit(u, R);
+  // diff: ostagat (index mot filerna), --staged/--cached det stagade (HEAD mot index). Filnamn begränsar, grenar och HEAD~1 jämförs inte.
+  if (u[1] === 'diff') {
+    const {staged, work} = repoChanges(R), cached = u.includes('--staged') || u.includes('--cached'), [from, to] = cached ? [S.base, S.index] : [S.index, S.fs];
+    const only = args.filter(t => !REFRE.test(t) && !REMOTE.includes(t) && !S.branches.has(t)).map(f => resolve(cwd, f)), txt = n => (typeof n === 'string' ? n : undefined);
+    const lines = (cached ? staged : work.filter(c => c[1] !== 'U')).map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
+      .flatMap(p => { const a = txt(look(from, p, S.ps).node), b = txt(look(to, p, S.ps).node); return a === b ? [] : udiff(p.slice(R.length).join('/'), a, b); });
+    return lines.length ? lines.join('\n') : !cached && staged.length ? '# (inget svar: allt du ändrat är stagat. git diff --staged visar det.)' : '';
+  }
   if (u[1] === 'push') S.pushed = S.commits.length;
   if (typeof here !== 'object') return;
   // add: filerna som de är nu läggs i index. -A utan namn tar hela repot.
