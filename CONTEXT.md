@@ -49,7 +49,9 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 - **Utskrifter (`OUT`, `sample`):** block utanför Filer & mappar skriver en kort, typisk utskrift när
   de löses (git, gh, npm, curl, ping, wrangler, firebase med flera), i verktygets riktiga form med
   påhittade värden. Nyckeln är kommandots början, den längsta vinner; tysta kommandon får raden att
-  tystnad betyder att det gick bra. Nytt kommando i `TASKS`: lägg en rad i `OUT`, annars visas inget.
+  tystnad betyder att det gick bra, även i Filer & mappar. Nytt kommando i `TASKS`: lägg en rad i `OUT`,
+  annars visas inget (`altcheck.js` i scratchpad hittar sådana). Rör i Filer & mappar körs av `piped`:
+  första kommandot mot filsystemet, sedan head/tail/sort/wc eller Select-Object/Measure-Object på raderna.
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som

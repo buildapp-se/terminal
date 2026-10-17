@@ -857,7 +857,7 @@ const PSCMD = {ls: 'Get-ChildItem', cd: 'Set-Location', cat: 'Get-Content', rm: 
 // Ger {cwd, out, seen, same} eller null när kommandot inte rör filsystemet. Fel kastas med skalets egen text.
 // seen: mappen som listades. same: kommandot ändrade ingenting (cd dit du redan står, touch på en fil som finns).
 function fake(fs, cwd, key, ps) {
-  if (key.includes('|')) return null; // ponytail: pipes körs inte, de bara rättas
+  if (key.includes('|')) return piped(fs, cwd, key, ps);
   const r = key.findIndex(t => t === '>' || t === '>>');
   const [c, ...rest] = r > 0 ? key.slice(0, r) : key;
   if (ps && !PSOP[c] && !['python', 'python3', 'node'].includes(c)) return null; // touch, head, wc: not recognized
@@ -1003,10 +1003,11 @@ function fake(fs, cwd, key, ps) {
       return {cwd: alive(), out: []};
     }
     case 'du': {
+      const line = (node, n) => { const k = Math.max(4, Math.ceil(size(node) / 4096) * 4); return `${k < 10 ? k + '.0' : k}K\t${n}`; };
+      if (a0 === '*') return ok(Object.entries(get('.').node).filter(([n]) => !n.startsWith('.')).map(([n, v]) => line(v, n)));
       const {node} = get(a0 ?? '.');
       if (node === undefined) fail(`du: cannot access '${a0}': No such file or directory`);
-      const k = Math.max(4, Math.ceil(size(node) / 4096) * 4);
-      return ok([`${k < 10 ? k + '.0' : k}K\t${a0 ?? '.'}`]);
+      return ok([line(node, a0 ?? '.')]);
     }
     case 'chmod': {
       if (typeof get(args.at(-1)).node !== 'string') fail(`chmod: cannot access '${args.at(-1)}': No such file or directory`);
@@ -1014,6 +1015,37 @@ function fake(fs, cwd, key, ps) {
     }
   }
   return null;
+}
+
+// Rör: första kommandot körs mot filsystemet, resten filtrerar dess rader. Ett filter vi inte kan ger null, som förut.
+function piped(fs, cwd, key, ps) {
+  const stages = [[]];
+  for (const t of key) t === '|' ? stages.push([]) : stages.at(-1).push(t);
+  const [first, ...rest] = stages, c = ps ? PSOP[first[0]] || first[0] : first[0];
+  const n = flags => +(flags.find(f => /^-(n|first|last)=\d+$/.test(f))?.split('=')[1] ?? flags.find(f => /^-\d+$/.test(f))?.slice(1) ?? 10);
+  const table = rows => ['', ...rows.map(([k, v]) => `${k.padEnd(8)} : ${v}`), ''];
+  // Mappstorlek i PowerShell räknas på filerna, inte på tabellen som Get-ChildItem skriver
+  if (ps && c === 'ls' && rest.length === 1 && rest[0][0] === 'measure-object') {
+    const node = look(fs, resolve(cwd, first.find((t, i) => i && !t.startsWith('-')) ?? '.'), ps).node;
+    if (typeof node !== 'object') return null;
+    const deep = first.includes('-recurse'), files = x => Object.values(x).reduce((s, v) => s + (typeof v === 'string' ? 1 : deep ? files(v) : 0), 0);
+    const sum = rest[0].includes('-sum');
+    return {cwd, out: table([['Count', files(node)], ['Average', ''], ['Sum', sum ? size(node) : ''], ['Maximum', ''], ['Minimum', ''], ['Property', sum ? 'Length' : '']])};
+  }
+  const r = fake(fs, cwd, first, ps);
+  if (!r) return null;
+  let lines = !ps && c === 'ls' ? r.out.flatMap(l => l.split(/ {2,}/)) : r.out; // ls i en pipe skriver ett namn per rad
+  const hs = l => parseFloat(l) * ({K: 1, M: 1024, G: 1048576}[l.match(/^[\d.]+([KMG])/)?.[1]] ?? 1);
+  for (const [f, ...fl] of rest) {
+    if (f === 'head' || (f === 'select-object' && fl.some(x => x.startsWith('-first')))) lines = lines.slice(0, n(fl));
+    else if (f === 'tail' || (f === 'select-object' && fl.some(x => x.startsWith('-last')))) lines = lines.slice(-n(fl));
+    else if (f === 'sort') { lines = [...lines].sort((a, b) => fl.includes('-h') ? hs(a) - hs(b) : a.localeCompare(b)); if (fl.includes('-r')) lines.reverse(); }
+    else if (f === 'wc') lines = [String(lines.length)];
+    else if (f === 'measure-object' && fl.includes('-line')) lines = ['', 'Lines Words Characters Property', '----- ----- ---------- --------', String(lines.length).padStart(5), ''];
+    else if (f === 'measure-object') lines = table([['Count', lines.length], ['Average', ''], ['Sum', ''], ['Maximum', ''], ['Minimum', ''], ['Property', '']]);
+    else return null;
+  }
+  return {cwd, out: lines};
 }
 
 // ---------- quizläget: uppgifterna som frågor ----------
@@ -1431,7 +1463,7 @@ const OUT = {
   // npm, node och verktygen runt dem
   'npm install': a => a.length > 2 ? '\nadded 1 package, and audited 87 packages in 2s\n\nfound 0 vulnerabilities'
     : '\nadded 86 packages, and audited 87 packages in 4s\n\n14 packages are looking for funding\n  run "npm fund" for details\n\nfound 0 vulnerabilities',
-  'npm i': a => OUT['npm install'](a),
+  'npm i': a => OUT['npm install'](a), 'npm add': a => OUT['npm install'](a), 'npm t': a => OUT['npm test'],
   'npm run': a => a[2] === 'build' ? '\n> projekt@1.0.0 build\n> vite build\n\n✓ 34 modules transformed.\ndist/index.html  0.46 kB\n✓ built in 1.21s'
     : a[2] === 'test' ? OUT['npm test'] : `\n> projekt@1.0.0 ${a[2]}\n> vite\n\n  VITE v6.3.5  ready in 312 ms\n\n  ➜  Local:   http://localhost:5173/`,
   'npm test': '\n> projekt@1.0.0 test\n> node --test\n\n✔ räknar rätt (1.2ms)\nℹ tests 1\nℹ pass 1\nℹ fail 0',
@@ -1468,7 +1500,11 @@ const OUT = {
   'lsof': 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)',
   'get-nettcpconnection': '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n',
   'kill': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'export': '', 'sed': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
-  'env': 'HOME=/home/du\nPATH=/usr/local/bin:/usr/bin:/bin\nPORT=3000\nUSER=du',
+  'env': 'HOME=/home/du\nPATH=/usr/local/bin:/usr/bin:/bin\nPORT=3000\nUSER=du', 'printenv': a => OUT.env,
+  'cd': '', 'set-location': '', 'ii': '', 'rg': (a, ps) => grepOut(a, ps), 'curl.exe': a => OUT.curl(a),
+  'wget': a => `--2026-10-17 14:20:01--  ${a.find(t => t.startsWith('http'))}\nResolving example.com... 93.184.215.14\nHTTP request sent, awaiting response... 200 OK\nLength: 1256 (1.2K) [application/json]\nSaving to: '${a.find(t => t.startsWith('http')).split('/').at(-1) || 'index.html'}'\n\n100%[===================>]   1.23K  --.-KB/s    in 0s`,
+  'top': 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n 4821 du         1.2  0.8 node\n 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
+  'htop': a => OUT.top,
   'open': '', 'xdg-open': '', 'start': '', 'invoke-item': '', 'explorer': '', 'explorer.exe': '',
   'ssh': 'Welcome to Ubuntu 24.04.3 LTS\nLast login: Fri Oct 16 21:14:03 2026 from 192.0.2.10\ndeploy@server:~$',
   'scp': a => `${a[1]}                                     100%   43     1.2KB/s   00:00`,
@@ -1516,18 +1552,19 @@ const OUT = {
   'firebase emulators:start': 'i  emulators: Starting emulators: auth, firestore, hosting\n✔  All emulators ready! It is now safe to connect your app.\ni  View Emulator UI at http://127.0.0.1:4000/',
 };
 Object.setPrototypeOf(OUT, null);
+const QUIET = '# (inget svar: när ett kommando är tyst gick det bra)';
 // Utskriften för ett löst kommando, som rader. Tysta kommandon får en rad om att tystnad betyder att det gick bra.
 function sample(u, ps) {
   let a = u.filter(t => t !== 'sudo');
   if (a[0] === 'npx') a = a.slice(1);
   if (a[0] === 'git' && a[1] === '-C') a = ['git', ...a.slice(3)];
   const w = [ps ? psCmd(a[0]) : a[0].toLowerCase(), ...a.slice(1).map(t => t.toLowerCase())];
-  if (a[1] === '=') w.splice(0, w.length, 'kill'); // $env:PORT = 3000 är tyst, som kill
+  if (a[1] === '=' || /^\$env:\w+=/i.test(a[0])) return [QUIET]; // $env:PORT = 3000 är tyst
   for (let i = Math.min(3, w.length); i > 0; i--) {
     const k = w.slice(0, i).join(' ');
     if (!(k in OUT)) continue;
     const v = typeof OUT[k] === 'function' ? OUT[k](a, ps) : OUT[k];
-    return v ? v.split('\n') : ['# (inget svar: när ett kommando är tyst gick det bra)'];
+    return v ? v.split('\n') : [QUIET];
   }
   return [];
 }
@@ -1664,7 +1701,7 @@ function run(raw) {
         let r;
         try { r = fake(S.fs, S.cwd, key, S.ps); } catch (e) { errs++; msgs.push(e.message); continue; }
         // seen kan vara '', hemmappen
-        if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); notes.push(...r.out); if (!b) continue; }
+        if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); notes.push(...r.out); if (!b) continue; if (!r.out.length) notes.push(QUIET); }
       }
       if (!b && toy(u, notes)) continue;
       if (!b) { errs++; explain(u, bad, msgs); continue; }
