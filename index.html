@@ -337,12 +337,12 @@ const TASKS = [
   ['git', 5, 'Visa vem som senast ändrade varje rad i {f}', 'git blame {f}', 'blame = skylla på. Visar commit och person per rad.', '='],
 
   ['cc', 1, 'Sök efter {word} i {f}', 'grep {word} {f}', 'grep = global regular expression print. Claude Code söker så här hela tiden.', "Select-String {word} {f}", "Select-String är PowerShells grep. sls är aliaset."],
-  ['cc', 1, 'Sök efter {word} i alla filer i alla undermappar', ['grep -r {word} .', 'grep -r {word}', 'grep -R {word} .', 'rg {word}'], '-r = recursive. rg (ripgrep) är en snabbare grep, och den Claude Code använder.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg {word}"], "Get-ChildItem -Recurse hämtar filerna, Select-String söker i dem. rg fungerar likadant i båda skalen."],
+  ['cc', [1, 3], 'Sök efter {word} i alla filer i alla undermappar', ['grep -r {word} .', 'grep -r {word}', 'grep -R {word} .', 'rg {word}'], '-r = recursive. rg (ripgrep) är en snabbare grep, och den Claude Code använder.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg {word}"], "Get-ChildItem -Recurse hämtar filerna, Select-String söker i dem. rg fungerar likadant i båda skalen."],
   ['cc', 1, 'Visa vilken version av node du har', ['node --version', 'node -v'], 'Första felsökningen: kör jag rätt version?', '='],
   ['cc', 1, 'Installera projektets paket', ['npm install', 'npm i'], 'Läser package.json och laddar ner allt till node_modules.', '=', "Läser package.json och laddar ner allt till node_modules. Får du 'running scripts is disabled': kör npm.cmd install."],
   ['cc', 1, 'Starta utvecklingsservern (skriptet dev)', 'npm run dev', 'npm run kör skript från package.json. dev brukar starta en lokal server.', '='],
   ['cc', 1, 'Hämta sidan https://example.com', 'curl https://example.com', 'curl = client URL. Gör en webbförfrågan och skriver ut svaret.', ["Invoke-WebRequest https://example.com -UseBasicParsing", "Invoke-WebRequest https://example.com", "curl.exe https://example.com", "Invoke-RestMethod https://example.com"], "I Windows PowerShell är curl ett alias för Invoke-WebRequest. Utan -UseBasicParsing frågar den först om skript på sidan. Riktiga curl heter curl.exe."],
-  ['cc', 2, 'Sök efter {word} i alla filer och visa radnummer', ['grep -rn {word} .', 'grep -rn {word}', 'rg -n {word}', 'rg {word}'], '-n = line number. Så vet Claude Code exakt vilken rad den ska ändra.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg -n {word}", "rg {word}"], "Select-String visar radnumret av sig själv."],
+  ['cc', [2, 3], 'Sök efter {word} i alla filer och visa radnummer', ['grep -rn {word} .', 'grep -rn {word}', 'rg -n {word}', 'rg {word}'], '-n = line number. Så vet Claude Code exakt vilken rad den ska ändra.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg -n {word}", "rg {word}"], "Select-String visar radnumret av sig själv."],
   ['cc', 2, 'Sök efter {word} i {f} oavsett stora och små bokstäver', 'grep -i {word} {f}', '-i = ignore case.', "Select-String {word} {f}", "Select-String struntar redan i stora och små bokstäver. -CaseSensitive slår på dem."],
   ['cc', 2, 'Kör projektets tester', ['npm test', 'npm run test', 'npm t'], 'Claude Code kör testerna efter en ändring för att se att inget gick sönder.', '='],
   ['cc', 2, 'Visa var programmet node ligger', ['which node', 'command -v node', 'type node'], 'which letar igenom PATH och säger vilken fil som körs.', "Get-Command node", "Get-Command visar var programmet finns. gcm är aliaset."],
@@ -583,9 +583,12 @@ function same(input, expected) {
   });
 }
 
+// Svårighet 1–5, eller [bash, PowerShell] när PowerShell-svaret är mycket längre (en pipe där bash har ett kommando)
+const lvOf = (t, ps) => (Array.isArray(t[1]) ? t[1][+!!ps] : t[1]);
+
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
-  const [pack, lv, text, bashAns, bashWhy, psAns, psWhy] = task, v = {};
+  const [pack, , text, bashAns, bashWhy, psAns, psWhy] = task, lv = lvOf(task, ps), v = {};
   const ans = ps && psAns !== '=' ? psAns : bashAns, why = ps && psWhy || bashWhy;
   const sub = s => s.replace(/\{(\w+?)(2?)\}/g, (m, k, two) => {
     if (!POOLS[k]) return m;
@@ -1274,7 +1277,7 @@ function fresh() {
 // Lättare och vanligare uppgifter oftare, svåra då och då. Uppgifter i Filer & mappar får mallorden ur
 // filsystemet och provkörs på en kopia, så att blocket bara ber om det som går att göra där du står.
 function draw(pool, dup = false) {
-  const weighted = pool.flatMap(t => Array(6 - t[1]).fill(t));
+  const weighted = pool.flatMap(t => Array(6 - lvOf(t, S.ps)).fill(t));
   const near = [S.cwd, []].flatMap(at => Object.entries(look(S.fs, at, S.ps).node || {})).filter(([n]) => !n.startsWith('.')); // dolt hittar man själv
   const names = (list, k) => {
     if (k.endsWith('2')) return list.filter(n => look(S.fs, [...S.cwd, n], S.ps).node === undefined);
@@ -1315,7 +1318,7 @@ function spawn() {
   const story = S.pack === 'fs', here = S.cwd.join('/');
   if (story && S.blocks.some(b => !b.landed)) return false;
   const maxLv = Math.min(5, Math.ceil(S.level / 2));
-  const fits = t => (S.pack === 'all' || t[0] === S.pack) && t[1] <= maxLv && (!S.ps || t[5]);
+  const fits = t => (S.pack === 'all' || t[0] === S.pack) && lvOf(t, S.ps) <= maxLv && (!S.ps || t[5]);
   let pool = TASKS.filter(t => fits(t) && !S.recent.includes(t));
   if (!pool.length) pool = TASKS.filter(fits);
   const lists = t => t[2] === 'Lista filerna i mappen du står i', runs = t => t[0] === 'fs' && /^(python|node) /.test(t[5] === '=' ? t[3] : t[5]);

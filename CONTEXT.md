@@ -66,6 +66,8 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   Debug Console, rör aldrig `S.score`), annan ändring sparas inte och är inget fusk. Test `editcheck.js` i scratchpad.
 - **Debug Console är ett fält** (2026-10-17, förr larmade fliken direkt och Patrik förstod inte varför): `S.score`, `best` eller `S` visar värden,
   `S.score = ...` eller `best = ...` som man skriver själv ger fusklarmet med den inskrivna siffran, okänt ger `ReferenceError`. Test `alarmcheck.js`.
+- **Svårighet per skal:** `t[1]` får vara `[bash, PowerShell]` (läses via `lvOf`) när PowerShell-svaret är en pipe där bash har ett kort kommando.
+  Sökning i alla filer är `[1, 3]`: Patrik tyckte `Get-ChildItem -Recurse | Select-String TODO` var svårt på nivå 1 (2026-10-17). Test `lvcheck.js`.
 - **Hello world** (Patriks krav 2026-10-17): två kedjeblock i Filer & mappar (svårighet 2), JavaScript och Python: skapa filen, skriv koden, kör.
   `node`/`python`/`bash` på en fil som inte finns i `PROGS` kör det som står i filen (`runFile`: bara utskriftsrader, console.log, print, echo,
   Write-Output), så egna ändringar i redigeraren syns när man kör. PowerShell rättas i gemener, men låtsasskalet får originaltexten

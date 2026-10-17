@@ -55,7 +55,7 @@ for (const t of TASKS) {
       n++;
     }
   }
-  assert.ok(Object.hasOwn(PACKS, t[0]) && t[0] !== 'all' && t[1] >= 1 && t[1] <= 5, `fel paket eller nivå: ${t[2]}`);
+  assert.ok(Object.hasOwn(PACKS, t[0]) && t[0] !== 'all' && [].concat(t[1]).every(l => l >= 1 && l <= 5), `fel paket eller nivå: ${t[2]}`);
   assert.ok(!/—/.test(t[2] + t[4]), `tankstreck i: ${t[2]}`);
 }
 // {x2} skiljer sig alltid från {x}, även när slumpen alltid väljer det första ordet
