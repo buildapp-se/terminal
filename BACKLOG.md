@@ -50,8 +50,8 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Giltiga fria kommandon (`node --version`, `ping`) visar `sample()` och "# rätt kommando, men inget block bad om det", räknas fortfarande som fel (låst beslut, mellanläge Patrik 2026-10-17).
 - [ ] bash: `ls -z` ska ge "invalid option", `rmdir ..` fel text, `node spel.py` kör Python. Förklaringen till `find -name *.js` utan citattecken: nyansera.
 - [x] "Lista filerna" var 9 av 40 block i Filer & mappar, nu 3 till 4 (2026-10-17): tvingas fram i nya mappar bara de tre första gångerna och dras inte slumpvis där man redan listat.
-- [ ] Mobil: ingen pausknapp (texten säger Esc), kugghjulet syns inte, "Enter starta" under kanten; quizets para ihop och hjälpkortet: dd hamnar utanför 390 px (dt över dd under 600 px). Hjälpkortets första rad klipps under panelflikarna.
-- [ ] Smått: quizräknaren "2 rätt" blir "13 av 16" (para ihop räknas 4), OUTPUT-fliken säger "Spela en runda" mitt i en runda, topplistan och delningstexten visar inte skal, källkontrollens placeholder klipps.
+- [x] Mobil (agent D 2026-10-17): paus och kugghjul i panelens flikrad under 700 px, knappraden fast i bladets botten, dt över dd under 600 px, hjälpkortet börjar överst. Kvar: Bits bubbla och ägg täcker terminalens nedersta rad på 390 px.
+- [x] Smått (agent D): quizräknaren "X av Y rätt hittills", OUTPUT mitt i rundan, skal (`sh`) i topplista och delning (integritet 1.2), källkontrollens platshållare växer (`field-sizing`, inte i Firefox).
 - [x] Tab-komplettering (`4caaf67`).
 
 ## Antigravitys granskning (2026-10-17, på `4caaf67`, kvar)
@@ -62,8 +62,8 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [x] Samtidiga block (låst beslut omprövat, Patrik ja 2026-10-17): högst nivå + 1 i luften, `maxLvFor`-gränsen 7 så att git börjar på svårighet 1.
 - [x] Rödmarkeringen i `explain` (2026-10-17): saknas bara något säger spelet "# rätt kommando, men en flagga eller ett argument saknas" i stället för att färga rätta ord; commit-meddelande utan citattecken får en förklaring. Kvar: citerad fel text markeras inte (`echo` delar på mellanslag).
 - [ ] Låtsasskalet: text som börjar med streck räknas som flagga, så `echo "- [ ] ny punkt" >> todo.md` och `Add-Content todo.md "- [ ] ny"` går fel (rättningen klarar det sedan 2026-10-17).
-- [ ] `vim` eller `claude` i quizet: prompten fastnar i vim- eller agentläget även på resultatskärmen.
-- [ ] Antalet filer räknas bara vid rundstart (`S.lanes`): stänger man Bits panel eller ändrar fönstret mitt i rundan följer de inte med. Obs: med panelen öppen på 1 280 px är brunnen under 980 px, alltså 2 filer i stället för 3.
+- [x] `vim`/`claude` i quizet släpps vid resultat och bossfråga (`plainPrompt`, agent D).
+- [x] Antalet filer följer fönstret och Bits panel (`relane`, agent D), men byts först när inget block ligger landat (staplar slås aldrig ihop).
 - [ ] Underhåll: PowerShell-cmdlets står i åtta tabeller (`PSALIAS`, `PSPARAMS`, `PSPOS`, `PSOP`, `PSCMD`, `PSNAME`, `KNOWNPS`...) som har glidit isär; samla i en. `node()` vid källkontrollen dubblerar `look()`.
 - [ ] Tester: `OUT`, `sample`, `gitWorld`, `changes`, `petTip` ligger utanför `pure` och testas inte; svaren i andra paket än Filer & mappar körs inte genom `fake()` i testet.
 - [ ] Idéer ur granskningen: klickbara lampor i Bits panel (tänd 8 4 2 1 och se summan, plus chmod-siffran för tre bitar), PORTS-fliken som släpper 4821 när man dödat processen, piratlapp på Bit när man hittat `.hemligt/skatt.txt`, `git diff` som visar spelarens egen ändring.
