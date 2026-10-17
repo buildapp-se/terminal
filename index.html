@@ -1769,18 +1769,20 @@ function draw(pool, dup = false) {
   }
   return null;
 }
-function doable(b) {
+// Varför blockets svar inte går att köra i världen som den är nu: skalets felmeddelande, 'same' om inget skulle ändras, null om det går
+function blocker(b) {
   const fs = structuredClone(S.fs);
   let cwd = S.cwd;
   try {
     for (const st of b.steps) {
       const r = fake(fs, cwd, st[0].key, S.ps);
-      if (r?.same) return false;
+      if (r?.same) return 'same';
       if (r) cwd = r.cwd;
     }
-    return true;
-  } catch { return false; }
+    return null;
+  } catch (e) { return e.message; }
 }
+const doable = b => !blocker(b);
 
 function spawn() {
   const floors = [...Array(S.lanes)].map((_, lane) => {
@@ -2506,6 +2508,14 @@ function run(raw) {
   }
   echo(raw, bad, '', at);
   petWatch(raw);
+  // Ett fritt kommando kan ställa sig i vägen (touch backup när blocket vill ha mappen backup). Spelet städar inte åt dig, Bit säger vad som hänt.
+  if (mode === 'play') for (const b of S.blocks) {
+    if (b.pack !== 'fs' || b.step || b.warned) continue;
+    const w = blocker(b);
+    if (!w || w === 'same') continue;
+    b.warned = true;
+    petSay(`"${b.text}" går inte att lösa just nu. Skalet skulle svara: ${w.split('\n')[0]} ${/exists/i.test(w) ? `Något med samma namn finns redan. Ta bort det först med ${S.ps ? 'Remove-Item' : 'rm'}, sen går det.` : 'Något blocket behöver saknas. Skapa det igen, eller klicka på blocket för hjälp.'}`, 'varning', 14000);
+  }
   render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));

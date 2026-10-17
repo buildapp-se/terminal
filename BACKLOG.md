@@ -50,7 +50,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.md`). Kvar:
 
-- [ ] `[P1]` Fria kommandon kan låsa ett block i Filer & mappar: `New-Item backup` (utan `-ItemType Directory`) eller `touch backup` skapar en fil, och sedan går "Skapa mappen backup" inte att lösa förrän man tar bort filen. Säg varför (`# det blev en fil, inte en mapp`), eller låt `spawn` byta ut ett block som inte längre är `doable`.
+- [x] `[P1]` Fria kommandon kan låsa ett block i Filer & mappar (`touch backup` före "Skapa mappen backup"). Byggt 2026-10-17: spelet städar inte, Bit varnar en gång per block med skalets eget fel och vad man gör (ta bort det som står i vägen, eller skapa det som saknas). Patrik: man får ta bort den själv.
 - [ ] Låst beslut utmanat: utanför Filer & mappar kan tre block falla samtidigt efter 14 sekunder på nivå 1, och `maxLvFor` drar in svårighet 2 i git redan på nivå 1 (7 uppgifter, gränsen är 8). Förslag: högst `S.level` fallande block åt gången. Patrik avgör (Skalet låses per runda, ingen "lugn start").
 - [ ] Rödmarkeringen i `explain`: saknas bara en flagga (`grep TODO .` mot `grep -r TODO .`) blir alla rätta argument röda; säg "# rätt kommando, men en flagga saknas". Commit-meddelande utan citattecken får ingen förklaring, och citerad fel text markeras inte (`echo` delar på mellanslag).
 - [ ] Låtsasskalet: text som börjar med streck räknas som flagga, så `echo "- [ ] ny punkt" >> todo.md` och `Add-Content todo.md "- [ ] ny"` går fel (rättningen klarar det sedan 2026-10-17).
