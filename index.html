@@ -2215,7 +2215,7 @@ function tick(dt) {
       floor = b.y;
     }
     for (const b of inLane.filter(b => !b.landed).sort((a, c) => c.y - a.y)) {
-      b.y += speed * dt;
+      b.y += speed * dt / b.steps.length; // kedjeblock: samma tid per steg som ett vanligt block, inte en tredjedel
       if (b.y + b.h >= floor) {
         b.y = floor - b.h;
         land(b);
