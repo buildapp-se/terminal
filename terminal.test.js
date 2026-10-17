@@ -5,8 +5,8 @@ const fs = require('fs');
 
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -105,10 +105,11 @@ for (const t of TASKS) if (t[5]) for (const pick of [a => a[0], a => a[a.length 
     for (const [p, d] of parts(a.raw, true)) if (!d || /undefined/.test(d)) missing.add(`PS ${a.raw}  ->  ${p}`);
 assert.ok(!missing.size, `förklaring saknas:\n${[...missing].join('\n')}`);
 
-// Låtsasfilsystemet: samma värld i båda skalen
+// Låtsasfilsystemet: samma värld i båda skalen. PowerShell med skiftläget kvar (keep), som spelet kör det.
 function shell(ps) {
-  const fs = structuredClone(WORLD);
-  const sh = s => { const r = fake(fs, sh.cwd, canon(tokenize(s, ps), ps), ps); if (r) sh.cwd = r.cwd; return r; };
+  const fs = structuredClone(WORLD), env = {};
+  const sh = s => { const r = fake(fs, sh.cwd, canon(tokenize(s, ps), ps, true), ps, env); if (r) sh.cwd = r.cwd; return r; };
+  sh.fs = fs; sh.env = env;
   sh.cwd = ['projekt'];
   sh.out = s => sh(s).out.join('\n');
   sh.bad = (s, re) => assert.throws(() => sh(s), re, `${s} borde ge fel`);
@@ -202,5 +203,96 @@ for (const ps of [false, true]) for (const pack of Object.keys(PACKS)) for (let 
 for (const g of NEAR) for (const t of g) assert.ok(TASKS.some(x => x[2] === t), `NEAR: ingen uppgift heter ${t}`);
 const small = Object.entries(sizes).filter(([, n]) => n < 10);
 assert.ok(!small.length, `quiz med färre än tio frågor: ${small.map(x => x.join(' ')).join(', ')}`);
+
+// Testagenternas småfynd 2026-10-17, bash
+sh = shell(false);
+const o = s => sh.out(s);
+sh('cd spel'); sh('cd ../musik'); assert.strictEqual(o('cd -'), '/home/du/projekt/spel', 'cd - går tillbaka och skriver mappen');
+sh.cwd = ['projekt'];
+assert.strictEqual(o('ls *.txt'), 'notes.txt', 'ls *.txt'); assert.strictEqual(o('echo *.md'), 'README.md todo.md');
+sh('cp app.log b.log'); sh('rm *.log'); assert.ok(!/\.log/.test(o('ls')), 'rm *.log');
+sh.bad('ls *.xyz', /cannot access '\*\.xyz'/);
+assert.strictEqual(o('wc notes.txt'), ' 3  7 44 notes.txt', 'wc utan flagga: rader, ord, byte');
+assert.ok(/ total$/.test(o('wc -l notes.txt todo.md')), 'wc med flera filer har en totalrad');
+assert.strictEqual(o('cat notes.txt todo.md').split('\n').length, 6, 'cat med två filer');
+assert.ok(/^==> notes\.txt <==/.test(o('head -n 1 notes.txt todo.md')), 'head med flera filer har rubriker');
+sh('cp ../recept/pannkakor.txt p.txt'); assert.strictEqual(o('tail -n +3 p.txt'), '2,5 dl vetemjöl\n1 nypa salt', 'tail -n +3');
+sh.bad('./notes.txt', /Permission denied/); sh.bad('./musik', /Is a directory/);
+assert.strictEqual(o('ls -1 spel'), 'highscore.txt\nspel.py'); assert.ok(/^\.:\n[\s\S]*\.\/spel:\nhighscore\.txt  spel\.py/.test(o('ls -R')), 'ls -R');
+assert.strictEqual(o('ls -d spel'), 'spel');
+assert.strictEqual(o('cat < notes.txt').split('\n')[0], 'köp mjölk'); assert.strictEqual(o('wc -l < notes.txt'), '3', 'wc -l < fil skriver inget filnamn');
+assert.strictEqual(o('echo $HOME'), '/home/du'); assert.strictEqual(o('echo ~'), '/home/du');
+assert.strictEqual(o('echo $PATH'), '/usr/local/bin:/usr/bin:/bin:/home/du/.local/bin', 'echo $PATH skriver sökvägen, inte texten $PATH');
+sh.bad('cd spel musik', /too many arguments/);
+sh('mkdir ut'); sh('mv notes.txt todo.md ut'); assert.strictEqual(o('ls ut'), 'notes.txt  todo.md', 'mv med flera källor');
+sh.bad('mv README.md app.js deploy.sh', /target 'deploy.sh' is not a directory/);
+// bash: kommandon som saknades
+assert.strictEqual(o('find . -name "*.js"'), './server/server.js'); assert.strictEqual(o('find spel -type f'), 'spel/highscore.txt\nspel/spel.py');
+assert.ok(/inga träffar/.test(sh('find . -name nope').note));
+assert.strictEqual(o('grep -r API_KEY .'), './.env:API_KEY=hunter2', 'grep -r hittar dolda filer');
+assert.strictEqual(o('grep -n mjölk ut/notes.txt'), '1:köp mjölk'); assert.strictEqual(o('grep -c ERROR ../projekt/README.md'), '0');
+assert.strictEqual(o('grep -ci error server/server.log'), '3');
+assert.ok(/^\.\n├── [\s\S]*\n\d+ directories, \d+ files$/.test(o('tree')), 'tree: ' + o('tree'));
+assert.ok(/less visar en sida/.test(o('less README.md')));
+sh('export PORT=3000'); assert.strictEqual(o('echo $PORT'), '3000'); assert.ok(/^PORT=3000$/m.test(o('env')));
+sh('X=hej'); assert.strictEqual(o('echo $X'), 'hej'); sh('unset X'); assert.strictEqual(o('echo $X'), '');
+sh.bad('$HOME', /bash: \/home\/du: Is a directory/);
+assert.ok(/inga träffar/.test(sh('grep -r zzz .').note));
+sh('ls > lista.txt'); assert.ok(/spel/.test(o('cat lista.txt')), '> fungerar för alla kommandon, inte bara echo');
+sh('ls -a > lista.txt'); assert.ok(/\.env/.test(o('cat lista.txt')), 'flaggorna följer med före >');
+// Rader skalet vägrar
+assert.strictEqual(syntax(tokenize('ls ;;'), false), "bash: syntax error near unexpected token `;;'");
+assert.strictEqual(syntax(tokenize('ls |'), false), 'bash: syntax error: unexpected end of file');
+assert.strictEqual(syntax(tokenize('ls |', true), true), 'An empty pipe element is not allowed.');
+assert.strictEqual(syntax(tokenize('ls ;;', true), true), null, 'PowerShell tål tomma satser');
+assert.strictEqual(syntax(tokenize('cd a && ls; pwd'), false), null);
+
+// PowerShell
+sh = shell(true);
+sh('New-Item -ItemType Directory demo'); assert.strictEqual(typeof sh.fs.projekt.demo, 'object', 'New-Item -ItemType Directory skapar en mapp, även med stort D');
+sh('Move-Item notes.txt musik'); assert.ok(/notes\.txt/.test(o('ls musik')), 'Move-Item in i en mapp');
+sh('New-Item -Path demo -Name a.txt -Value hej'); assert.strictEqual(sh.fs.projekt.demo['a.txt'], 'hej', 'New-Item -Name -Value');
+sh('New-Item -Name b.txt'); assert.strictEqual(sh.fs.projekt['b.txt'], '', 'New-Item -Name utan -Path skapar här');
+sh.bad('New-Item b.txt', /already exists/); sh('New-Item b.txt -Value ny -Force'); assert.strictEqual(sh.fs.projekt['b.txt'], 'ny', '-Force skriver över');
+sh.bad('Move-Item b.txt todo.md', /already exists/); sh('Move-Item b.txt todo.md -Force'); assert.strictEqual(sh.fs.projekt['todo.md'], 'ny');
+assert.ok(/todo\.md/.test(o('Get-ChildItem *.md')) && !/notes/.test(o('gci *.md')), 'jokertecken i sökvägen');
+assert.ok(/server\.js/.test(o('Get-ChildItem -Recurse -Filter *.js')), '-Recurse -Filter');
+assert.ok(/server\\server\.js/.test(o('gci -Recurse -Name -File')), '-Name ger relativa namn');
+assert.ok(!/\.env|README/.test(o('gci -Directory')) && /spel/.test(o('gci -Directory')), '-Directory');
+assert.ok(/\.hemligt/.test(o('gci -Hidden')) && !/spel/.test(o('gci -Hidden')), '-Hidden visar bara dolda');
+sh('rm todo.md, deploy.sh'); assert.ok(!/todo\.md|deploy\.sh/.test(o('ls')), 'rm a, b');
+sh.bad('Remove-Item README.md app.log', /A positional parameter cannot be found that accepts argument 'app.log'/);
+sh('cd..'); assert.deepStrictEqual(sh.cwd, []); sh('cd projekt'); sh.bad('cd\\', /bara din hemmapp/);
+assert.strictEqual(o('$HOME'), 'C:\\Users\\du'); assert.ok(/C:\\Users\\du\\projekt/.test(o('$PWD')));
+sh('Set-Location $HOME'); assert.deepStrictEqual(sh.cwd, []); sh('cd projekt');
+sh.bad('Remove-Item .hemligt -Recurse', /sufficient access rights/); sh('Remove-Item .hemligt -Recurse -Force'); assert.ok(!sh.fs.projekt['.hemligt']);
+sh.bad('Rename-Item README.md musik/R.md', /represents a path/);
+sh('New-Item hej.sh'); assert.ok(/Windows öppnar hej\.sh/.test(o('.\\hej.sh'))); sh.bad('.\\nope.sh', /is not recognized/);
+sh('New-Item x.ps1'); sh.bad('.\\x.ps1', /running scripts is disabled/);
+sh.bad('ls -l', /Missing an argument for parameter 'LiteralPath'/); sh.bad('ls -a', /Missing an argument for parameter 'Attributes'/);
+assert.strictEqual(o('Test-Path musik'), 'True'); assert.strictEqual(o('Test-Path nope'), 'False'); assert.strictEqual(o('Test-Path musik -PathType Leaf'), 'False');
+assert.ok(/README\.md/.test(o('Get-Item README.md'))); sh.bad('Get-Item .git', /Could not find item/);
+assert.ok(/skärmen/.test(o('Write-Host hej > w.txt')) && sh.fs.projekt['w.txt'] === '', 'Write-Host går inte till filen');
+assert.strictEqual(o('Write-Output hej då'), 'hej\ndå', 'Write-Output: ett ord per rad');
+sh('Write-Output hej | Out-File o.txt'); assert.strictEqual(sh.fs.projekt['o.txt'], 'hej');
+assert.ok(/öppnas/.test(o('ii README.md')) && /öppnas/.test(o('start README.md')) && /Utforskaren/.test(o('explorer .')));
+assert.ok(/Folder PATH listing[\s\S]*├───bilder/.test(o('tree')) && /spel\.py/.test(o('tree /F')), 'tree och tree /F');
+sh('$env:PORT = 3000'); assert.strictEqual(o('$env:PORT'), '3000'); assert.ok(/PORT\s+3000/.test(o('Get-ChildItem env:')));
+assert.ok(/README\.md:1:# projekt/.test(o('Select-String projekt README.md')));
+assert.ok(/spel\\spel\.py:1:import random/.test(o('Get-ChildItem -Recurse | Select-String random')));
+sh.bad('cat < notes.txt', /reserved for future use/);
+
+// Små paket får minst 8 olika uppgifter redan på nivå 1, i båda skalen
+for (const ps of [false, true]) for (const pack of Object.keys(PACKS)) {
+  const lv = maxLvFor(pack, ps, 1), n = TASKS.filter(t => (pack === 'all' || t[0] === pack) && (!ps || t[5]) && lvOf(t, ps) <= lv).length;
+  assert.ok(n >= 8, `${pack} ${ps ? 'ps' : 'bash'}: bara ${n} uppgifter på nivå 1`);
+}
+assert.strictEqual(maxLvFor('fs', false, 1), 1, 'stora paket börjar fortfarande med det lättaste');
+
+// Inget svar i Filer & mappar säger 'Missing an argument' i en ny värld (PowerShell)
+for (const t of TASKS) if (t[0] === 'fs' && t[5]) for (const st of fill(t, a => a[0], true).steps) {
+  const s = shell(true);
+  try { s(st[0].raw); } catch (e) { assert.ok(!/Missing an argument|positional parameter/.test(e.message), `${st[0].raw}: ${e.message}`); }
+}
 
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);
