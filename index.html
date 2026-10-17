@@ -205,6 +205,7 @@ kbd{font:inherit;color:var(--yellow)}
 .reg .sum{margin-top:8px;font:12px var(--mono);color:var(--dim)}
 .reg .meter{height:4px;margin:10px 0 4px;border-radius:2px;background:#262626;overflow:hidden}.reg .meter i{display:block;height:100%;background:linear-gradient(90deg,#8FE3C8,#B8C4FF)}
 .reg .left{font-size:11px;color:var(--faint)}
+.play{padding-top:10px}.play .lamp{padding:0}.play .lamp:hover b{outline:1px solid #555}.play .lamp:focus-visible b{outline:1px solid var(--accent)}.play .left{font-family:var(--mono);margin-top:2px}
 .chat-log{flex:1;overflow:auto;min-height:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .chat-log .empty{color:var(--faint);font-size:12px;line-height:1.5}
 .msg{padding:7px 10px;border-radius:6px;background:#202020;border-left:3px solid var(--k);font-size:12.5px;line-height:1.5;color:var(--fg)}
@@ -270,6 +271,7 @@ kbd{font:inherit;color:var(--yellow)}
       <div class="side-h"><span>Bit</span><span class="dim" aria-hidden="true">&#8943;</span></div>
       <div class="chat-pet" id="chatpet"></div>
       <div class="reg" id="reg"></div>
+      <div class="reg play" id="play"><div class="nm">Lek med bitarna</div><div class="lamps"><button type="button" class="lamp" aria-pressed="false" aria-label="biten 8" data-v="8"><b>0</b><small>8</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 4" data-v="4"><b>0</b><small>4</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 2" data-v="2"><b>0</b><small>2</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 1" data-v="1"><b>0</b><small>1</small></button></div><div class="sum" id="playsum"></div><div class="left" id="playmode"></div></div>
       <div class="chat-log" id="chatlog" aria-live="polite"><p class="empty">Bit lyssnar på terminalen. Tips, varningar, kul fakta och det som händer i rundan hamnar här.</p></div>
     </aside>
   </div>
@@ -754,6 +756,9 @@ const petStage = bits => PET_STAGES.findLastIndex(([n]) => bits >= n);
 // Binärt i hela nibbles med inledande nollor, som lampor i ett register: 5 = 0101, 18 = 0001 0010 (Patrik 2026-10-17)
 const binStr = n => { const b = n.toString(2); return b.padStart(Math.ceil(b.length / 4) * 4, '0').replace(/(.{4})(?=.)/g, '$1 '); };
 const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).map(v => v.toLocaleString('sv-SE')).join(' + ') || '0';
+// Lekytans fyra lampor 8 4 2 1: summan, och de tre lägsta bitarna som en chmod-siffra (4 = r, 2 = w, 1 = x)
+const lampSum = n => { const d = n.toString(2).padStart(4, '0').split('').join(' '), p = binParts(n); return p.includes('+') ? `${d} = ${p} = ${n}` : `${d} = ${n}`; };
+const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
 
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
@@ -2326,6 +2331,16 @@ function petPanel() {
   reg.innerHTML = `<div class="nm">${esc(name)}</div><div class="lamps${n > 8 ? " many" : ""}" aria-label="${binStr(pet.bits)} binärt">${lamps}</div><div class="sum">${fmt(pet.bits)} = ${binParts(pet.bits)}</div>`
     + (next ? `<div class="meter"><i style="width:${Math.round(100 * (pet.bits - cur) / (next[0] - cur))}%"></i></div><div class="left">${bitar(next[0] - pet.bits)} kvar till ${esc(next[1])}</div>` : '<div class="left">fullvuxen</div>');
 }
+// Lekytan under registret: fyra lampor att tända själv. Fristående från pet.bits och sparas inte.
+const play = $('#play');
+function playDraw() {
+  let n = 0;
+  for (const l of play.querySelectorAll('.lamp')) { const on = l.getAttribute('aria-pressed') === 'true'; l.classList.toggle('on', on); l.querySelector('b').textContent = +on; if (on) n += +l.dataset.v; }
+  $('#playsum').textContent = lampSum(n);
+  $('#playmode').textContent = `chmod: ${lampMode(n)}`;
+}
+play.addEventListener('click', e => { const l = e.target.closest('.lamp'); if (l) { l.setAttribute('aria-pressed', l.getAttribute('aria-pressed') !== 'true'); playDraw(); } });
+playDraw();
 function petFeel(mood, ms = 1500) {
   clearTimeout(petT);
   petDraw(mood);

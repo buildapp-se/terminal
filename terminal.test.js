@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, gitRefs, back} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, gitRefs, back};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -318,6 +318,8 @@ assert.deepStrictEqual([0, 1, 3, 4, 7, 8, 9, 1024, 5000].map(petStage), [0, 1, 2
 assert.deepStrictEqual([0, 1, 2, 3, 4].map(binStr), ['0000', '0001', '0010', '0011', '0100']);
 assert.strictEqual(binStr(18), '0001 0010'); assert.strictEqual(binStr(255), '1111 1111');
 assert.strictEqual(binParts(13), '8 + 4 + 1'); assert.strictEqual(binParts(0), '0'); assert.strictEqual(binParts(16), '16'); assert.strictEqual(binParts(1028), '1 024 + 4', 'svenska mellanslag i tusental');
+assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(lampSum(4), '0 1 0 0 = 4'); assert.strictEqual(lampSum(0), '0 0 0 0 = 0');
+assert.strictEqual(lampMode(5), '101 = r-x = 5'); assert.strictEqual(lampMode(15), '111 = rwx = 7', 'chmod tar de tre lägsta bitarna'); assert.strictEqual(lampMode(8), '000 = --- = 0');
 for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(text), 'svensk text: inga tankstreck, decimalkomma: ' + text);
 // PowerShell frågar om mappen inte är tom
 sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');
