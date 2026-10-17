@@ -12,7 +12,6 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] Bygg om paketet Som Claude Code från loggdatan (2026-10-17: grep, head, git, curl, uv, ls, tail, node i topp; PowerShell mest för att döda dev-servrar). Ta också med kommandon Patrik kör själv med `!` (bash-input i transkripten), t.ex. `powershell -Command "Stop-Process -Id N"`: det han gör på riktigt ska han kunna öva på.
 - [ ] Patrik spelar och lyssnar: välj ljud bland `terminal-ljud.js`, `?ljud=gemini` och `?ljud=mp3` (bara lokalt, spåren i `_musik/`), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
-- [ ] Länka spelet från `buildapp.se/ai/` (index och quiz).
 - [ ] Egen integritetstext för spelet; i dag redovisas nycklarna i `buildapp.se/ai/integritet.html`.
 - [ ] Paket Terminalvett: hjälp (Get-Help, Get-Command), installera (winget, npm, uv, npx/uvx), processer och portar, miljö (PATH, `$?`), nätverk (ipconfig, ping, Resolve-DnsName, Test-NetConnection), ssh-keygen, zip. Hjälpkortet får raden "begreppet bakom".
 - [ ] Paket Cloudflare (wrangler login/dev/deploy/tail/secret put, d1 execute --remote, rollback) och Firebase (login, use, deploy --only hosting, emulators:start).
