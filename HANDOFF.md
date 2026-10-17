@@ -11,7 +11,7 @@ reviewedAt: 2026-10-17
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.
 
-**2026-10-17, quizläget.** Eget läge i menyn: tio frågor per paket ur `TASKS`, flerval åt båda hållen och para ihop, resultat och bästa per paket (`term-quiz`). Bossfrågan läser nu spelets egna uppgifter, inte ai-quizet. Spelet har egen `integritet.html`; ai:s text är version 2.8 och hänvisar hit. Verifierat i Chromium, Firefox och WebKit (`quizmode.js`) och i `terminal.test.js`.
+**2026-10-17, quizläget.** Eget läge i menyn: tio frågor per paket ur `TASKS`, flerval åt båda hållen och para ihop, resultat och bästa per paket (`term-quiz`). Bossfrågan läser ai-quizet som förut (Patrik gillade dem); `git --help` med flera fungerar nu i PowerShell också. Spelet har egen `integritet.html`; ai:s text är version 2.8 och hänvisar hit. Verifierat i Chromium, Firefox och WebKit (`quizmode.js`) och i `terminal.test.js`.
 
 **2026-10-17, formatera om datorn.** Påskägget byggt: krasch, ominstallation i fyra steg, ny nyckel `term-crash`, integritetstexten i ai-repot version 2.7. Verifierat i Chromium och Firefox (krasch, kvar efter F5, fel steg börjar om, ominstallation, Ctrl+F5, vanlig `rm -rf /` orörd).
 

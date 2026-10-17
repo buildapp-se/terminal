@@ -189,6 +189,7 @@ kbd{font:inherit;color:var(--yellow)}
   </footer>
 </div>
 
+<script src="/ai/quiz-data.js" defer></script>
 <script>
 /* pure:start  (ren logik utan DOM, testas av terminal.test.js) */
 const PACKS = {
@@ -1261,6 +1262,54 @@ function toy([c], notes) {
   return true;
 }
 
+// Det riktiga git --help, och vad --help gör för andra program
+const GITHELP = `usage: git [-v | --version] [-h | --help] [-C <path>] [-c <name>=<value>]
+           [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
+           [-p | --paginate | -P | --no-pager] [--no-replace-objects] [--bare]
+           [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
+           <command> [<args>]
+
+These are common Git commands used in various situations:
+
+start a working area (see also: git help tutorial)
+   clone     Clone a repository into a new directory
+   init      Create an empty Git repository or reinitialize an existing one
+
+work on the current change (see also: git help everyday)
+   add       Add file contents to the index
+   mv        Move or rename a file, a directory, or a symlink
+   restore   Restore working tree files
+   rm        Remove files from the working tree and from the index
+
+examine the history and state (see also: git help revisions)
+   diff      Show changes between commits, commit and working tree, etc
+   log       Show commit logs
+   show      Show various types of objects
+   status    Show the working tree status
+
+grow, mark and tweak your common history
+   branch    List, create, or delete branches
+   commit    Record changes to the repository
+   merge     Join two or more development histories together
+   rebase    Reapply commits on top of another base tip
+   reset     Reset current HEAD to the specified state
+   switch    Switch branches
+
+collaborate (see also: git help workflows)
+   fetch     Download objects and refs from another repository
+   pull      Fetch from and integrate with another repository or a local branch
+   push      Update remote refs along with associated objects
+
+See 'git help <command>' or 'git <command> --help' to read about a specific subcommand.`;
+function helpText(u) {
+  const [c, sub] = [u[0].toLowerCase(), u[1]];
+  if (c !== 'git') return `Usage: ${u[0]} [OPTION]...\n# riktiga ${u[0]} --help listar alla flaggor och vad de gör. Läs uppifrån, det viktigaste står först.`;
+  const name = sub === 'help' ? u[2] : sub && !sub.startsWith('-') ? sub : null;
+  if (!name) return GITHELP + '\n# git <kommando> --help visar manualen för ett av dem.';
+  if (u.includes('-h')) return `usage: git ${name} [<options>]\n# riktiga git ${name} -h listar flaggorna för ${name} direkt i terminalen.`;
+  return `# git ${name} --help öppnar hela manualen för git ${name}: i webbläsaren på Windows, i terminalen på Mac och Linux (q stänger).\n# Kort hjälp direkt i terminalen: git ${name} -h`;
+}
+
 function explain(u, bad, msgs) {
   const [c, sub] = u;
   if (S.ps) {
@@ -1309,7 +1358,7 @@ function run(raw) {
     return fail();
   }
   const hits = [], bad = new Set(), msgs = [], notes = [], at = S.cwd;
-  let errs = 0, progressed = false, typed = 0, prevOk = true;
+  let errs = 0, progressed = false, typed = 0, prevOk = true, hint = null;
   for (let seg of segs) {
     if ((seg.op === '&&' && !prevOk) || (seg.op === '||' && prevOk)) continue; // bash: && bara efter lyckat, || bara efter fel
     const errsBefore = errs;
@@ -1321,11 +1370,11 @@ function run(raw) {
     if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
     for (const u of units(seg, S.ps)) {
       const key = canon(u, S.ps), b = target(key);
-      // --help är aldrig fel: visa hjälpen som det riktiga kommandot gör
-      if (!b && !S.ps && KNOWN.has(u[0]) && (u.includes('--help') || (u[0] === 'git' && u[1] === '-h'))) {
-        notes.push(u[0] === 'git' ? MISSING.git + '\n\n# riktiga git --help listar alla underkommandon, git <kommando> --help visar ett av dem' : `Usage: ${u[0]} [OPTION]...\n# riktiga ${u[0]} --help listar alla flaggor`);
-        continue;
-      }
+      // --help är aldrig fel: program visar sin hjälp i båda skalen. PowerShells cmdlets har ingen --help, där pekar vi på Get-Help.
+      const c0l = u[0].toLowerCase(), prog = KNOWN.has(c0l) && (!S.ps || (!Object.hasOwn(PSALIAS, c0l) && !c0l.includes('-')));
+      const asks = u.includes('--help') || (c0l === 'git' && (u.includes('-h') || u[1] === 'help'));
+      if (!b && prog && asks) { notes.push(helpText(u)); continue; }
+      if (!b && S.ps && u.includes('--help')) hint = `# cmdlets har ingen --help. Get-Help ${PSNAME[psCmd(u[0])] || u[0]} visar hjälpen.`;
       // Filsystemet: block i Filer & mappar och fria kommandon körs på riktigt, på låtsas
       if (!b || b.pack === 'fs') {
         let r;
@@ -1344,6 +1393,7 @@ function run(raw) {
   }
   echo(raw, bad, '', at);
   if (S.cwd !== at) applyShell();
+  if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
   notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : ''));
   S.typed += typed;
@@ -1593,7 +1643,7 @@ const QUIZ = 'term-quiz';
 let Q = null;
 const quizBest = (pack, ps) => load(QUIZ, {})[`${pack}-${ps ? 'ps' : 'bash'}`];
 function askHTML(q) {
-  return `<p>${q.kind === 'vilket' ? `Vilket kommando gör det här? <span class="hot">${esc(q.ask)}</span>` : `Vad gör <span class="hot">${esc(sig() + q.ask)}</span>?`}</p>
+  return `<p>${q.kind === 'fri' ? esc(q.ask) : q.kind === 'vilket' ? `Vilket kommando gör det här? <span class="hot">${esc(q.ask)}</span>` : `Vad gör <span class="hot">${esc(sig() + q.ask)}</span>?`}</p>
     <div class="opts qz">${q.options.map((o, i) => `<button class="opt" data-qa="${i}">[${'abcd'[i]}] ${esc(o)}</button>`).join('')}</div>
     <p class="dim">tryck ${q.options.map((_, i) => 'abcd'[i]).join(', ')}</p>`;
 }
@@ -1601,7 +1651,7 @@ function askHTML(q) {
 function answerHTML(q, i, msg) {
   screen.querySelectorAll('[data-qa]').forEach(b => { b.disabled = true; b.classList.toggle('ok', +b.dataset.qa === q.answer); b.classList.toggle('no', +b.dataset.qa === i && i !== q.answer); });
   const right = i === q.answer;
-  return `<p class="${right ? 'hot' : 'err'}">${right ? msg || 'Rätt!' : `Fel. Rätt svar: ${esc(q.options[q.answer])}`}</p><p class="cmt"># ${esc(q.it.cmd)}: ${esc(q.why)}</p>`;
+  return `<p class="${right ? 'hot' : 'err'}">${right ? msg || 'Rätt!' : `Fel. Rätt svar: ${esc(q.options[q.answer])}`}</p>${q.why ? `<p class="cmt"># ${q.it ? esc(q.it.cmd) + ': ' : ''}${esc(q.why)}</p>` : ''}`;
 }
 function quiz() {
   mode = 'quiz';
@@ -1760,12 +1810,28 @@ function reboot(st) {
 
 // ---------- bossfrågan mellan nivåerna ----------
 // Kommandot visas, välj vad det gör: andra hållet mot spelet, där du får uppgiften och skriver kommandot.
+// Frågorna kommer från quizet på buildapp.se/ai (/ai/quiz-data.js). Flerval tas som de är, para ihop blir
+// "vilken beskrivning passar X" med två felsvar ur samma omgång. Saknas filen tas en vad-fråga ur rundans paket.
+function bossQuestion() {
+  if (typeof QUIZZES === 'undefined') {
+    const items = quizItems(S.pack, S.ps), fresh = items.filter(x => !S.asked.has(x.text));
+    return fresh.length ? {...quizQuestion(items, rnd(fresh), 'vad'), key: null} : null;
+  }
+  const steps = QUIZZES.flatMap(z => z.steps || []).filter(st => st.q || st.pairs);
+  const all = steps.flatMap(st => st.q ? [{st}] : st.pairs.map((pr, i) => ({st, i})));
+  const fresh = all.filter(x => !S.asked.has(x.st.q || x.st.pairs[x.i][0]));
+  if (!fresh.length) return null;
+  const {st, i} = rnd(fresh);
+  if (st.q) return {kind: 'fri', key: st.q, ask: st.q, options: st.options, answer: st.answer, why: st.why};
+  const [term, desc, name, more] = st.pairs[i];
+  const options = shuffle([desc, ...shuffle(st.pairs.filter((_, j) => j !== i)).slice(0, 2).map(x => x[1])]);
+  return {kind: 'fri', key: term, ask: `Vilken beskrivning passar ${term}?`, options, answer: options.indexOf(desc), why: [name && `${term} = ${name}.`, more].filter(Boolean).join(' ')};
+}
 function boss() {
   if (mode !== 'play' || S.agent?.busy) return;
-  const items = quizItems(S.pack, S.ps), fresh = items.filter(x => !S.asked.has(x.text));
-  if (!fresh.length) return;
-  const x = S.boss = quizQuestion(items, rnd(fresh), 'vad');
-  S.asked.add(x.it.text);
+  const x = S.boss = bossQuestion();
+  if (!x) return;
+  S.asked.add(x.key ?? x.it.text);
   mode = 'boss';
   try { snd()?.stop(); } catch {}
   screen.innerHTML = `<p class="hot"># bossfråga: rätt svar ger en clear-laddning</p>${askHTML(x)}`;
@@ -1925,7 +1991,7 @@ Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter i
 - flera kommandon på en rad rensar flera block: && i bash, ; i PowerShell
 - klicka på ett block för hjälpkortet (blocket ger då 0 poäng)
 - ↑ hämtar förra kommandot, Esc pausar, exit avslutar
-- ny nivå ger en bossfråga: vad gör kommandot? Rätt svar ger en clear-laddning
+- ny nivå ger en bossfråga ur quizet på buildapp.se/ai: rätt svar ger en clear-laddning
 - clear (cls i PowerShell) tömmer brunnen när du har en laddning, en per 10 rätt i rad
 
 ## skal
