@@ -481,8 +481,14 @@ const TASKS = [
 const OPS = new Set(['|', '>', '>>', '&&', ';', '||']);
 const ANY = '{any}';
 // Korta flaggor som tar ett värde, per kommando, så att -m "text" hålls ihop när flaggorna sorteras
-const VALS = {git: 'mbcC', gh: 'Rh', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k'};
+const VALS = {git: 'mbcC', gh: 'Rh', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k', ping: 'c', 'ssh-keygen': 'tCf'};
 const LONGVALS = new Set(['--source', '--message', '--title', '--body', '--output', '--header', '--data', '--request', '--json', '--repo', '--file', '--id', '--scopes', '--only']);
+// Långa flaggor som betyder samma som en kort, per kommando: --lines=10 blir -n 10. Bara där det är samma sak (wc --lines är -l, inte -n).
+const LONGFLAG = {head: {lines: 'n'}, tail: {lines: 'n'}, rm: {recursive: 'r'}, cp: {recursive: 'r'}, grep: {recursive: 'r', 'ignore-case': 'i'},
+  git: {message: 'm', verbose: 'v', delete: 'd'}, tar: {verbose: 'v'}, gh: {repo: 'R'}};
+// Flaggor som inte ändrar vad kommandot gör: curl -s tystar bara förloppet, -C är en kommentar i nyckeln, TERM är kills standard
+const NOOP = {curl: /^(-[sS]|--silent|--show-error)$/, 'ssh-keygen': /^-C=/, kill: /^-s=TERM$/};
+const SIGS = {1: 'HUP', 2: 'INT', 9: 'KILL', 15: 'TERM'};
 
 // Delar en rad som bash: citattecken, backslash och operatorer. Oavslutat citat kastar fel.
 // I PowerShell är backslash ett vanligt tecken i sökvägar och backtick är escape.
@@ -544,7 +550,18 @@ function canon(seg, ps = false, keep = false) {
 function canonStage([cmd, ...rest]) {
   if (cmd === 'find') return [cmd, ...rest.map(path)]; // find har långa flaggor med ett streck, -name
   if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map(t => (/^-(c|command)$/i.test(t) ? '-Command' : t))];
-  const vals = VALS[cmd] || '', pos = [], flags = [];
+  const vals = VALS[cmd] || '', pos = [], flags = [], long = LONGFLAG[cmd] || {};
+  // Likvärdiga skrivsätt till en form: --lines=10 och -n10 blir -n 10, head -10 blir -n 10, kill -9 blir -s 9, ps -aux blir ps aux
+  rest = rest.flatMap(t => {
+    let m = /^--([\w-]+)(?:=(.*))?$/.exec(t);
+    if (m && Object.hasOwn(long, m[1])) return m[2] === undefined ? ['-' + long[m[1]]] : ['-' + long[m[1]], m[2]];
+    if ((m = /^-([A-Za-z])(\d+)$/.exec(t)) && vals.includes(m[1])) return ['-' + m[1], m[2]];
+    if (/^(head|tail)$/.test(cmd) && /^-\d+$/.test(t)) return ['-n', t.slice(1)];
+    if (cmd === 'kill' && /^-(\d+|[A-Z]+)$/.test(t)) return ['-s', t.slice(1)];
+    if (cmd === 'ps' && t === '-aux') return ['aux'];
+    if (cmd === 'chmod') return [t.replace(/^a(?=[+-])/, '')];
+    return [t];
+  });
   for (let i = 0; i < rest.length; i++) {
     const t = rest[i], next = rest[i + 1];
     const free = next !== undefined && !/^--?[A-Za-z]/.test(next) && !OPS.has(next);
@@ -556,7 +573,11 @@ function canonStage([cmd, ...rest]) {
     }
     else pos.push(t === '>' || t === '>>' ? t : path(t));
   }
-  return [cmd, ...pos, ...flags.sort()];
+  // kill -s SIGKILL, -s 9 och -s KILL är samma signal
+  const fl = flags.map(f => (cmd === 'kill' ? f.replace(/^-s=(?:SIG)?(\w+)$/i, (_, s) => '-s=' + (SIGS[s] || s.toUpperCase())) : f)).filter(f => !NOOP[cmd]?.test(f));
+  // git push origin main är git push när du står på main, som i spelet. Med -u, --force och liknande är det något annat.
+  if (cmd === 'git' && /^(push|pull)$/.test(pos[0]) && pos[1] === 'origin' && (pos.length === 2 || (pos.length === 3 && pos[2] === 'main')) && fl.every(f => /^-C=/.test(f))) pos.length = 1;
+  return [cmd, ...pos, ...fl.sort()];
 }
 
 // ---------- PowerShell ----------
@@ -602,6 +623,9 @@ const PSPARAMS = Object.fromEntries(Object.entries({
   'add-content': 'path literalpath value force encoding nonewline passthru filter include exclude:force nonewline passthru',
   'invoke-item': 'path literalpath filter include exclude:',
   'start-process': 'filepath argumentlist workingdirectory wait passthru nonewwindow verb windowstyle:wait passthru nonewwindow',
+  'test-netconnection': 'computername commontcpport port traceroute hops informationlevel diagnoserouting constrainsourceaddress constraininterface:traceroute diagnoserouting',
+  'test-connection': 'computername count delay buffersize throttlelimit timetolive source credential impersonation authentication asjob dcomauthentication wsmanauthentication protocol quiet:asjob quiet',
+  'resolve-dnsname': 'name type server dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly:dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly',
 }).map(([k, v]) => { const [all, sw] = v.split(':'); return [k, {all: [...all.split(' '), ...COMMON.split(' ')], sw: new Set([...sw.split(' '), ...COMMON.split(' ')])}]; }));
 const PSPARAMALIAS = {'get-content': {head: 'totalcount', first: 'totalcount', last: 'tail'}, 'new-item': {type: 'itemtype'}};
 // Ordningen positionella argument fyller parametrarna i: Select-String ord fil = -Pattern ord -Path fil
@@ -609,7 +633,10 @@ const PSPOS = {'select-string': ['pattern', 'path'], 'copy-item': ['path', 'dest
   'set-content': ['path', 'value'], 'add-content': ['path', 'value'], 'write-output': ['inputobject'], 'measure-object': ['property'], 'sort-object': ['property'],
   'group-object': ['property'], 'select-object': ['property'], 'stop-process': ['id'], 'get-process': ['name'], 'invoke-webrequest': ['uri'], 'invoke-restmethod': ['uri'],
   'get-command': ['name'], 'get-help': ['name'], 'start-sleep': ['seconds'], 'get-nettcpconnection': ['localaddress'],
-  'get-childitem': ['path', 'filter'], 'write-host': ['object'], 'out-file': ['filepath', 'encoding'], 'start-process': ['filepath', 'argumentlist']};
+  'get-childitem': ['path', 'filter'], 'write-host': ['object'], 'out-file': ['filepath', 'encoding'], 'start-process': ['filepath', 'argumentlist'],
+  'test-netconnection': ['computername'], 'test-connection': ['computername'], 'resolve-dnsname': ['name', 'type']};
+// Parametrar som inte ändrar svaret: Stop-Process avslutar alltid direkt, Test-Connection skickar 4 paket som standard
+const PSDROP = {'stop-process': /^-force$/, 'test-connection': /^-count=4$/};
 const isCmdlet = c => /^[a-z]+-[a-z]+$/.test(c);
 const psval = (t, keep) => path((keep ? t : t.toLowerCase()).replace(/\\/g, '/')); // keep: till låtsasskalet, så Hello world inte blir hello world
 // Hela parameternamnet, även när det är förkortat. null om ingen parameter passar, '' om flera gör det.
@@ -641,7 +668,8 @@ function canonPSStage([c, ...rest], keep = false) {
   const slots = (PSPOS[cmd] || ['path']).map(k => { const v = named[k]; delete named[k]; return v; });
   for (let i = 0; i < slots.length && pos.length; i++) if (slots[i] === undefined) slots[i] = pos.shift();
   while (slots.length && slots.at(-1) === undefined) slots.pop();
-  return [cmd, ...slots.map(v => v ?? ''), ...pos, ...Object.entries(named).map(([k, v]) => `-${k}=${v}`).sort(), ...flags.map(f => '-' + f).sort()];
+  const out = [cmd, ...slots.map(v => v ?? ''), ...pos, ...Object.entries(named).map(([k, v]) => `-${k}=${v}`).sort(), ...flags.map(f => '-' + f).sort()];
+  return keep ? out : out.filter(t => !PSDROP[cmd]?.test(t)); // keep: låtsasskalet ska se -Force
 }
 
 function same(input, expected) {
@@ -1609,7 +1637,7 @@ function makeQuiz(pack, ps) {
     .map(kind => (kind === 'par' ? quizPairs(pool) : pool.length ? quizQuestion(items, pool.shift(), kind) : null)).filter(Boolean);
 }
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
-for (const o of [PACKS, POOLS, VALS, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
+for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
 
 // ---------- spelet ----------
