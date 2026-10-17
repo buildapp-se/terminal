@@ -9,6 +9,8 @@ reviewedAt: 2026-10-17
 
 # Handoff: ./terminal
 
+**2026-10-17, Bit och Tab.** Terminaldjuret Bit (Patriks idé, binärräkningen och 0000-formen hans), Tab-komplettering och fyra fel som lärde ut fel (`4caaf67`). Speltestaren (en subagent) hittade inga krascher; resten av fynden i BACKLOG. En Antigravity-granskning av hela projektet kördes på `4caaf67` (`review-lane.mjs`, kopia av aifabrikens `tools/owasp-lane.mjs`). Verifierat: `terminal.test.js` (nu även att hela skriptet går att tolka, efter ett syntaxfel som bara webbläsaren såg), Playwright 1280 och 390 px (kläckning, binärräknare, sparning, Tab, rädsla, klapp, blicken, inga JS-fel).
+
 **2026-10-17, testagenternas småfynd.** Allt i BACKLOG-avsnittet åtgärdat (`5616bec`): låtsasskalet kan globbar, variabler, find/grep/tree, nano och code öppnar redigeraren, PowerShell-parametrarna och fyra riktiga buggar (Move-Item in i mapp, New-Item -ItemType Directory gav fil, echo $PATH, ls -l i PowerShell). Små paket upprepade samma tre uppgifter på låg nivå (Patrik: ping fyra gånger); `maxLvFor` rotfix. winget står kvar i båda skalen med förklaring i bash. Verifierat: `terminal.test.js` (med mutationskoll på spärren) och Playwright i Chromium på 1280 och 390 px (meny, historik, syntaxfel, $?, which, man, nano, smala tabeller, inga JS-fel).
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.

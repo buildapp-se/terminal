@@ -167,14 +167,14 @@ kbd{font:inherit;color:var(--yellow)}
 .pet svg{display:block;width:100%;height:100%;transform:scale(var(--s,1));transform-origin:50% 100%;overflow:visible}
 .pet:hover svg{transform:scale(var(--s,1)) rotate(-4deg)}
 .pet:focus-visible{outline:1px solid var(--accent)}
-.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#3C3C3C;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
+.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#5A5A5A;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
 .pet .body{transform-box:fill-box;transform-origin:50% 100%;animation:breathe 2.6s ease-in-out infinite}
 .pet .egg{transform-box:fill-box;transform-origin:50% 100%;animation:wobble 3s ease-in-out infinite}
 .pet.eat .body,.pet.happy .body{animation:boing .32s ease-in-out 3}.pet.scared .body{animation:shiver .12s linear infinite}.pet.sad .body{animation:none;transform:scaleY(.94)}
 .pet.sleep .body{animation-duration:4.5s}.pet .zz{animation:zz 3s ease-in-out infinite}
 .pet .chomp{transform-box:fill-box;transform-origin:center;animation:chomp .18s ease-in-out infinite alternate}
 .pet .wave{transform-box:fill-box;transform-origin:50% 100%;animation:wave .3s ease-in-out infinite alternate}
-.pet .blink{animation:blink 1s steps(1) infinite}.pet .twinkle{transform-box:fill-box;transform-origin:center;animation:twinkle 1.6s ease-in-out infinite}.pet .eye{transform-box:fill-box;transform-origin:center;animation:eyes 5s infinite}
+.pet .blink{animation:blink 1s steps(1) infinite}.pet .twinkle{transform-box:fill-box;transform-origin:center;animation:twinkle 1.6s ease-in-out infinite}.pet .eye{transform-box:fill-box;transform-origin:center;animation:eyes 5s infinite;translate:var(--lx,0) var(--ly,0);transition:translate .3s}
 .pet .fly{position:absolute;left:50%;top:40%;font:700 11px var(--mono);color:#8FE3C8;pointer-events:none;animation:munch .7s ease-in both}
 .pet .fly.heart{color:#FF4F8B;font-size:14px;animation:float 1.1s ease-out both}
 @keyframes breathe{50%{transform:scale(1.03,.97)}}@keyframes wobble{0%,70%,100%{transform:rotate(0)}78%{transform:rotate(-7deg)}86%{transform:rotate(6deg)}93%{transform:rotate(-3deg)}}
@@ -2011,7 +2011,18 @@ function petFeel(mood, ms = 1500) {
   petT = setTimeout(() => { petT = 0; petDraw(petBase()); }, ms);
 }
 const bitar = n => `${fmt(n)} ${n === 1 ? 'bit' : 'bitar'}`;
-const petIdle = () => { if (!petT) petDraw(petBase()); };
+// Blicken följer det fallande block som ligger närmast botten: ögonen visar var faran är
+function petIdle() {
+  if (!petT) petDraw(petBase());
+  const b = S?.blocks.filter(x => !x.landed).sort((x, y) => y.y - x.y)[0];
+  let dx = 0, dy = 0;
+  if (b && mode === 'play') {
+    const r = b.el.getBoundingClientRect(), me = petEl.getBoundingClientRect();
+    const ax = r.left + r.width / 2 - (me.left + me.width / 2), ay = r.top + r.height / 2 - (me.top + me.height / 2), d = Math.hypot(ax, ay) || 1;
+    dx = Math.round(ax / d * 12) / 10; dy = Math.round(ay / d * 12) / 10;
+  }
+  petEl.style.setProperty('--lx', dx + 'px'); petEl.style.setProperty('--ly', dy + 'px');
+}
 // Små saker som flyger: ettor och nollor in i munnen när Bit äter, hjärtan upp när man klappar
 function petFly(kind, n) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;

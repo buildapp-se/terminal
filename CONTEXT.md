@@ -79,6 +79,14 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   `node`/`python`/`bash` på en fil som inte finns i `PROGS` kör det som står i filen (`runFile`: bara utskriftsrader, console.log, print, echo,
   Write-Output), så egna ändringar i redigeraren syns när man kör. PowerShell rättas i gemener, men låtsasskalet får originaltexten
   (`canon(u, ps, keep)`), annars blev det hello world i filen. Test `hellocheck.js` (trädet, redigeraren, utskriften, löst block, egen text).
+- **Bit, terminaldjuret** (Patriks idé 2026-10-17): nere till höger i terminalen. Äter en bit per löst steg (hjälp ger ingen mat, som inga poäng),
+  quizet matar också. Växer vid tvåpotenserna 1, 2, 4 ... 1 024 (`PET_STAGES`, `petStage`); varje stadium lär ut något om bitar.
+  Räknaren syns binärt i hela nibbles med inledande nollor (`binStr`, Patrik: 0000, 0001, 0010), klick förklarar platsvärdena (`binParts`).
+  Humör i `petSVG`: sover i menyn, rädd när högen når övre tredjedelen och vid `PET_FEAR` (rm -rf, sudo, push --force, reset --hard),
+  ledsen vid fel, knuff mot hjälpkortet efter tre fel i rad. Blicken följer lägsta fallande block. Pratar sparsamt (minst 30 s mellan tips).
+  Sparas i `term-pet` (integritetstexten 1.1). Test: `terminal.test.js` för de rena delarna.
+- **Tab** (`complete`): bash fyller i det entydiga och listar vid andra Tab, PowerShell bläddrar. Dolda namn bara efter punkt.
+- **Versionsfrågor** (`VERS` i `toy`): `git --version`, `node -v`, `python -V` med flera är aldrig fel. `python -v` är verbose, inte version.
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
   Svårighetsspärren är halva nivån men höjs tills minst 8 uppgifter passar (`maxLvFor`): Terminalvett har tre

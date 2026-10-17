@@ -30,7 +30,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 ## Speltestarens fynd (2026-10-17, efter `5616bec` kvar)
 
-- [ ] Fel som lär ut fel: `git --version`/`-v` ger "unknown option"; PS-varianten `Write-Output '…' > hello.js` godkänns fast 5.1 skriver UTF-16 (node och python kraschar), gör det till lärdomen och kräv Set-Content; `npx firebase` ska vara `npx firebase-tools`; förklaringen till `rm` av icke-tom mapp i PS säger "frågar" men spelet ger fel (visa 5.1:s Confirm-ruta).
+- [x] Fel som lär ut fel: versionsfrågor, Hello world med > i PowerShell, `npx firebase-tools`, Confirm-frågan för icke-tom mapp (`4caaf67`).
 - [ ] git-världen säger ja till omöjligheter: `switch nope`, `merge nope`, `branch -d main` på main. Clone: `cd budget` + `git status` visar "Untracked projekt/budget", `git init` där ska ge "Reinitialized", `git clone url mapp` ska säga 'mapp'.
 - [ ] PS-uttryck: `"hej"`, `"hej" > f`, `$PSVersionTable`, `$env:USERPROFILE`, `(Get-Content f).Count`, `(Get-Command node).Source`.
 - [ ] Windows-program i PS: netstat, findstr, tasklist, taskkill, where.exe, py, tnc (alias för Test-NetConnection).
@@ -40,4 +40,4 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] "Lista filerna i mappen du står i" är 9 av 40 block i Filer & mappar: sänk vikten.
 - [ ] Mobil: ingen pausknapp (texten säger Esc), kugghjulet syns inte, "Enter starta" under kanten; quizets para ihop och hjälpkortet: dd hamnar utanför 390 px (dt över dd under 600 px). Hjälpkortets första rad klipps under panelflikarna.
 - [ ] Smått: quizräknaren "2 rätt" blir "13 av 16" (para ihop räknas 4), OUTPUT-fliken säger "Spela en runda" mitt i en runda, topplistan och delningstexten visar inte skal, källkontrollens placeholder klipps.
-- [ ] Idé: Tab-komplettering av filnamn och kommandon (största vanetipset för nybörjare).
+- [x] Tab-komplettering (`4caaf67`).
