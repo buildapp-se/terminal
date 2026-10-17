@@ -56,7 +56,7 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .tw{width:16px;flex:none;color:var(--fg);display:grid;place-items:center}.open>.tw svg{transform:rotate(90deg)}
 .ic{width:16px;flex:none;font:700 9px/1 var(--mono);text-align:center}
 .row .d{color:var(--faint);font-size:12px;overflow:hidden;text-overflow:ellipsis}
-.st{margin-left:auto;font-weight:700;font-size:12px}.st-U{color:#73C991}.st-M{color:#E2C08D}.st-D{color:#C74E39}
+.st{margin-left:auto;font-weight:700;font-size:12px}.gdot{color:var(--accent);font-size:10px;margin-right:6px}.st-U{color:#73C991}.st-M{color:#E2C08D}.st-D{color:#C74E39}
 .side .q{display:block;width:calc(100% - 24px);margin:4px 12px 8px}
 .side textarea.q{resize:none;font:inherit}
 .hit{display:block;width:100%;text-align:left;padding:3px 12px 3px 22px}.hit:hover{background:#2A2D2E}
@@ -1234,7 +1234,7 @@ function laneCount() { const w = well.clientWidth; return w < 560 ? 1 : w < 980 
 function start() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, commits: [], blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
   out(`# ${PACKS[S.pack].name}, nivå ${S.level}. Lös vilket block som helst. Esc pausar.`, 'cmt');
@@ -1431,7 +1431,7 @@ const OUT = {
   // git och gh
   'git status': 'On branch main\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n        modified:   index.html\n\nno changes added to commit (use "git add" and/or "git commit -a")',
   'git add': '', 'git restore': '', 'git init': (a, ps) => `Initialized empty Git repository in ${ps ? 'C:/Users/du' : '/home/du'}/projekt/.git/`,
-  'git commit': a => `[main 3f9c2a1] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
+  'git commit': a => `[main ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
   'git log': a => a.includes('--oneline') ? '3f9c2a1 (HEAD -> main, origin/main) lägg till sök\n8b1d0e4 fixa menyn\n1a2b3c4 första versionen'
     : 'commit 3f9c2a1e7d4b (HEAD -> main, origin/main)\nAuthor: Du <du@buildapp.se>\nDate:   Sat Oct 17 14:02:11 2026 +0200\n\n    lägg till sök',
   'git push': a => a.includes('-u') || a.includes('--set-upstream')
@@ -1706,6 +1706,7 @@ function run(raw) {
       if (!b && toy(u, notes)) continue;
       if (!b) { errs++; explain(u, bad, msgs); continue; }
       progressed = true;
+      if (u[0] === 'git' && u[1] === 'commit') commit(u); // före utskriften, som visar commitens hash
       if (b.pack !== 'fs') notes.push(...sample(u, S.ps)); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
@@ -1944,7 +1945,7 @@ document.addEventListener('selectionchange', () => document.activeElement === cm
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
 cmd.addEventListener('blur', () => term.classList.add('blur'));
 term.addEventListener('click', e => { if (!e.target.closest('button, input') && !getSelection().toString()) cmd.focus(); });
-document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('button, input') && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
+document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('button, input, textarea') && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
 
 screen.addEventListener('click', e => {
   const t = e.target.closest('button');
@@ -2082,6 +2083,23 @@ function changes(a, b, path = []) {
   });
 }
 
+// Commits i rundan: källkontrollens historik, och Changes räknas från senaste commit
+// ponytail: en commit tar med allt, som VS Codes smart commit; staging syns inte i vyn
+function commit(u) {
+  const i = u.findIndex(t => /^-[a-z]*m$/.test(t) || t === '--message'), msg = (i < 0 ? undefined : u[i + 1]) ?? 'ändringar';
+  if (u.includes('--amend') && S.commits.length) S.commits[0].msg = msg;
+  else S.commits.unshift({msg, id: Math.random().toString(16).slice(2, 9).padEnd(7, '0')});
+  S.base = structuredClone(S.fs);
+}
+// Commit-knappen och Enter i rutan kör git commit -m med meddelandet, genom samma rättning som terminalen
+function sideCommit() {
+  const msg = $('#sideb textarea')?.value.replace(/\s+/g, ' ').replace(/"/g, "'").trim();
+  if (!S || mode !== 'play') return say('# Starta en runda först. Knappen kör git commit -m med ditt meddelande.');
+  if (!msg) return say('# Skriv ett meddelande först. Utan meddelande stannar git commit och öppnar en editor.');
+  run(`git commit -m "${msg}"`);
+  cmd.focus();
+}
+
 const VIEWS = {
   explorer: () => {
     const here = (S?.cwd ?? ['projekt']).join('/'), ps = S?.ps ?? isPS();
@@ -2097,12 +2115,15 @@ const VIEWS = {
   search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon">
     ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
   scm: () => {
-    const ch = S ? changes(WORLD, S.fs) : [];
-    return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Ctrl+Enter för commit på 'main')" aria-label="Commit-meddelande"></textarea>
+    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], log = S?.commits ?? [];
+    return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Enter för commit på 'main')" aria-label="Commit-meddelande"></textarea>
       <button type="button" class="btn" data-side="commit">&#10003; Commit</button>
       <div class="sec open"><span class="tw">${CHEV}</span>Changes<span class="badge" data-n="${ch.length}">${ch.length}</span></div>
       ${ch.map(([pth, st]) => `<button type="button" class="row" style="padding-left:20px">${fileIcon(pth.at(-1))}<span>${esc(pth.at(-1))}</span><span class="d">${esc(pth.slice(0, -1).join('/'))}</span><span class="st st-${st}">${st}</span></button>`).join('')}
-      <p class="note">${ch.length ? 'U = ny, M = ändrad, D = borttagen. Det är vad git status visar.' : 'Inga ändringar än.'} Allt du gjort den här rundan är ocommittat. Som vanligt.</p>`];
+      <p class="note">${ch.length ? 'U = ny, M = ändrad, D = borttagen. Det är vad git status visar.' : 'Inga ändringar än.'}${log.length ? '' : ' Allt du gjort den här rundan är ocommittat. Som vanligt.'}</p>
+      <div class="sec open"><span class="tw">${CHEV}</span>Graph<span class="badge" data-n="${log.length}">${log.length}</span></div>
+      ${log.map((c, i) => `<div class="row" style="padding-left:20px"><span class="gdot" aria-hidden="true">&#9679;</span><span>${esc(c.msg)}</span><span class="d">${c.id}${i ? '' : ' · main'}</span></div>`).join('')}
+      ${log.length ? '<p class="note">Det här är git log --oneline. Senaste överst.</p>' : '<p class="note">Inga commits än. Committa i terminalen, eller skriv ett meddelande här ovanför och tryck Enter.</p>'}`];
   },
   run: () => ['Run and Debug', `<button type="button" class="btn" data-side="run">&#9654; ${S ? 'Rundan kör redan' : 'Starta rundan'}</button>
     <p class="note">F5 startar felsökning i VS Code. I en webbläsare laddar F5 om sidan, och då är rundan borta.</p>`],
@@ -2134,7 +2155,7 @@ const refreshSide = () => { if (sideView && sideView !== 'search') openSide(side
 side.addEventListener('click', e => {
   const r = e.target.closest('[data-path]'), a = e.target.closest('[data-side]')?.dataset.side;
   if (a === 'close') return closeSide();
-  if (a === 'commit') return say(`# Knappen kör git commit åt dig. I terminalen: git add . ${(S?.ps ?? isPS()) ? ';' : '&&'} git commit -m "meddelande".`);
+  if (a === 'commit') return sideCommit();
   if (a === 'run') return S ? say('# Rundan kör redan.') : start();
   if (!r) return;
   const pth = r.dataset.path, n = node(pth);
@@ -2143,7 +2164,10 @@ side.addEventListener('click', e => {
   if (!showEditor('file')) sheet('explorer', `<p class="cmt"># ${esc(pth)}</p>${pre(n)}`);
   openSide('explorer');
 });
-side.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSide(); } });
+side.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.stopPropagation(); closeSide(); }
+  if (e.key === 'Enter' && e.target.matches('textarea')) { e.preventDefault(); sideCommit(); } // VS Code vill ha Ctrl+Enter, här räcker Enter
+});
 
 // Redigeraren: stats.json, README.md och en förhandsflik för filen du klickat på i utforskaren
 function showEditor(tab) {
