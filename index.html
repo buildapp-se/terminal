@@ -186,6 +186,7 @@ kbd{font:inherit;color:var(--yellow)}
   </footer>
 </div>
 
+<script src="/ai/quiz-data.js" defer></script>
 <script>
 /* pure:start  (ren logik utan DOM, testas av terminal.test.js) */
 const PACKS = {
@@ -1047,7 +1048,7 @@ function laneCount() { const w = well.clientWidth; return w < 560 ? 1 : w < 980 
 function start() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, blocks: [], spawnIn: .4, recent: [], seq: 0, lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
   out(`# ${PACKS[S.pack].name}, nivå ${S.level}. Lös vilket block som helst. Esc pausar.`, 'cmt');
@@ -1318,7 +1319,7 @@ function run(raw) {
   if (n > 1) { out(`# kombo x${n}`, 'hot'); sfx('combo', n); } else if (n || progressed) sfx('clear');
 
   const lv = S.start + Math.floor(S.cleared / 10);
-  if (lv > S.level) { S.level = lv; out(`# nivå ${lv}: tempot ökar`, 'hot'); sfx('levelUp'); music(); }
+  if (lv > S.level) { S.level = lv; out(`# nivå ${lv}: tempot ökar`, 'hot'); sfx('levelUp'); music(); setTimeout(boss, 700); }
   if (errs) fail(errs); // varje fel räknas, så att ett makro med ; inte lönar sig
   stats();
 }
@@ -1424,6 +1425,7 @@ function askShell() {
 // Inställningar, som i VS Code: kugghjulet längst ner i sidofältet eller Ctrl+,
 let backTo = 'menu';
 function settings() {
+  if (mode === 'boss') return;
   if (mode === 'settings') return closeSettings();
   if (mode === 'play') pause(true);
   backTo = mode === 'pause' ? 'pause' : 'menu';
@@ -1531,9 +1533,57 @@ screen.addEventListener('click', e => {
   if (t.dataset.shell && !t.disabled) { setShell(t.dataset.shell); if (mode === 'shell') menu(); }
   if (t.dataset.snd) { setSound(t.dataset.snd === '1'); screen.querySelectorAll('[data-snd]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.snd === '1') === soundOn)); }
   if (t.dataset.lv) setLevel(+t.dataset.lv);
-  ({start, share, menu, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
+  if (t.dataset.boss) bossAnswer(+t.dataset.boss);
+  ({start, share, menu, bossEnd, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
   cmd.focus();
 });
+
+// ---------- bossfrågan: quizet mellan nivåerna ----------
+// Frågorna kommer från quizet (/ai/quiz-data.js, en källa för båda sidorna). Flerval tas som de är,
+// para ihop blir "vilken beskrivning passar X" med två felsvar ur samma omgång. Rätt svar ger en clear-laddning.
+const shuffle = a => a.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+function bossQuestion() {
+  if (typeof QUIZZES === 'undefined') return null;
+  const steps = QUIZZES.flatMap(z => z.steps || []).filter(st => st.q || st.pairs);
+  const all = steps.flatMap(st => st.q ? [{st}] : st.pairs.map((pr, i) => ({st, i})));
+  const fresh = all.filter(x => !S.asked.has(x.st.q || x.st.pairs[x.i][0]));
+  if (!fresh.length) return null;
+  const {st, i} = rnd(fresh);
+  if (st.q) return {key: st.q, q: st.q, options: st.options, answer: st.answer, why: st.why};
+  const [term, desc, name, more] = st.pairs[i];
+  const options = shuffle([desc, ...shuffle(st.pairs.filter((_, j) => j !== i)).slice(0, 2).map(x => x[1])]);
+  return {key: term, q: `Vilken beskrivning passar ${term}?`, options, answer: options.indexOf(desc), why: [name && `${term} = ${name}.`, more].filter(Boolean).join(' ')};
+}
+function boss() {
+  if (mode !== 'play' || S.agent?.busy) return;
+  const x = bossQuestion();
+  if (!x) return;
+  S.asked.add(x.key);
+  S.boss = x;
+  mode = 'boss';
+  try { snd()?.stop(); } catch {}
+  screen.innerHTML = `<p class="hot"># bossfråga: rätt svar ger en clear-laddning</p><p>${esc(x.q)}</p>
+    <div class="opts">${x.options.map((o, i) => `<button class="opt" data-boss="${i}">[${'abcd'[i]}] ${esc(o)}</button>`).join('')}</div>
+    <p class="dim">tryck a, b, c${x.options.length > 3 ? ' eller d' : ''}</p>`;
+  screen.hidden = false;
+}
+function bossAnswer(i) {
+  const x = S.boss;
+  if (mode !== 'boss' || x.done || !x.options[i]) return;
+  x.done = true;
+  const right = i === x.answer;
+  if (right && S.charges < 3) S.charges++;
+  sfx(right ? 'combo' : 'error', 2);
+  screen.querySelectorAll('[data-boss]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', +b.dataset.boss === x.answer); });
+  screen.insertAdjacentHTML('beforeend', `<p class="${right ? 'hot' : 'err'}">${right ? `Rätt! +1 clear${S.charges === 3 ? ' (max 3)' : ''}` : `Fel. Rätt svar: ${esc(x.options[x.answer])}`}</p>
+    ${x.why ? `<p class="cmt"># ${esc(x.why)}</p>` : ''}<div class="actions"><button data-act="bossEnd"><kbd>Enter</kbd> fortsätt</button></div>`);
+  stats();
+}
+function bossEnd() {
+  if (mode !== 'boss') return;
+  mode = 'pause';
+  pause(false);
+}
 
 // ---------- påskägg: gå in i en agent ----------
 // claude, codex och de andra byter prompten mot agentens >. Text går till agenten, som svarar roligt men inte hjälper.
@@ -1624,6 +1674,7 @@ function lit(name) {
 }
 // Ett blad i terminalen, som inställningarna: pausar rundan, Esc går tillbaka
 function sheet(name, html) {
+  if (mode === 'boss') return;
   if (mode === 'play') pause(true);
   if (mode !== 'sheet' && mode !== 'settings') backTo = mode === 'pause' ? 'pause' : 'menu';
   mode = 'sheet';
@@ -1672,6 +1723,7 @@ Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter i
 - flera kommandon på en rad rensar flera block: && i bash, ; i PowerShell
 - klicka på ett block för hjälpkortet (blocket ger då 0 poäng)
 - ↑ hämtar förra kommandot, Esc pausar, exit avslutar
+- ny nivå ger en bossfråga ur quizet på buildapp.se/ai: rätt svar ger en clear-laddning
 - clear (cls i PowerShell) tömmer brunnen när du har en laddning, en per 10 rätt i rad
 
 ## skal
@@ -1681,11 +1733,12 @@ bash finns på Linux och Mac, och i Git Bash på Windows. PowerShell är Windows
 Sök (Ctrl+P) hittar kommandot för det du vill göra. Skriv "radera mapp" eller "commit".`;
 
 const DO = {
-  start: () => (mode === 'play' || mode === 'pause' ? say('# Rundan kör redan. Buggarna också.') : start()),
+  start: () => (['play', 'pause', 'boss'].includes(mode) ? say('# Rundan kör redan. Buggarna också.') : start()),
   quit: () => (S ? gameOver() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
   explorer: () => sheet('explorer', `<p class="cmt"># utforskaren: din hemmapp just nu</p>${pre(treeLines(S?.fs ?? WORLD).join('\n'))}<p class="dim"># Två mappar syns inte här. Dolda saker hittar du med ${(S?.ps ?? isPS()) ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`),
   search: () => {
+    if (mode === 'boss') return;
     const round = backTo === 'pause' || mode === 'play' || mode === 'pause';
     sheet('search', `<p class="cmt"># sök: skriv vad du vill göra, som "radera mapp" eller "commit"</p>${round ? '<p class="dim">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : ''}<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon"><div id="hits"></div>`);
     if (round && S) S.blocks.forEach(b => { b.helped = true; });
@@ -1812,6 +1865,13 @@ cmd.addEventListener('keydown', e => {
     else return;
     e.preventDefault();
     return music();
+  }
+  if (mode === 'boss') {
+    const i = 'abcd'.indexOf(k.toLowerCase());
+    if (i >= 0 && !e.ctrlKey && !S.boss.done) bossAnswer(i);
+    else if ((k === 'Enter' || k === 'Escape') && S.boss.done) bossEnd();
+    if (typing(e) || k === 'Enter') e.preventDefault();
+    return;
   }
   if (mode === 'over') {
     if (k === 'Enter') start(); else if (k === 'd') share(); else if (k === 'Escape') menu(); else if (!typing(e)) return;
