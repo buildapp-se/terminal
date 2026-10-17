@@ -614,7 +614,7 @@ const GLOSS = {
   // operatorer och sökvägar
   '|': 'pipe: skickar utskriften från kommandot före in i kommandot efter', '>': 'skriv utskriften till en fil i stället för skärmen, och skriv över filen',
   '>>': 'lägg till utskriften sist i en fil', '&&': 'kör nästa kommando bara om det förra lyckades',
-  '.': 'mappen du står i', '..': 'mappen ovanför den du står i', '~': 'din hemmapp', '*': 'alla filer och mappar här',
+  '.': 'mappen du står i', '..': 'mappen ovanför den du står i', '~': 'din hemmapp. Skrivs med AltGr + ¨ och sedan mellanslag', '*': 'alla filer och mappar här',
   '*.js': 'alla filnamn som slutar på .js. * matchar vad som helst', 'ERROR': 'texten som söks efter', 'HEAD~1': 'commiten före den senaste. HEAD är där du står nu', 'HEAD~': 'samma som HEAD~1: commiten före den senaste',
   'origin': 'namnet på remoten, alltså GitHub-repot du klonade från', '{any}': 'ditt commit-meddelande, valfri text', 'deploy.sh': 'skriptet, en fil full av kommandon', 'node': 'programmet node',
   // filer och mappar
@@ -2281,7 +2281,8 @@ Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter i
 bash finns på Linux och Mac, och i Git Bash på Windows. PowerShell är Windows. Byt under kugghjulet.
 
 ## fastnat?
-Sök (Ctrl+P) hittar kommandot för det du vill göra. Skriv "radera mapp" eller "commit".`;
+Sök (Ctrl+P) hittar kommandot för det du vill göra. Skriv "radera mapp" eller "commit".
+Svårt att hitta ~, | eller $ på tangentbordet? Help, Svåra tecken. ~ är AltGr + ¨ och sedan mellanslag.`;
 
 const DO = {
   start: () => (['play', 'pause', 'boss'].includes(mode) ? say('# Rundan kör redan. Buggarna också.') : start()),
@@ -2311,8 +2312,23 @@ Enter       kör kommandot
 Esc         pausa och fortsätt
 Ctrl+C      kopiera markerad text, annars avbryt raden
 Ctrl+P      sök kommandon
+Ctrl+Shift+P kommandopaletten
 Ctrl+,      inställningar
 s           byt skal i menyn`)),
+  chars: () => sheet('chars', pre(`# svåra tecken på svenskt tangentbord
+tecken  Windows                    Mac
+~       AltGr + ¨, mellanslag      Option + ¨, mellanslag
+|       AltGr + <                  Option + 7
+\\       AltGr + plustangenten      Shift + Option + 7
+$       AltGr + 4                  Option + 4
+@       AltGr + 2                  Option + 2
+[ ]     AltGr + 8 och 9            Option + 8 och 9
+{ }     AltGr + 7 och 0            Shift + Option + 8 och 9
+&       Shift + 6                  Shift + 6
+
+# ¨ är tangenten till höger om Å. Tangenter som ¨ och ´ är döda: inget syns
+# förrän du trycker nästa tangent. Mellanslag ger själva tecknet.
+# Hittar du inte ~: cd utan något efter går också hem, i bash.`)),
   about: () => sheet('about', `${pre(`# om
 ./terminal: lär dig terminalen genom att spela.
 Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://github.com/buildapp-se/terminal" target="_blank" rel="noopener">källkoden på GitHub</a> · <a href="integritet.html" target="_blank" rel="noopener">integritet</a></p>`),
@@ -2348,7 +2364,7 @@ const MENUS = {
   Go: [['Gå till fil…', 'Ctrl+P', 'search'], ['Gå till rad…', 'Ctrl+G', '# Rad 42. Det är alltid rad 42.'], ['Tillbaka', 'Alt+←', '# cd - tar dig tillbaka till förra mappen i bash. cd .. går upp en nivå.']],
   Run: [['Starta felsökning', 'F5', 'run'], ['Kör utan felsökning', 'Enter', 'start']],
   Terminal: [['Ny terminal', '', 'start'], ['Dela terminal', '', '# Två terminaler, dubbelt så många block. Nej.'], ['Döda terminal', 'exit', 'quit']],
-  Help: [['README', '', 'readme'], ['Kortkommandon', '', 'keys'], 0, ['Rapportera problem', '', 'issue'], ['Om', '', 'about']],
+  Help: [['README', '', 'readme'], ['Kortkommandon', '', 'keys'], ['Svåra tecken', '~ | $', 'chars'], 0, ['Rapportera problem', '', 'issue'], ['Om', '', 'about']],
 };
 const pop = $('#pop');
 function openMenu(btn) {
