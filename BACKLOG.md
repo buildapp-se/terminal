@@ -49,7 +49,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] Godkänn likvärdiga former: `git push/pull origin main`; långa flaggor (`--lines=10`, `--recursive`, `--message=`, `--verbose`, `--delete`, `--ignore-case`), `-n10`, `kill -15/-TERM`, `ps -aux`, `chmod a+x`, `curl -s`, `ssh-keygen -C`, `ping -c4`; PS namngivna `Test-NetConnection -ComputerName`, `Resolve-DnsName -Name`, `Test-Connection -Count`, `Stop-Process -Id -Force`.
 - [x] Giltiga fria kommandon (`node --version`, `ping`) visar `sample()` och "# rätt kommando, men inget block bad om det", räknas fortfarande som fel (låst beslut, mellanläge Patrik 2026-10-17).
 - [ ] bash: `ls -z` ska ge "invalid option", `rmdir ..` fel text, `node spel.py` kör Python. Förklaringen till `find -name *.js` utan citattecken: nyansera.
-- [ ] "Lista filerna i mappen du står i" är 9 av 40 block i Filer & mappar: sänk vikten.
+- [x] "Lista filerna" var 9 av 40 block i Filer & mappar, nu 3 till 4 (2026-10-17): tvingas fram i nya mappar bara de tre första gångerna och dras inte slumpvis där man redan listat.
 - [ ] Mobil: ingen pausknapp (texten säger Esc), kugghjulet syns inte, "Enter starta" under kanten; quizets para ihop och hjälpkortet: dd hamnar utanför 390 px (dt över dd under 600 px). Hjälpkortets första rad klipps under panelflikarna.
 - [ ] Smått: quizräknaren "2 rätt" blir "13 av 16" (para ihop räknas 4), OUTPUT-fliken säger "Spela en runda" mitt i en runda, topplistan och delningstexten visar inte skal, källkontrollens placeholder klipps.
 - [x] Tab-komplettering (`4caaf67`).
@@ -60,7 +60,7 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 
 - [x] `[P1]` Fria kommandon kan låsa ett block i Filer & mappar (`touch backup` före "Skapa mappen backup"). Byggt 2026-10-17: spelet städar inte, Bit varnar en gång per block med skalets eget fel och vad man gör (ta bort det som står i vägen, eller skapa det som saknas). Patrik: man får ta bort den själv.
 - [x] Samtidiga block (låst beslut omprövat, Patrik ja 2026-10-17): högst nivå + 1 i luften, `maxLvFor`-gränsen 7 så att git börjar på svårighet 1.
-- [ ] Rödmarkeringen i `explain`: saknas bara en flagga (`grep TODO .` mot `grep -r TODO .`) blir alla rätta argument röda; säg "# rätt kommando, men en flagga saknas". Commit-meddelande utan citattecken får ingen förklaring, och citerad fel text markeras inte (`echo` delar på mellanslag).
+- [x] Rödmarkeringen i `explain` (2026-10-17): saknas bara något säger spelet "# rätt kommando, men en flagga eller ett argument saknas" i stället för att färga rätta ord; commit-meddelande utan citattecken får en förklaring. Kvar: citerad fel text markeras inte (`echo` delar på mellanslag).
 - [ ] Låtsasskalet: text som börjar med streck räknas som flagga, så `echo "- [ ] ny punkt" >> todo.md` och `Add-Content todo.md "- [ ] ny"` går fel (rättningen klarar det sedan 2026-10-17).
 - [ ] `vim` eller `claude` i quizet: prompten fastnar i vim- eller agentläget även på resultatskärmen.
 - [ ] Antalet filer räknas bara vid rundstart (`S.lanes`): stänger man Bits panel eller ändrar fönstret mitt i rundan följer de inte med. Obs: med panelen öppen på 1 280 px är brunnen under 980 px, alltså 2 filer i stället för 3.

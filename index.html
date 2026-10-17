@@ -1805,11 +1805,11 @@ function spawn() {
   if (S.blocks.filter(b => !b.landed).length > S.level) return false; // högst nivå + 1 i luften: lugn början utan lugnt läge (Patrik 2026-10-17)
   const maxLv = maxLvFor(S.pack, S.ps, S.level);
   const fits = t => (S.pack === 'all' || t[0] === S.pack) && lvOf(t, S.ps) <= maxLv && (!S.ps || t[5]);
-  let pool = TASKS.filter(t => fits(t) && !S.recent.includes(t));
-  if (!pool.length) pool = TASKS.filter(fits);
   const lists = t => t[2] === 'Lista filerna i mappen du står i', runs = t => t[0] === 'fs' && /^(python|node) /.test(t[5] === '=' ? t[3] : t[5]);
   const enters = t => t[2] === 'Gå in i mappen {d}';
-  const phases = story ? [!S.seen.has(here) && TASKS.filter(lists), !S.ran.has(here) && TASKS.filter(t => runs(t) && fits(t)), !S.went.has(here) && TASKS.filter(enters), pool, TASKS.filter(fits)] : [pool, TASKS.filter(fits)]; // sist: även nyss använda, om inget annat går att göra här
+  let pool = TASKS.filter(t => fits(t) && !S.recent.includes(t) && !(lists(t) && S.seen.has(here)));
+  if (!pool.length) pool = TASKS.filter(fits);
+  const phases = story ? [!S.seen.has(here) && S.seen.size < 3 && TASKS.filter(lists), !S.ran.has(here) && TASKS.filter(t => runs(t) && fits(t)), !S.went.has(here) && TASKS.filter(enters), pool, TASKS.filter(fits)] : [pool, TASKS.filter(fits)]; // sist: även nyss använda, om inget annat går att göra här
   let b = null;
   for (const ph of phases) if (ph && (b = draw(ph))) break;
   // Små paket: när alla uppgifter redan ligger i brunnen kommer en dubblett, annars fryser rundan
@@ -2425,6 +2425,10 @@ function explain(u, bad, msgs) {
   }
   const flagOk = t => /^-[A-Za-z]+$/.test(t) && [...t.slice(1)].every(l => near.some(n => /^-[A-Za-z]+$/.test(n) && n.includes(l)));
   const wrong = near ? u.slice(1).filter(t => !near.includes(t) && !flagOk(t) && !near.includes(ANY)) : u.slice(1);
+  const mi = u.findIndex(t => /^-[a-z]*m$/.test(t));
+  if (c === 'git' && sub === 'commit' && mi > 0 && u.slice(mi + 2).some(t => !t.startsWith('-'))) msgs.push('# meddelandet har mellanslag: sätt citattecken runt det, git commit -m "fixa menyn"');
+  // Allt du skrev stämmer men något saknas: markera inget rött, de rätta orden är inte felet
+  else if (near && !wrong.length && u.length < near.length) return msgs.push('# rätt kommando, men en flagga eller ett argument saknas. Klicka på blocket för hjälp.');
   (wrong.length ? wrong : u.length > 1 ? u.slice(1) : u).forEach(t => bad.add(t));
 }
 
