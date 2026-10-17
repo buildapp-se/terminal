@@ -8,7 +8,7 @@ vibe-kodare och programmeringsstudenter som behöver terminalen men inte kan den
 Humor och påskägg är en del av målet, men varje skämt ska bära en lärdom.
 
 Flyttat hit från `buildapp-se/ai` 2026-10-17 med historiken kvar (`git filter-repo`);
-`buildapp.se/ai/terminal.html` skickar vidare hit.
+Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordran: spelet var aldrig länkat.
 
 ## Architecture
 
