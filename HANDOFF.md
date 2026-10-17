@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Granskningsfynden i frågorna, block som slutar komma på nivå 2, sedan resten enligt BACKLOG.md
+nextAction: Granskningsfynden i frågorna, sedan resten enligt BACKLOG.md
 blockers: []
 reviewedAt: 2026-10-17
 ---
@@ -10,6 +10,8 @@ reviewedAt: 2026-10-17
 # Handoff: ./terminal
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.
+
+**2026-10-17, man och Get-Help.** Hjälpkortet går att öppna med riktiga hjälpkommandon i stället för klick: `man` i bash, `Get-Help`/`help`/`man` i PowerShell, med eller utan kommandonamn. Verifierat: `terminal.test.js` och `mancheck.js` (scratchpad) i Chromium, båda skalen, rätt block, okänt namn, bash `help` orörd.
 
 **2026-10-17, VS Code-ramen.** Sidofält med riktiga vyer, README som flik, filer öppnas i redigeraren, dragbar panel. Klicktest `chromecheck.js` grönt i tre motorer.
 

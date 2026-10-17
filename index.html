@@ -1180,7 +1180,7 @@ function spawn() {
   if (!pool.length) pool = TASKS.filter(fits);
   const lists = t => t[2] === 'Lista filerna i mappen du står i', runs = t => t[0] === 'fs' && /^(python|node) /.test(t[5] === '=' ? t[3] : t[5]);
   const enters = t => t[2] === 'Gå in i mappen {d}';
-  const phases = story ? [!S.seen.has(here) && TASKS.filter(lists), !S.ran.has(here) && TASKS.filter(t => runs(t) && fits(t)), !S.went.has(here) && TASKS.filter(enters), pool] : [pool];
+  const phases = story ? [!S.seen.has(here) && TASKS.filter(lists), !S.ran.has(here) && TASKS.filter(t => runs(t) && fits(t)), !S.went.has(here) && TASKS.filter(enters), pool, TASKS.filter(fits)] : [pool, TASKS.filter(fits)]; // sist: även nyss använda, om inget annat går att göra här
   let b = null;
   for (const ph of phases) if (ph && (b = draw(ph))) break;
   if (!b) return false;
@@ -1388,6 +1388,18 @@ function run(raw) {
     out('# PowerShell 5.1 har inte && och ||. Skriv ; mellan kommandona. && kom i PowerShell 7.', 'cmt');
     return fail();
   }
+  // man, och Get-Help/help/man i PowerShell, öppnar hjälpkortet som ett klick:
+  // utan namn för blocket närmast botten, med namn för blocket vars svar börjar med det kommandot
+  const [h, name, extra] = segs.length === 1 ? segs[0] : [];
+  if (h && !extra && (S.ps ? psCmd(h) === 'get-help' : h === 'man')) {
+    const uses = a => { const c = tokenize(a.raw, S.ps)[0]; return S.ps ? psCmd(c) === psCmd(name) : c === name; };
+    const b = S.blocks.filter(x => x.step < x.steps.length && (!name || x.steps[x.step].some(uses)))
+      .sort((x, y) => x.landed - y.landed || y.y - x.y)[0];
+    echo(raw, new Set());
+    if (b) return help(b);
+    if (!name) return out('# inget block att visa hjälp för just nu', 'cmt');
+    return out(S.ps ? `Get-Help : Get-Help could not find ${name} in a help file in this session.` : `No manual entry for ${name}`, 'err');
+  }
   const hits = [], bad = new Set(), msgs = [], notes = [], at = S.cwd;
   let errs = 0, progressed = false, typed = 0, prevOk = true, hint = null;
   for (let seg of segs) {
@@ -1398,7 +1410,7 @@ function run(raw) {
     const c0 = S.ps ? seg[0].toLowerCase() : seg[0];
     if (['clear', 'cls', 'clear-host'].includes(seg[0].toLowerCase()) && seg.length === 1) { clearCmd(); continue; }
     if (c0 === 'exit') { echo(raw, bad); return gameOver(); }
-    if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
+    if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# man visar hjälpkortet för blocket närmast botten (0 poäng för det blocket). ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
     for (const u of units(seg, S.ps)) {
       const key = canon(u, S.ps), b = target(key);
       // --help är aldrig fel: program visar sin hjälp i båda skalen. PowerShells cmdlets har ingen --help, där pekar vi på Get-Help.
@@ -2153,7 +2165,7 @@ Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter i
 
 ## så spelar du
 - flera kommandon på en rad rensar flera block: && i bash, ; i PowerShell
-- klicka på ett block för hjälpkortet (blocket ger då 0 poäng)
+- klicka på ett block, eller skriv man (Get-Help i PowerShell), för hjälpkortet (blocket ger då 0 poäng)
 - ↑ hämtar förra kommandot, Esc pausar, exit avslutar
 - ny nivå ger en bossfråga ur quizet på buildapp.se/ai: rätt svar ger en clear-laddning
 - clear (cls i PowerShell) tömmer brunnen när du har en laddning, en per 10 rätt i rad
