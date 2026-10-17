@@ -70,7 +70,8 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .sash{flex:none;height:4px;margin:-2px 0;position:relative;z-index:3;cursor:ns-resize;touch-action:none}
 .sash:hover,.sash.drag,.sash:focus-visible{background:var(--accent);outline:0;transition:background .1s .2s}
 .mdh{color:#569CD6;font-weight:700}
-.tab.preview{font-style:italic}
+.tab.preview{font-style:italic}.tab.dirty::after{content:'\25CF';margin-left:4px;color:#fff}
+.code .edit{grid-column:1/-1;width:100%;height:100%;min-height:200px;resize:none;border:0;outline:0;padding:0 12px 0 72px;background:var(--editor);color:#D4D4D4;font:inherit;white-space:pre;tab-size:2}
 .tabs{flex:none;display:flex;height:35px;background:var(--bg);border-bottom:1px solid var(--border)}
 .tab{display:flex;align-items:center;gap:6px;padding:0 12px;border-right:1px solid var(--border);color:var(--dim)}
 .tab:hover{color:#fff}.tab.on{background:var(--editor);color:#fff;box-shadow:inset 0 1px var(--accent);margin-bottom:-1px}
@@ -1777,16 +1778,16 @@ function clearCmd() {
 const cpm = () => (S && S.time > 5 ? Math.round(S.typed / (S.time / 60)) : 0);
 const best = () => scoresLoad()[0]?.s ?? 0;
 let lastStats = '';
+const statRows = () => [['shell', (S?.ps ?? isPS()) ? 'PowerShell' : 'bash'], ['pack', PACKS[S?.pack ?? prefs.pack].name], ['score', S?.score ?? 0], ['level', S?.level ?? prefs.level],
+  ['cpm', cpm()], ['streak', S?.streak ?? 0], ['clear', S?.charges ?? 0], ['best', best()]];
 function stats() {
-  const landed = S ? S.blocks.filter(b => b.landed).length : 0;
-  const rows = [['shell', (S?.ps ?? isPS()) ? 'PowerShell' : 'bash'], ['pack', PACKS[S?.pack ?? prefs.pack].name], ['score', S?.score ?? 0], ['level', S?.level ?? prefs.level],
-    ['cpm', cpm()], ['streak', S?.streak ?? 0], ['clear', S?.charges ?? 0], ['best', best()]];
+  const landed = S ? S.blocks.filter(b => b.landed).length : 0, rows = statRows();
   const key = rows.join() + landed + (S?.errors ?? 0);
   if (key === lastStats) return;
   lastStats = key;
   const lines = ['<span class="br">{</span>', ...rows.map(([k, v], i) =>
     `  <span class="k">"${k}"</span>: ${typeof v === 'string' ? `<span class="s">"${esc(v)}"</span>` : `<span class="n">${v}</span>`}${i < rows.length - 1 ? ',' : ''}`), '<span class="br">}</span>'];
-  if (edTab === 'stats') $('#code').innerHTML = codeLines(lines);
+  if (edTab === 'stats' && !editing) $('#code').innerHTML = codeLines(lines);
   $('#problems').textContent = $('#problems').dataset.n = landed;
   $('#st-err').innerHTML = `&#8855; ${S?.errors ?? 0} &#9888; ${landed}`;
   $('#st-level').textContent = `nivå ${S?.level ?? prefs.level}`;
@@ -2207,8 +2208,75 @@ function render() {
   applyShell(); // prompt, skal och stats
   S?.cwd.forEach((_, i) => openDirs.add(S.cwd.slice(0, i + 1).join('/'))); // utforskaren visar var du står
   refreshSide();
-  if (edTab === 'file') { const y = $('#code').scrollTop; showEditor('file'); $('#code').scrollTop = y; }
+  if (edTab === 'file' && !editing) { const y = $('#code').scrollTop; showEditor('file'); $('#code').scrollTop = y; }
   $('#branch').textContent = S?.branch ?? 'main';
+}
+// Fusklarmet: den falska poängen i statusraden, rött blink och siren, sedan den riktiga poängen igen. Riktiga S.score rörs aldrig.
+function alarm(fake) {
+  const root = document.documentElement;
+  $('#st-score').textContent = `${fmt(fake)} p`;
+  root.classList.add('alarm');
+  [0, 450, 900].forEach(t => setTimeout(() => sfx('error'), t));
+  setTimeout(() => { root.classList.remove('alarm'); lastStats = ''; stats(); }, 2000);
+}
+
+// Redigeraren: klick i koden gör fliken redigerbar, Ctrl+S sparar, Esc slutar utan att spara.
+// Filer sparas i världen (Changes visar M), README i sessionen. stats.json skrivs av spelet: ändrad score eller best är fusk.
+let editing = null;
+const code = $('#code');
+function editText() {
+  if (edTab === 'stats') return JSON.stringify(Object.fromEntries(statRows()), null, 2);
+  if (edTab === 'readme') return README;
+  const n = node(edFile ?? '');
+  return typeof n === 'string' ? n : null;
+}
+code.addEventListener('click', () => {
+  const text = editText();
+  if (editing || text === null) return;
+  editing = {tab: edTab, text};
+  code.removeAttribute('aria-hidden');
+  code.innerHTML = '<textarea class="edit" spellcheck="false" aria-label="Redigera filen. Ctrl+S sparar, Esc slutar."></textarea>';
+  const ta = code.firstChild;
+  ta.value = text;
+  ta.focus();
+  ta.addEventListener('input', () => editor.querySelector('.tab.on')?.classList.toggle('dirty', ta.value !== text));
+  ta.addEventListener('keydown', e => {
+    if (e.key === 's' && e.ctrlKey) { e.preventDefault(); e.stopPropagation(); saveEdit(ta.value); }
+    if (e.key === 'Escape') { e.stopPropagation(); if (ta.value !== text) say('# Inte sparat. Ctrl+S sparar.'); stopEdit(); }
+  });
+});
+function stopEdit() {
+  editing = null;
+  code.setAttribute('aria-hidden', 'true');
+  editor.querySelector('.tab.dirty')?.classList.remove('dirty');
+  showEditor(edTab);
+  cmd.focus();
+}
+function saveEdit(v) {
+  const {tab, text} = editing;
+  if (v === text) return stopEdit();
+  if (tab === 'stats') {
+    let j;
+    try { j = JSON.parse(v); } catch { return say('# stats.json är inte giltig JSON längre. Kolla kommatecken och citattecken.'); }
+    const real = Object.fromEntries(statRows());
+    stopEdit();
+    if (j.score !== real.score || j.best !== real.best) {
+      out(`# Fusk upptäckt: ${j.score !== real.score ? 'score' : 'best'} ändrad i stats.json. Larmet har gått.`, 'err');
+      say('# Poängen är tillbaka. Den räknas bara när du skriver kommandona själv.');
+      return alarm(typeof j.score === 'number' && j.score !== real.score ? j.score : 999999);
+    }
+    return say('# stats.json skrivs av spelet, så ändringen sparades inte. Men det var inget fusk.');
+  }
+  if (tab === 'readme') README = v;
+  else {
+    if (!S) return say('# Starta en runda först, då finns filerna på riktigt och sparas.');
+    const p = edFile.split('/'), dir = look(S.fs, p.slice(0, -1), S.ps).node;
+    if (typeof dir !== 'object') { stopEdit(); return say('# Mappen finns inte längre. Någon körde rm.'); }
+    own(dir, p.at(-1), v);
+  }
+  stopEdit();
+  say(`# Sparat: ${tab === 'readme' ? 'README.md' : edFile}`);
+  render();
 }
 side.addEventListener('click', e => {
   const r = e.target.closest('[data-path]'), a = e.target.closest('[data-side]')?.dataset.side;
@@ -2230,6 +2298,7 @@ side.addEventListener('keydown', e => {
 // Redigeraren: stats.json, README.md och en förhandsflik för filen du klickat på i utforskaren
 function showEditor(tab) {
   if (getComputedStyle(editor).display === 'none') return false;
+  if (editing) { editing = null; $('#code').setAttribute('aria-hidden', 'true'); editor.querySelector('.tab.dirty')?.classList.remove('dirty'); } // byte av flik slutar redigera, osparat försvinner
   edTab = tab;
   const prev = editor.querySelector('.preview');
   if (tab === 'file' && edFile) { prev.hidden = false; prev.innerHTML = `${fileIcon(edFile.split('/').pop())} ${esc(edFile.split('/').pop())}`; }
@@ -2599,7 +2668,7 @@ function hits(q) {
     : `<p class="dim">Inga träffar för "${esc(q)}". Prova ett vanligt ord: mapp, fil, radera, commit, gren.</p>`;
 }
 
-const README = `## ./terminal
+let README = `## ./terminal
 Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter innan det landar.
 
 ## så spelar du
@@ -2679,12 +2748,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
     sheet('debug', pre(`> S.score = 999999
 Fusk upptäckt. Larmet har gått.
 # Skämt. Poängen är tillbaka, den räknas bara när du skriver kommandona själv.`));
-    // Larmet går på riktigt: 999 999 i statusraden, rött blink och siren, sedan den riktiga poängen igen
-    const root = document.documentElement;
-    $('#st-score').textContent = `${fmt(999999)} p`;
-    root.classList.add('alarm');
-    [0, 450, 900].forEach(t => setTimeout(() => sfx('error'), t));
-    setTimeout(() => { root.classList.remove('alarm'); lastStats = ''; stats(); }, 2000);
+    alarm(999999);
   },
   ports: () => sheet('ports', pre(`PORT   PROCESS
 3000   node server.js   används redan

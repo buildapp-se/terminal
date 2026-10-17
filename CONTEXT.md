@@ -60,6 +60,10 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   källkontrollen och öppen fil efter varje kommando. Fria kommandon som inte löser block är fortfarande fel i spelet,
   men händer ändå. Quizet (`fresh()` + `quiz()`) har en levande terminal: bokstav (eller siffra + bokstav vid
   para ihop) och Enter svarar, tomt Enter går vidare, allt annat körs. Test `worldcheck.js` i scratchpad.
+- **Redigeraren går att skriva i** (Patriks krav 2026-10-17): klick i koden byter till en `textarea` (`editing`), fliken får en prick när något ändrats,
+  Ctrl+S sparar (`saveEdit`), Esc slutar utan att spara, flikbyte släpper osparat. Filer sparas i `S.fs` (Changes visar M, `cat` ser det),
+  README i sessionen (`let README`). stats.json skrivs av spelet: ändrad `score` eller `best` sparad ger fusklarmet (`alarm()`, samma som
+  Debug-fliken, rör aldrig `S.score`), annan ändring sparas inte och är inget fusk. Test `editcheck.js` i scratchpad.
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som
