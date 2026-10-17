@@ -1105,20 +1105,32 @@ function findstrArgs(a) {
   const re = pat === undefined ? null : new RegExp((phrase === undefined ? pat.split(' ').filter(Boolean) : [pat]).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), opt('/i') ? 'i' : '');
   return {re, files, hit: l => re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
 }
-function winExe(fs, cwd, c, a) {
-  const val = s => { const i = a.findIndex(t => t.toLowerCase() === s); return i < 0 ? undefined : a[i + 1] ?? ''; };
+// Avslutar kommandot (rättningens form) node med PID 4821, den som håller port 3000? Ger då skalets fel för när processen
+// redan är borta, annars ''. kill -0 frågar bara om processen lever. Världen minns det i env['?killed'], en runda i taget.
+function kills(k, ps) {
+  const [c, ...a] = k[0] === 'npx' || k[0] === 'sudo' ? k.slice(1) : k, low = a.map(t => t.toLowerCase()), cl = c?.toLowerCase(), after = f => low[low.indexOf(f) + 1];
+  if (cl === 'kill-port') return low.includes('3000') ? 'Could not kill process on port 3000. No process running on port.' : '';
+  if (/^powershell(\.exe)?$/.test(cl)) { const i = low.findIndex(t => /^-c(ommand)?$/.test(t)); return i < 0 || !a[i + 1] ? '' : kills(canon(tokenize(a[i + 1], true), true), true); }
+  if (cl === 'stop-process' && ps) return low.includes('4821') ? 'Stop-Process : Cannot find a process with the process identifier 4821.'
+    : low.includes('-name=node') ? 'Stop-Process : Cannot find a process with the name "node". Verify the process name and call the cmdlet again.' : '';
+  if (cl === 'taskkill' && ps) return !low.includes('/f') ? '' : after('/pid') === '4821' ? 'ERROR: The process "4821" not found.' : after('/im') === 'node.exe' ? 'ERROR: The process "node.exe" not found.' : '';
+  return !ps && c === 'kill' && low.includes('4821') && !low.includes('-s=0') ? 'bash: kill: (4821) - No such process' : '';
+}
+function winExe(fs, cwd, c, a, gone = false) {
+  const live = rows => rows.filter(r => !gone || (r[1] !== 4821 && r.at(-1) !== 4821)); // PID:en står i TASKLIST:s andra kolumn, i NETSTAT:s sista
+  const val = s =>{ const i = a.findIndex(t => t.toLowerCase() === s); return i < 0 ? undefined : a[i + 1] ?? ''; };
   if (c === 'netstat') { // -a: även de som väntar (LISTENING), -n: siffror i stället för namn, -o: processens PID
     const f = a.filter(t => /^[-/][a-z]+$/i.test(t)).join('').toLowerCase(), num = f.includes('n'), pid = f.includes('o');
     const name = x => (num ? x : x.replace(/^(0\.0\.0\.0|\[::\]):0$/, 'BUILDAPP:0').replace(/^192\.168\.1\.42:/, 'BUILDAPP:').replace('140.82.112.25:443', 'lb-140-82-112-25-iad:https'));
     return ['', 'Active Connections', '', '  Proto  Local Address          Foreign Address        State' + (pid ? '           PID' : ''),
-      ...NETSTAT.filter(r => f.includes('a') || r[3] === 'ESTABLISHED').map(([p, l, r, s, id]) => '  ' + p.padEnd(7) + name(l).padEnd(22) + ' ' + name(r).padEnd(22) + ' ' + (pid ? s.padEnd(16) + id : s))];
+      ...live(NETSTAT).filter(r => f.includes('a') || r[3] === 'ESTABLISHED').map(([p, l, r, s, id]) => '  ' + p.padEnd(7) + name(l).padEnd(22) + ' ' + name(r).padEnd(22) + ' ' + (pid ? s.padEnd(16) + id : s))];
   }
   if (c === 'tasklist') {
     const bad = a.find((t, i) => !/^\/fi$/i.test(t) && !/^\/fi$/i.test(a[i - 1] ?? ''));
     if (bad) throw new Error(`ERROR: Invalid argument/option - '${bad}'.\nType "TASKLIST /?" for usage.`);
     const fi = val('/fi'), m = fi?.match(/^(imagename|pid)\s+eq\s+(.+)$/i);
     if (fi !== undefined && !m) throw new Error('ERROR: The search filter cannot be recognized.');
-    const rows = TASKLIST.filter(r => !m || (/pid/i.test(m[1]) ? String(r[1]) === m[2] : r[0].toLowerCase() === m[2].toLowerCase()));
+    const rows = live(TASKLIST).filter(r => !m || (/pid/i.test(m[1]) ? String(r[1]) === m[2] : r[0].toLowerCase() === m[2].toLowerCase()));
     if (!rows.length) return ['INFO: No tasks are running which match the specified criteria.'];
     return ['', 'Image Name                     PID Session Name        Session#    Mem Usage', '========================= ======== ================ =========== ============',
       ...rows.map(([n, p, s, k, mem]) => `${n.padEnd(25)} ${String(p).padStart(8)} ${s.padEnd(16)} ${String(k).padStart(11)} ${mem.padStart(12)}`)];
@@ -1127,7 +1139,7 @@ function winExe(fs, cwd, c, a) {
     // Utan /F ber taskkill processen att stänga sig, och det kan bara program med fönster. node har inget fönster och måste tvingas.
     const id = val('/pid'), im = val('/im');
     if (id === undefined && im === undefined) throw new Error('ERROR: Invalid syntax. Neither /FI nor /PID nor /IM were specified.\nType "TASKKILL /?" for usage.');
-    const r = TASKLIST.find(x => (id !== undefined ? String(x[1]) === id : x[0].toLowerCase() === im.toLowerCase()));
+    const r = live(TASKLIST).find(x => (id !== undefined ? String(x[1]) === id : x[0].toLowerCase() === im.toLowerCase()));
     if (!r) throw new Error(`ERROR: The process "${id ?? im}" not found.`);
     const who = id !== undefined ? `with PID ${r[1]}` : `"${r[0]}" with PID ${r[1]}`, why = `ERROR: The process ${who} could not be terminated.\nReason: `;
     if (r[2] === 'Services') throw new Error(why + 'Access is denied.');
@@ -1168,7 +1180,7 @@ function winExe(fs, cwd, c, a) {
   return null;
 }
 const envAll = (ps, env, cwd) => Object.entries({...ENV0[ps ? 'ps' : 'bash'], ...(ps ? {} : {PWD: where(cwd, false)}), ...env})
-  .filter(([k, v]) => k !== '?' && v != null).sort(([a], [b]) => a.localeCompare(b));
+  .filter(([k, v]) => !k.startsWith('?') && v != null).sort(([a], [b]) => a.localeCompare(b));
 // $HOME, $PATH, $? och det du själv satt. bash: skiftläget räknas, okänd variabel blir tom, ~ först i ordet är hemmappen.
 // PowerShell: $HOME, $PWD, $? och $env:X. ponytail: citattecken syns inte här, så '$HOME' byts också.
 function expand(t, cwd, ps, env) {
@@ -1264,7 +1276,7 @@ function fake(fs, cwd, key, ps, env = {}) {
     const n = v.startsWith('/') && HOMEPATH.test(v) ? look(fs, resolve(cwd, v), ps).node : undefined; // $HOME är en mapp, inget program
     throw new Error(`bash: ${v}: ${!v.startsWith('/') ? 'command not found' : typeof n === 'object' ? 'Is a directory' : n !== undefined ? 'Permission denied' : 'No such file or directory'}`);
   }
-  const win = ps && winExe(fs, cwd, c, rest);
+  const win = ps && winExe(fs, cwd, c, rest, !!env['?killed']);
   if (win) return ok(win, {note: NONE});
   if (ps && c === 'where-object') return ok([], {note: '# where är Where-Object i PowerShell, ett filter i en pipe, och utan något att filtrera blir det tyst. Programmet som letar i PATH heter where.exe.'});
   const script = ps && /^\.[\\/]/.test(c);
@@ -2018,7 +2030,7 @@ function draw(pool, dup = false) {
   };
   for (let i = 0; i < 40; i++) {
     const t = rnd(weighted), b = fill(t, t[0] === 'fs' ? (list, k) => rnd(names(list, k)) : rnd, S.ps);
-    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b))) return b;
+    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b)) && !(S.env['?killed'] && b.steps.some(st => kills(st[0].key, S.ps)))) return b; // död process dödas inte två gånger
   }
   return null;
 }
@@ -2464,6 +2476,7 @@ function grepOut(a, ps) {
   if (ps || a.includes('-r') || a.includes('-rn')) return lines.map((l, i) => `${ps ? file : 'src/' + file}:${12 + i * 9}:${l}`).join('\n');
   return lines.join('\n');
 }
+const nodeGone = () => !!S?.env['?killed']; // node 4821 avslutad i rundan (kills), port 3000 ledig
 const OUT = {
   // git och gh
   // git status, log och branch läser världen, så att terminalen och källkontrollen säger samma sak
@@ -2547,15 +2560,19 @@ const OUT = {
   'find': a => (a.find(t => t.includes('*')) ?? '').includes('.js') ? './app.js\n./src/main.js' : `./${a.at(-1)}`,
   'get-childitem': a => `\n    Directory: C:\\Users\\du\\projekt\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\n-a----        2026-10-17     14:02           1256 app.js\n`,
   // processer och portar
-  'ps': 'USER   PID %CPU %MEM COMMAND\ndu    4821  1.2  0.8 node server.js\ndu    5102  0.0  0.1 bash',
-  'get-process': '\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n    312      28    41236      52108       1,22   4821   1 node\n',
-  'lsof': 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)',
-  'get-nettcpconnection': '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n',
+  // Har du avslutat node (PID 4821) i rundan är port 3000 ledig: listorna saknar den, och den som letar efter porten hittar inget
+  'ps': () => 'USER   PID %CPU %MEM COMMAND\n' + (nodeGone() ? '' : 'du    4821  1.2  0.8 node server.js\n') + 'du    5102  0.0  0.1 bash',
+  'get-process': () => '\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n'
+    + (nodeGone() ? '    598      34    61208      78344       2,05   5102   1 powershell\n' : '    312      28    41236      52108       1,22   4821   1 node\n'),
+  'lsof': () => (nodeGone() ? '# (inget svar: ingen lyssnar på port 3000 längre, du avslutade node 4821)' : 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)'),
+  'get-nettcpconnection': () => (nodeGone() ? "Get-NetTCPConnection : No MSFT_NetTCPConnection objects found with property 'LocalPort' equal to '3000'.  Verify the value of the property and retry."
+    : '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n'),
+  'kill-port': 'Process on port 3000 killed',
   'kill': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'sed': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
   'cd': '', 'set-location': '', 'ii': '', 'rg': (a, ps) => grepOut(a, ps), 'curl.exe': a => OUT.curl(a),
   'wget': a => `--2026-10-17 14:20:01--  ${a.find(t => t.startsWith('http'))}\nResolving example.com... 93.184.215.14\nHTTP request sent, awaiting response... 200 OK\nLength: 1256 (1.2K) [application/json]\nSaving to: '${a.find(t => t.startsWith('http')).split('/').at(-1) || 'index.html'}'\n\n100%[===================>]   1.23K  --.-KB/s    in 0s`,
-  'top': 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n 4821 du         1.2  0.8 node\n 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
-  'htop': a => OUT.top,
+  'top': () => 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n' + (nodeGone() ? '' : ' 4821 du         1.2  0.8 node\n') + ' 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
+  'htop': a => OUT.top(),
   'open': '', 'xdg-open': '', 'start': '', 'invoke-item': '', 'explorer': '', 'explorer.exe': '',
   'ssh': 'Welcome to Ubuntu 24.04.3 LTS\nLast login: Fri Oct 16 21:14:03 2026 from 192.0.2.10\ndeploy@server:~$',
   'scp': a => `${a[1]}                                     100%   43     1.2KB/s   00:00`,
@@ -2759,7 +2776,8 @@ function run(raw) {
     if (c0 === 'exit') { echo(raw, bad); return mode === 'play' ? gameOver() : menu(); }
     if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# man visar hjälpkortet för blocket närmast botten (0 poäng för det blocket). ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
     for (const u of units(seg, S.ps)) { const e0 = errs; try { // finally: $? säger om kommandot gick bra, för nästa echo $?
-      const key = canon(u, S.ps), b = target(key);
+      const key = canon(u, S.ps), b = target(key), killing = kills(key, S.ps);
+      if (killing && S.env['?killed'] && !b) { errs++; msgs.push(killing); continue; } // node 4821 är redan borta i den här rundan
       // --help är aldrig fel: program visar sin hjälp i båda skalen. PowerShells cmdlets har ingen --help, där pekar vi på Get-Help.
       const c0l = u[0].toLowerCase(), prog = KNOWN.has(c0l) && (!S.ps || (!Object.hasOwn(PSALIAS, c0l) && !c0l.includes('-')));
       const asks = u.includes('--help') || (c0l === 'git' && (u.includes('-h') || u[1] === 'help'));
@@ -2773,6 +2791,7 @@ function run(raw) {
       // git före utskriften, som visar commitens hash. Gits fel (okänd gren, grenen finns redan) är fel, även för ett block.
       let g;
       try { g = gitWorld(u); } catch (e) { errs++; msgs.push(e.message); continue; }
+      if (killing) S.env['?killed'] = true; // port 3000 är ledig resten av rundan: lsof, netstat och PORTS visar det
       // Det världen svarade vinner över den påhittade utskriften i OUT; tom utskrift med note (inga träffar) visar noten
       const said = g !== undefined ? (g ? g.split('\n') : [QUIET]) : r && (r.out.length ? r.out : r.note ? [r.note] : null);
       if (!b) {
@@ -3982,9 +4001,12 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
       else say(`Uncaught ReferenceError: ${v.split(/\W/)[0] || v} is not defined. Prova S.score, S.best eller S`, 'err');
     });
   },
-  ports: () => sheet('ports', pre(`PORT   PROCESS
-3000   node server.js   används redan
-# Porten är alltid upptagen. Den som håller den stänger du med
+  ports: () => sheet('ports', pre(nodeGone() ? `PORT   PROCESS
+3000   ledig
+# Du avslutade node (PID 4821) i den här rundan, så porten är fri för en ny server.
+# Nästa runda startar node igen och tar porten.` : `PORT   PROCESS
+3000   node server.js   används redan (PID 4821)
+# Porten är upptagen. Den som håller den stänger du med
 # ${(S?.ps ?? isPS()) ? 'Stop-Process -Id <id> (PID:en står i Get-NetTCPConnection -LocalPort 3000)' : 'kill <pid> (PID:en står i lsof -i :3000)'}`)),
   terminal: () => mode === 'sheet' && closeSettings(),
   min: () => (mode === 'play' ? pause(true) : say('# Minimerat. Fast inte, det här är en webbsida.')),

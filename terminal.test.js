@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, gitRefs, back} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, gitRefs, back};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, gitRefs, back} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, gitRefs, back};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -439,6 +439,17 @@ assert.strictEqual(sh.out('taskkill /f /im node.exe'), 'SUCCESS: The process "no
 assert.strictEqual(sh.out('taskkill /PID 6120'), 'SUCCESS: Sent termination signal to the process with PID 6120.', 'Code har ett fönster och kan be att få stänga');
 sh.bad('taskkill /PID 999', /^Error: ERROR: The process "999" not found\.$/); sh.bad('taskkill', /Neither \/FI nor \/PID nor \/IM were specified/);
 sh.bad('taskkill /F /PID 1204', /Access is denied/);
+// Port 3000: kommandona som avslutar node 4821, och världen efteråt (env['?killed'] sätts av run)
+const kk = (s, ps) => kills(canon(tokenize(s, ps), ps), ps);
+for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"']) assert.ok(kk(s, false), `${s} avslutar node`);
+for (const s of ['Stop-Process -Id 4821', 'kill 4821', 'spps 4821', 'Stop-Process -Name node', 'taskkill /PID 4821 /F', 'taskkill /f /im node.exe', 'npx kill-port 3000']) assert.ok(kk(s, true), `${s} avslutar node`);
+for (const [s, ps] of [['kill 5102', false], ['kill -0 4821', false], ['taskkill /PID 4821', true], ['Stop-Process -Id 5102', true], ['lsof -i :3000', false]]) assert.strictEqual(kk(s, ps), '', `${s} avslutar inte node`);
+assert.strictEqual(kk('kill -9 4821', false), 'bash: kill: (4821) - No such process'); assert.strictEqual(kk('Stop-Process -Id 4821', true), 'Stop-Process : Cannot find a process with the process identifier 4821.');
+sh.env['?killed'] = true;
+assert.strictEqual(sh.out('netstat -ano | findstr :3000'), '', 'porten är ledig'); assert.ok(!/4821/.test(sh.out('tasklist')), 'node syns inte i tasklist');
+sh.bad('taskkill /PID 4821 /F', /ERROR: The process "4821" not found\./);
+assert.ok(!sh.out('Get-ChildItem env:').includes('?killed'), 'världens minne är ingen miljövariabel');
+delete sh.env['?killed'];
 assert.strictEqual(sh.out('findstr mjölk notes.txt'), 'köp mjölk'); assert.strictEqual(sh.out('findstr /n /i MJÖLK notes.txt'), '1:köp mjölk');
 assert.strictEqual(sh.out('findstr "mjölk mormor" notes.txt'), 'köp mjölk\nring mormor', 'orden är alternativ'); assert.strictEqual(sh.out('findstr /c:"köp mjölk" notes.txt'), 'köp mjölk');
 assert.strictEqual(sh.out('findstr /s import *.py'), 'spel\\spel.py:import random'); assert.ok(/inga träffar/.test(sh('findstr zzz notes.txt').note));
