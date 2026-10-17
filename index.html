@@ -1945,7 +1945,7 @@ function share() {
 function pause(on) {
   if (on && mode === 'play') {
     mode = 'pause';
-    screen.innerHTML = '<p class="cmt"># pausad</p><div class="actions"><button data-act="resume"><kbd>Esc</kbd> fortsätt</button><button data-act="quit">avsluta</button></div>';
+    screen.innerHTML = '<p class="cmt"># pausad</p><div class="actions"><button data-act="resume"><kbd>Esc</kbd> fortsätt</button><button data-act="quit"><kbd>Ctrl+C</kbd> avsluta</button></div>';
     screen.hidden = false;
     try { snd()?.stop(); } catch {}
   } else if (!on && mode === 'pause') {
@@ -2712,7 +2712,7 @@ const DO = {
   keys: () => sheet('keys', pre(`# kortkommandon
 Enter       kör kommandot
 ↑ ↓         förra och nästa kommando
-Esc         pausa och fortsätt
+Esc         pausa och fortsätt, Ctrl+C i pausen avslutar
 Ctrl+C      kopiera markerad text, annars avbryt raden
 Ctrl+P      sök kommandon
 Ctrl+Shift+P kommandopaletten
@@ -2866,7 +2866,7 @@ cmd.addEventListener('keydown', e => {
     if (k === 'Enter') start(); else if (k === 'd') share(); else if (k === 'Escape') menu(); else if (!typing(e)) return;
     return e.preventDefault();
   }
-  if (mode === 'pause') { if (k === 'Escape' || k === 'Enter') { e.preventDefault(); pause(false); } else if (typing(e)) e.preventDefault(); return; } // inget förskrivet svar under paus
+  if (mode === 'pause') { if (k === 'Escape' || k === 'Enter') { e.preventDefault(); pause(false); } else if (e.ctrlKey && k.toLowerCase() === 'c') { e.preventDefault(); gameOver(); } else if (typing(e)) e.preventDefault(); return; } // inget förskrivet svar under paus
   if (k === 'Enter') { e.preventDefault(); const v = cmd.value; cmd.value = ''; run(v); }
   else if (k === 'Escape') S?.agent?.busy ? agentStop() : pause(true);
   else if (k === 'ArrowUp' || k === 'ArrowDown') {
