@@ -1233,11 +1233,7 @@ let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, shar
 function laneCount() { const w = well.clientWidth; return w < 560 ? 1 : w < 980 ? 2 : 3; }
 
 function start() {
-  well.querySelectorAll('.blk').forEach(e => e.remove());
-  S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, commits: [], blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
-  log.replaceChildren();
-  applyShell();
+  fresh();
   out(`# ${PACKS[S.pack].name}, nivå ${S.level}. Lös vilket block som helst. Esc pausar.`, 'cmt');
   mode = 'play';
   screen.hidden = true;
@@ -1245,6 +1241,14 @@ function start() {
   cmd.value = ''; sync(); cmd.focus();
   music();
   refreshSide();
+}
+// Ny värld: filsystemet, mappen, git och en tom logg. Spelet och quizet börjar båda här.
+function fresh() {
+  well.querySelectorAll('.blk').forEach(e => e.remove());
+  S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
+    typed: 0, time: 0, commits: [], blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+  log.replaceChildren();
+  applyShell();
 }
 
 // ---------- block ----------
@@ -1688,7 +1692,7 @@ function run(raw) {
     if (!seg.length) continue;
     const c0 = S.ps ? seg[0].toLowerCase() : seg[0];
     if (['clear', 'cls', 'clear-host'].includes(seg[0].toLowerCase()) && seg.length === 1) { clearCmd(); continue; }
-    if (c0 === 'exit') { echo(raw, bad); return gameOver(); }
+    if (c0 === 'exit') { echo(raw, bad); return mode === 'play' ? gameOver() : menu(); }
     if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# man visar hjälpkortet för blocket närmast botten (0 poäng för det blocket). ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
     for (const u of units(seg, S.ps)) {
       const key = canon(u, S.ps), b = target(key);
@@ -1697,18 +1701,22 @@ function run(raw) {
       const asks = u.includes('--help') || (c0l === 'git' && (u.includes('-h') || u[1] === 'help'));
       if (!b && prog && asks) { notes.push(helpText(u)); continue; }
       if (!b && S.ps && u.includes('--help')) hint = `# cmdlets har ingen --help. Get-Help ${PSNAME[psCmd(u[0])] || u[0]} visar hjälpen.`;
-      // Filsystemet: block i Filer & mappar och fria kommandon körs på riktigt, på låtsas
-      if (!b || b.pack === 'fs') {
-        let r;
-        try { r = fake(S.fs, S.cwd, key, S.ps); } catch (e) { errs++; msgs.push(e.message); continue; }
-        // seen kan vara '', hemmappen
-        if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); notes.push(...r.out); if (!b) continue; if (!r.out.length) notes.push(QUIET); }
+      // Världen ändras av allt du skriver, block eller inte: filsystemet, mappen du står i och git (clone, init, commit).
+      // Filsystemets fel räknas bara där filsystemet rättar: fria kommandon och Filer & mappar.
+      let r = null;
+      try { r = fake(S.fs, S.cwd, key, S.ps); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
+      if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
+      gitWorld(u); // före utskriften, som visar commitens hash
+      if (!b) {
+        if (r) { notes.push(...r.out); continue; }
+        if (toy(u, notes)) continue;
+        const said = sample(u, S.ps);
+        if (mode !== 'play' && said.length) { notes.push(...said); continue; } // i quizet får man prova fritt
+        if (u[0] === 'git') notes.push(...said); // git gjorde det ändå, men det löste inget block
+        errs++; explain(u, bad, msgs); continue;
       }
-      if (!b && toy(u, notes)) continue;
-      if (!b) { errs++; explain(u, bad, msgs); continue; }
       progressed = true;
-      if (u[0] === 'git' && u[1] === 'commit') commit(u); // före utskriften, som visar commitens hash
-      if (b.pack !== 'fs') notes.push(...sample(u, S.ps)); // rätt svar ser ut som på riktigt
+      notes.push(...(r?.out.length ? r.out : b.pack === 'fs' ? [QUIET] : sample(u, S.ps))); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
       else b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`;
@@ -1971,7 +1979,7 @@ const quizBest = (pack, ps) => load(QUIZ, {})[`${pack}-${ps ? 'ps' : 'bash'}`];
 function askHTML(q) {
   return `<p>${q.kind === 'fri' ? esc(q.ask) : q.kind === 'vilket' ? `Vilket kommando gör det här? <span class="hot">${esc(q.ask)}</span>` : `Vad gör <span class="hot">${esc(sig() + q.ask)}</span>?`}</p>
     <div class="opts qz">${q.options.map((o, i) => `<button class="opt" data-qa="${i}">[${'abcd'[i]}] ${esc(o)}</button>`).join('')}</div>
-    <p class="dim">tryck ${q.options.map((_, i) => 'abcd'[i]).join(', ')}</p>`;
+    <p class="dim">${mode === 'boss' ? `tryck ${q.options.map((_, i) => 'abcd'[i]).join(', ')}` : `skriv ${q.options.map((_, i) => 'abcd'[i]).join(', ')} och Enter, eller klicka`}</p>`;
 }
 // Markerar rätt och fel alternativ och visar förklaringen
 function answerHTML(q, i, msg) {
@@ -1979,11 +1987,16 @@ function answerHTML(q, i, msg) {
   const right = i === q.answer;
   return `<p class="${right ? 'hot' : 'err'}">${right ? msg || 'Rätt!' : `Fel. Rätt svar: ${esc(q.options[q.answer])}`}</p>${q.why ? `<p class="cmt"># ${q.it ? esc(q.it.cmd) + ': ' : ''}${esc(q.why)}</p>` : ''}`;
 }
+// Terminalen lever under quizet: en bokstav och Enter svarar, allt annat körs, så man kan prova kommandot man ska svara på
 function quiz() {
+  fresh();
   mode = 'quiz';
   document.body.className = 'menu-on';
   Q = {pack: prefs.pack, ps: isPS(), qs: makeQuiz(prefs.pack, isPS()), i: 0, right: 0, missed: []};
   Q.total = Q.qs.reduce((n, q) => n + (q.pairs ? q.pairs.length : 1), 0);
+  out('# quiz: svara med bokstaven och Enter, eller klicka. Allt annat du skriver körs här, så prova gärna kommandona först.', 'cmt');
+  cmd.value = ''; sync(); cmd.focus();
+  refreshSide();
   quizShow();
 }
 function quizShow() {
@@ -1991,7 +2004,7 @@ function quizShow() {
   let h = `<p class="cmt"># quiz: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'} · fråga ${Q.i + 1} av ${Q.qs.length} · ${Q.right} rätt hittills</p>`;
   if (q.pairs) {
     Object.assign(q, {sel: null, ok: new Set(), miss: new Set()});
-    h += `<p>Para ihop: välj ett kommando (${q.pairs.map((_, i) => i + 1).join(', ')}), sedan vad det gör (${q.pairs.map((_, i) => 'abcd'[i]).join(', ')}).</p>
+    h += `<p>Para ihop: skriv kommandots siffra och beskrivningens bokstav, som 1a, och Enter. Eller klicka.</p>
       <div class="pairs"><div class="opts qz">${q.pairs.map((x, i) => `<button class="opt" data-qc="${i}">[${i + 1}] ${esc(sig() + x.cmd)}</button>`).join('')}</div>
       <div class="opts qz">${q.order.map((j, i) => `<button class="opt" data-qd="${i}">[${'abcd'[i]}] ${esc(q.pairs[j].text)}</button>`).join('')}</div></div><p id="qmsg" class="dim"></p>`;
   } else h += askHTML(q);
@@ -2091,6 +2104,19 @@ function commit(u) {
   if (u.includes('--amend') && S.commits.length) S.commits[0].msg = msg;
   else S.commits.unshift({msg, id: Math.random().toString(16).slice(2, 9).padEnd(7, '0')});
   S.base = structuredClone(S.fs);
+}
+// git ändrar också världen: clone ger en mapp, init ett repo, commit en rad i källkontrollen
+function gitWorld(u) {
+  if (u[0] !== 'git') return;
+  if (u[1] === '-C') u = ['git', ...u.slice(3)];
+  const here = look(S.fs, S.cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-'));
+  if (u[1] === 'commit') return commit(u);
+  if (typeof here !== 'object') return;
+  if (u[1] === 'clone' && args[0]) {
+    const name = args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
+    if (!Object.hasOwn(here, name)) own(here, name, {'.git': {}, 'README.md': `# ${name}\n`});
+  }
+  if (u[1] === 'init' && !Object.hasOwn(here, '.git')) own(here, '.git', {});
 }
 // Commit-knappen och Enter i rutan kör git commit -m med meddelandet, genom samma rättning som terminalen
 function sideCommit() {
@@ -2719,14 +2745,18 @@ cmd.addEventListener('keydown', e => {
     return music();
   }
   if (mode === 'quiz' || mode === 'quizover') {
-    const c = k.toLowerCase(), q = Q.qs[Q.i];
-    if (k === 'Escape') menu();
-    else if (mode === 'quizover') { if (k === 'Enter') quiz(); }
-    else if (k === 'Enter') quizNext();
-    else if (q.pairs && c >= '1' && c <= '4') quizPick(+c - 1);
-    else if ('abcd'.includes(c) && c.length === 1 && !e.ctrlKey) q.pairs ? quizMatch('abcd'.indexOf(c)) : quizAnswer('abcd'.indexOf(c));
-    if (typing(e) || k === 'Enter') e.preventDefault();
-    return;
+    if (k === 'Escape') { e.preventDefault(); return menu(); }
+    if (k !== 'Enter') return; // skriv som vanligt
+    e.preventDefault();
+    const v = cmd.value.trim(), c = v.toLowerCase(), q = Q.qs[Q.i];
+    cmd.value = ''; sync();
+    if (!v) return mode === 'quizover' ? quiz() : quizNext();
+    if (mode === 'quiz' && !q.done) {
+      if (/^[a-d]$/.test(c)) return q.pairs ? quizMatch('abcd'.indexOf(c)) : quizAnswer('abcd'.indexOf(c));
+      if (q.pairs && /^[1-4]$/.test(c)) return quizPick(+c - 1);
+      if (q.pairs && /^[1-4] ?[a-d]$/.test(c)) { quizPick(+c[0] - 1); return quizMatch('abcd'.indexOf(c.at(-1))); }
+    }
+    return run(v);
   }
   if (mode === 'boss') {
     const i = 'abcd'.indexOf(k.toLowerCase());
