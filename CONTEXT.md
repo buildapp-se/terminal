@@ -43,9 +43,11 @@ Flyttat hit från `buildapp-se/ai` 2026-10-17 med historiken kvar (`git filter-r
   block i taget: ny mapp ger först "lista", sedan "kör programmet" om det finns ett, sedan
   "gå in". Mallorden dras ur filsystemet (dolda namn aldrig) och varje uppgift provkörs på en
   kopia (`doable`). I PowerShell är bara `.git` och `.hemligt` dolda.
-- **Poäng:** landade block ger halva poängen utan kombo, CPM räknar bara tecken i delar som
+- **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som
   löste något, varje felaktig del i en rad räknas som ett fel. `whoami`, `hostname`, `date`
   och `history` svarar utan att räknas som fel (`toy()`).
+- **VS Code-ramen** är klickbar sedan 2026-10-17: allt har `data-do` (en rad i `DO`) eller `data-menu` (en lista i `MENUS`), en klicklyssnare för allt. Vyer öppnas som blad i terminalen (`sheet()`, läget `sheet`, samma tillbaka-logik som inställningarna). Sök (förstoringsglaset, kommandocentret, Ctrl+P/F) letar i `TASKS` på uppgift, svar och förklaring med vardagsord i `SYN` och påskägg i `EGGS`. Varje skämt ska lära något.
+- **Hjälp ger 0 poäng** för blocket (`b.helped`), rundan räknas ändå (Patriks val 2026-10-17, ersätter att hela rundan stängdes ute). Sökning mitt i en runda nollar blocken som faller just då.
 - **Ljud:** `terminal-ljud.js`; `?ljud=gemini` laddar `terminal-ljud-gemini.js` (samma
   gränssnitt), `?ljud=mp3` spelar Lyria-spåren i `_musik/` (bara lokalt, gitignorerat).
 - **Lagring:** `localStorage` på `buildapp.se`: `term-highscores`, `term-sound`,

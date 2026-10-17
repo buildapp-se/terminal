@@ -25,22 +25,26 @@ svg{display:block}
 
 .titlebar{height:35px;flex:none;display:flex;align-items:center;gap:6px;padding-left:8px;background:var(--bg);border-bottom:1px solid var(--border);color:var(--dim)}
 .titlebar img{width:16px;height:16px;margin-right:4px}
-.menu span{padding:3px 7px;border-radius:4px}
+.menu button{padding:3px 7px;border-radius:4px}.menu button:hover,.menu button[aria-expanded=true]{background:#2A2D2E;color:var(--fg)}
+.pop{position:fixed;z-index:50;min-width:250px;padding:4px;background:#1F1F1F;border:1px solid #454545;border-radius:6px;box-shadow:0 2px 8px #000a;font-size:13px}
+.pop button{display:flex;width:100%;gap:2em;justify-content:space-between;padding:3px 10px;border-radius:4px;color:var(--fg);text-align:left}.pop button:hover,.pop button:focus{background:var(--accent);color:#fff;outline:0}.pop kbd{color:var(--dim);font:inherit}.pop button:hover kbd,.pop button:focus kbd{color:#fff}.pop hr{border:0;border-top:1px solid #454545;margin:4px 0}
+.q{width:min(100%,60ch);font:inherit;color:var(--fg);background:#313131;border:1px solid var(--accent);border-radius:4px;padding:3px 8px;margin:.6em 0}
+.zen .titlebar,.zen .activity,.zen .editor,.zen .status{display:none}
 .cmdcenter{flex:0 1 380px;margin:0 auto;height:24px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #3C3C3C;border-radius:6px;background:#222;color:var(--dim)}
 .winctl{display:flex;height:100%}
-.winctl span{width:46px;display:grid;place-items:center}
+.winctl button{width:46px;display:grid;place-items:center;height:100%}.winctl button:hover{background:#2A2D2E}.winctl button:last-child:hover{background:#C42B1C;color:#fff}.cmdcenter:hover{border-color:#555}
 
 .main{flex:1;display:flex;min-height:0}
 .activity{width:48px;flex:none;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding-top:4px;color:#868686}
-.activity span{width:48px;height:48px;display:grid;place-items:center}
-.activity span:first-child{color:#D7D7D7;box-shadow:inset 2px 0 var(--accent)}
+.activity>button{width:48px;height:48px;display:grid;place-items:center}.activity>button:hover{color:#D7D7D7}
+.activity>button.on{color:#D7D7D7;box-shadow:inset 2px 0 var(--accent)}
 .activity .gear{margin-top:auto;width:48px;height:48px;display:grid;place-items:center;color:inherit}.activity .gear:hover{color:#D7D7D7}
 .work{flex:1;display:flex;flex-direction:column;min-width:0}
 
 .editor{flex:none;background:var(--editor)}
 .tabs{display:flex;height:35px;background:var(--bg);border-bottom:1px solid var(--border)}
 .tab{display:flex;align-items:center;gap:6px;padding:0 12px;border-right:1px solid var(--border);color:var(--dim)}
-.tab.on{background:var(--editor);color:#fff;box-shadow:inset 0 1px var(--accent);margin-bottom:-1px}
+.tab:hover{color:#fff}.tab.on{background:var(--editor);color:#fff;box-shadow:inset 0 1px var(--accent);margin-bottom:-1px}
 .tab b{color:var(--brace);font-weight:400;font-family:var(--mono)}
 .crumbs{padding:2px 16px;color:var(--dim);font-size:12px}
 .code{display:grid;grid-template-columns:50px 1fr;font:13px/19px var(--mono);padding:2px 0 8px;white-space:pre}
@@ -50,8 +54,8 @@ svg{display:block}
 .panel{flex:1;display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--border);background:var(--bg)}
 .ptabs{height:35px;flex:none;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:11px;letter-spacing:.04em}
 .ptabs{overflow:hidden}
-.ptabs>span{padding:0 6px;line-height:33px;color:var(--dim);white-space:nowrap}
-.ptabs>span.on{color:#E7E7E7;box-shadow:inset 0 -1px #E7E7E7}
+.ptabs>button{padding:0 6px;line-height:33px;color:var(--dim);white-space:nowrap}.ptabs>button:hover{color:#E7E7E7}
+.ptabs>button.on{color:#E7E7E7;box-shadow:inset 0 -1px #E7E7E7}
 .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:#616161;color:#fff;text-align:center;line-height:18px;letter-spacing:0}
 .badge[data-n="0"]{display:none}
 .pright{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--dim);letter-spacing:0;font-size:12px}
@@ -120,7 +124,7 @@ kbd{font:inherit;color:var(--yellow)}
 .status>button:hover{background:#2A2D2E}
 
 @media (max-height:760px),(max-width:700px){.editor{display:none}}
-@media (max-width:700px){.activity,.menu,.winctl,.status .hide,.ptabs>span:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
+@media (max-width:700px){.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
 @media (prefers-reduced-motion:reduce){.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
@@ -128,36 +132,36 @@ kbd{font:inherit;color:var(--yellow)}
 <div class="win">
   <header class="titlebar">
     <img src="favicon.svg" alt="">
-    <div class="menu"><span>File</span><span>Edit</span><span>Selection</span><span>View</span><span>Go</span><span>Run</span><span>Terminal</span><span>Help</span></div>
-    <div class="cmdcenter"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></svg>terminal</div>
-    <div class="winctl" aria-hidden="true">
-      <span><svg width="10" height="10"><path d="M0 5h10" stroke="currentColor"/></svg></span>
-      <span><svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></span>
-      <span><svg width="10" height="10"><path d="m0 0 10 10M10 0 0 10" stroke="currentColor"/></svg></span>
+    <div class="menu"><button type="button" data-menu="File" aria-haspopup="true" aria-expanded="false">File</button><button type="button" data-menu="Edit" aria-haspopup="true" aria-expanded="false">Edit</button><button type="button" data-menu="Selection" aria-haspopup="true" aria-expanded="false">Selection</button><button type="button" data-menu="View" aria-haspopup="true" aria-expanded="false">View</button><button type="button" data-menu="Go" aria-haspopup="true" aria-expanded="false">Go</button><button type="button" data-menu="Run" aria-haspopup="true" aria-expanded="false">Run</button><button type="button" data-menu="Terminal" aria-haspopup="true" aria-expanded="false">Terminal</button><button type="button" data-menu="Help" aria-haspopup="true" aria-expanded="false">Help</button></div>
+    <button type="button" class="cmdcenter" data-do="search" title="Sök kommandon (Ctrl+P)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></svg>terminal</button>
+    <div class="winctl">
+      <button type="button" data-do="min" aria-label="Minimera"><svg width="10" height="10"><path d="M0 5h10" stroke="currentColor"/></svg></button>
+      <button type="button" data-do="max" aria-label="Helskärm"><svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></button>
+      <button type="button" data-do="close" aria-label="Stäng"><svg width="10" height="10"><path d="m0 0 10 10M10 0 0 10" stroke="currentColor"/></svg></button>
     </div>
   </header>
 
   <div class="main">
     <nav class="activity">
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 3H7a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M3 7v13a1 1 0 0 0 1 1h10"/></svg></span>
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></span>
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="5" r="2"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 7v10M17 10c0 4-10 3-10 7"/></svg></span>
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 5 11 7-11 7z"/></svg></span>
-      <span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 10h6v10H4zM10 14h6v6h-6zM14 4h6v6h-6z"/></svg></span>
+      <button type="button" data-do="explorer" title="Utforskaren (Ctrl+Shift+E)" aria-label="Utforskaren (Ctrl+Shift+E)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 3H7a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4M3 7v13a1 1 0 0 0 1 1h10"/></svg></button>
+      <button type="button" data-do="search" title="Sök (Ctrl+Shift+F)" aria-label="Sök (Ctrl+Shift+F)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg></button>
+      <button type="button" data-do="scm" title="Källkontroll" aria-label="Källkontroll"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="5" r="2"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 7v10M17 10c0 4-10 3-10 7"/></svg></button>
+      <button type="button" data-do="run" title="Kör och felsök" aria-label="Kör och felsök"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 5 11 7-11 7z"/></svg></button>
+      <button type="button" data-do="ext" title="Tillägg" aria-label="Tillägg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 10h6v10H4zM10 14h6v6h-6zM14 4h6v6h-6z"/></svg></button>
       <button class="gear" id="gear" type="button" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></button>
     </nav>
 
     <div class="work">
-      <section class="editor" aria-hidden="true">
-        <div class="tabs"><div class="tab on"><b>{}</b> stats.json</div><div class="tab">README.md</div></div>
-        <div class="crumbs">ai &rsaquo; <b class="br" style="font-weight:400">{}</b> stats.json</div>
-        <div class="code" id="code"></div>
+      <section class="editor">
+        <div class="tabs"><button type="button" class="tab on" data-do="stats"><b>{}</b> stats.json</button><button type="button" class="tab" data-do="readme">README.md</button></div>
+        <div class="crumbs" aria-hidden="true">terminal &rsaquo; <b class="br" style="font-weight:400">{}</b> stats.json</div>
+        <div class="code" id="code" aria-hidden="true"></div>
       </section>
 
       <section class="panel">
-        <div class="ptabs" aria-hidden="true">
-          <span>PROBLEMS<span class="badge" id="problems" data-n="0">0</span></span><span>OUTPUT</span><span>DEBUG CONSOLE</span><span class="on">TERMINAL</span><span>PORTS</span>
-          <div class="pright"><span id="shname">bash</span><span>+</span><span>&#8943;</span></div>
+        <div class="ptabs">
+          <button type="button" data-do="problems">PROBLEMS<span class="badge" id="problems" data-n="0">0</span></button><button type="button" data-do="output">OUTPUT</button><button type="button" data-do="debug">DEBUG CONSOLE</button><button type="button" class="on" data-do="terminal">TERMINAL</button><button type="button" data-do="ports">PORTS</button>
+          <div class="pright" aria-hidden="true"><span id="shname">bash</span><span>+</span><span>&#8943;</span></div>
         </div>
         <div class="term" id="term">
           <div class="well" id="well"><div class="screen" id="screen"></div></div>
@@ -168,10 +172,11 @@ kbd{font:inherit;color:var(--yellow)}
     </div>
   </div>
 
+  <div class="pop" id="pop" role="menu" hidden></div>
   <footer class="status">
     <span class="remote"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m2 6 3 3-3 3M14 4l-3 3 3 3"/></svg></span>
-    <span class="hide"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 3-6 2-6 4"/></svg>main</span>
-    <span id="st-err">&#8855; 0 &#9888; 0</span>
+    <button type="button" class="hide" data-do="scm"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 3-6 2-6 4"/></svg>main</button>
+    <button type="button" id="st-err" data-do="problems">&#8855; 0 &#9888; 0</button>
     <span class="sp" id="st-level">nivå 1</span>
     <span id="st-score">0 p</span>
     <span class="hide" id="st-cpm">0 CPM</span>
@@ -850,7 +855,7 @@ const rnd = a => a[Math.floor(Math.random() * a.length)];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const fmt = n => n.toLocaleString('sv-SE');
 const show = raw => raw.replace(ANY, '"meddelande"');
-const sig = () => S?.ps ? 'PS> ' : '$ '; // promptens tecken i hjälpkort och missade block
+const sig = () => (S?.ps ?? isPS()) ? 'PS> ' : '$ '; // promptens tecken i hjälpkort och missade block
 
 // Alla kommandon spelet känner till, för bash: X: command not found
 const KNOWN = new Set(['ls', 'cd', 'echo', 'clear', 'exit', 'help', 'sudo', 'vim', 'nano', 'code', 'python', 'python3', 'node', 'man', 'history', 'whoami', 'date', 'open', 'less', 'claude', 'uniq', 'sort', 'jq']);
@@ -1098,6 +1103,7 @@ function remove(b) {
 // Poäng per rensat block. Ju högre upp blocket är när du löser det, desto snabbare var du.
 // Landade block visar svaret, så de ger halva. combo = antal block rensade med samma Enter.
 function points(b, combo, level) {
+  if (b.helped) return 0; // hjälpkort eller sökning: blocket räknas, men ger inga poäng
   const base = 10 * level * b.steps.length;
   if (b.landed) return Math.round(base / 2); // ingen kombo på missade block, annars lönar det sig att vänta
   return Math.round(base * (2 - Math.max(0, b.y) / S.H)) * combo;
@@ -1353,6 +1359,7 @@ function settings() {
   screen.hidden = false;
 }
 function closeSettings() {
+  lit('stats'); lit('terminal'); document.querySelectorAll('.activity .on').forEach(b => b.classList.remove('on'));
   if (backTo === 'pause') { mode = 'play'; pause(true); } else menu();
 }
 
@@ -1373,8 +1380,8 @@ function gameOver() {
   document.body.className = '';
   const entry = {s: S.score, l: S.level, c: cpm(), p: S.pack, d: new Date().toISOString().slice(0, 10)};
   const scores = scoresLoad();
-  if (!S.helped && S.score > 0) { scores.push(entry); scores.sort((a, b) => b.s - a.s); save(HS, scores.slice(0, 10)); }
-  const place = S.helped || !S.score ? 0 : scores.indexOf(entry) + 1;
+  if (S.score > 0) { scores.push(entry); scores.sort((a, b) => b.s - a.s); save(HS, scores.slice(0, 10)); }
+  const place = !S.score ? 0 : scores.indexOf(entry) + 1;
   stats();
   try { snd()?.stop(); } catch {}
   sfx(place === 1 && S.score > 0 ? 'newHighscore' : 'gameOver');
@@ -1382,16 +1389,16 @@ function gameOver() {
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
     <p><span class="hot">${fmt(S.score)} p</span> · nivå ${S.level} · ${cpm()} CPM · ${S.cleared} block · ${S.errors} fel</p>
-    <p class="${place === 1 ? 'hot' : 'dim'}">${S.helped ? 'Hjälpen användes, så rundan sparas inte på topplistan.' : place === 1 && S.score > 0 ? 'Nytt rekord!' : place <= 10 ? `Plats ${place} på din topplista.` : 'Utanför topp 10.'}</p>
+    <p class="${place === 1 ? 'hot' : 'dim'}">${place === 1 && S.score > 0 ? 'Nytt rekord!' : place <= 10 ? `Plats ${place} på din topplista.` : 'Utanför topp 10.'}</p>
     <div class="actions"><button data-act="start"><kbd>Enter</kbd> spela igen</button><button data-act="share"><kbd>d</kbd> dela</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>
     <p id="shared" class="cmt"></p>`;
   screen.hidden = false;
 }
 
-// Hjälpkortet: pausar och visar svaret del för del. Rundan hamnar då inte på topplistan.
+// Hjälpkortet: pausar och visar svaret del för del. Blocket ger då 0 poäng.
 function help(b) {
   if (mode !== 'play') return;
-  S.helped = true;
+  b.helped = true;
   pause(true);
   const step = b.steps[b.step];
   screen.innerHTML = `<p class="cmt"># ${esc(b.text)}</p>
@@ -1401,7 +1408,7 @@ function help(b) {
     <dl class="parts">${parts(step[0].raw, S.ps).map(([p, d]) => `<dt>${esc(show(p))}</dt><dd>${esc(d || '')}</dd>`).join('')}</dl>
     ${step.length > 1 ? `<p class="dim">godkänns också: ${step.slice(1, 3).map(a => esc(show(a.raw))).join(' · ')}</p>` : ''}
     <p class="cmt"># ${esc(b.why)}</p>
-    <p class="dim"># rundan hamnar inte på topplistan när du har använt hjälpen</p>
+    <p class="dim"># blocket ger 0 poäng nu, resten av rundan räknas som vanligt</p>
     <div class="actions"><button data-act="resume"><kbd>Esc</kbd> fortsätt</button></div>`;
 }
 
@@ -1435,8 +1442,8 @@ cmd.addEventListener('input', sync);
 document.addEventListener('selectionchange', () => document.activeElement === cmd && sync());
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
 cmd.addEventListener('blur', () => term.classList.add('blur'));
-term.addEventListener('click', e => { if (!e.target.closest('button') && !getSelection().toString()) cmd.focus(); });
-document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('button') && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
+term.addEventListener('click', e => { if (!e.target.closest('button, input') && !getSelection().toString()) cmd.focus(); });
+document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('button, input') && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
 
 screen.addEventListener('click', e => {
   const t = e.target.closest('button');
@@ -1447,6 +1454,173 @@ screen.addEventListener('click', e => {
   if (t.dataset.lv) setLevel(+t.dataset.lv);
   ({start, share, menu, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
   cmd.focus();
+});
+
+// ---------- VS Code-ramen: menyer, vyer och påskägg ----------
+// Allt klickbart har data-do (en rad i DO) eller data-menu (en lista i MENUS). Skämten ska lära något.
+const say = t => setTimeout(() => out(t, 'cmt'));
+function lit(name) {
+  for (const b of document.querySelectorAll(`[data-do="${name}"]`)) {
+    if (!b.parentElement.matches('.activity, .tabs, .ptabs')) continue;
+    b.parentElement.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  }
+}
+// Ett blad i terminalen, som inställningarna: pausar rundan, Esc går tillbaka
+function sheet(name, html) {
+  if (mode === 'play') pause(true);
+  if (mode !== 'sheet' && mode !== 'settings') backTo = mode === 'pause' ? 'pause' : 'menu';
+  mode = 'sheet';
+  document.querySelectorAll('.activity .on').forEach(b => b.classList.remove('on'));
+  lit(name);
+  screen.innerHTML = html + '<div class="actions"><button data-act="back"><kbd>Esc</kbd> tillbaka</button></div>';
+  screen.hidden = false;
+}
+const pre = t => `<pre>${esc(t)}</pre>`;
+
+function treeLines(n, path = [], depth = 0) {
+  const here = (S?.cwd ?? ['projekt']).join('/'), dir = k => typeof n[k] === 'object';
+  return Object.keys(n).filter(k => k !== '.git' && k !== '.hemligt')
+    .sort((a, b) => dir(b) - dir(a) || a.localeCompare(b, 'sv'))
+    .flatMap(k => [`${'  '.repeat(depth)}${dir(k) ? '▾ ' + k : '  ' + k}${[...path, k].join('/') === here ? '   ← du står här' : ''}`,
+      ...(dir(k) ? treeLines(n[k], [...path, k], depth + 1) : [])]);
+}
+
+const EGGS = {
+  hunter2: '*******\n# Konstigt, här syns bara stjärnor. I projekt ligger en .env som inte är lika försiktig.',
+  'meningen med livet': '42\n# Hittat på 0,00042 sekunder.', 'meaning of life': '42',
+  bugg: '1 träff: du.\n# Skämt. Läs felmeddelandet en gång till, svaret står ofta där.', bug: '1 träff: du.',
+  sudo: '# Sökningen kräver inte sudo. Den här gången.', google: '# Det här är inte Google, men svaret är närmare.',
+  vim: '# Du hittade vim. Nu hittar du aldrig ut.\n# :q! stänger utan att spara, :wq sparar och stänger.',
+  stackoverflow: '# Frågan är stängd som dubblett.', claude: '# Jag kan inte spela åt dig. Men sökrutan hjälper.',
+  'hur avslutar jag vim': '# :q! och Enter. Du är inte ensam: frågan har setts över tre miljoner gånger.',
+};
+// Vardagsord och engelska till orden uppgifterna använder, så att "radera mapp" hittar "Ta bort mappen"
+const SYN = {radera: 'bort', delete: 'bort', remove: 'bort', ta: '', ny: 'skapa', nytt: 'skapa', create: 'skapa', new: 'skapa', folder: 'mapp', directory: 'mapp', file: 'fil', byt: 'namn', rename: 'namn'};
+function hits(q) {
+  const k = q.trim().toLowerCase(), box = $('#hits');
+  if (Object.hasOwn(EGGS, k)) return void (box.innerHTML = pre(EGGS[k]));
+  if (!k) return void (box.innerHTML = '');
+  const ps = S?.ps ?? isPS(), words = k.split(/\s+/).map(w => (Object.hasOwn(SYN, w) ? SYN[w] : w)).filter(Boolean);
+  const found = TASKS.filter(t => !ps || t[5]).map(t => fill(t, a => a[0], ps))
+    .filter(b => words.every(w => `${b.text} ${b.steps.map(x => x[0].raw).join(' ')} ${b.why}`.toLowerCase().includes(w)));
+  const seen = new Set(), uniq = found.filter(b => !seen.has(b.text) && seen.add(b.text)).slice(0, 8);
+  box.innerHTML = uniq.length ? uniq.map(b => `<p class="cmt"># ${esc(b.text)}</p><p>${sig()}${esc(b.steps.map(x => show(x[0].raw)).join(ps ? '; ' : ' && '))}</p><p class="dim">${esc(b.why)}</p>`).join('')
+    : `<p class="dim">Inga träffar för "${esc(q)}". Prova ett vanligt ord: mapp, fil, radera, commit, gren.</p>`;
+}
+
+const README = `## ./terminal
+Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter innan det landar.
+
+## så spelar du
+- flera kommandon på en rad rensar flera block: && i bash, ; i PowerShell
+- klicka på ett block för hjälpkortet (blocket ger då 0 poäng)
+- ↑ hämtar förra kommandot, Esc pausar, exit avslutar
+- clear (cls i PowerShell) tömmer brunnen när du har en laddning, en per 10 rätt i rad
+
+## skal
+bash finns på Linux och Mac, och i Git Bash på Windows. PowerShell är Windows. Byt under kugghjulet.
+
+## fastnat?
+Sök (Ctrl+P) hittar kommandot för det du vill göra. Skriv "radera mapp" eller "commit".`;
+
+const DO = {
+  start: () => (mode === 'play' || mode === 'pause' ? say('# Rundan kör redan. Buggarna också.') : start()),
+  quit: () => (S ? gameOver() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
+  save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
+  explorer: () => sheet('explorer', `<p class="cmt"># utforskaren: din hemmapp just nu</p>${pre(treeLines(S?.fs ?? WORLD).join('\n'))}<p class="dim"># Två mappar syns inte här. Dolda saker hittar du med ${(S?.ps ?? isPS()) ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`),
+  search: () => {
+    const round = backTo === 'pause' || mode === 'play' || mode === 'pause';
+    sheet('search', `<p class="cmt"># sök: skriv vad du vill göra, som "radera mapp" eller "commit"</p>${round ? '<p class="dim">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : ''}<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon"><div id="hits"></div>`);
+    if (round && S) S.blocks.forEach(b => { b.helped = true; });
+    const q = $('#q');
+    q.oninput = () => hits(q.value);
+    q.onkeydown = e => { if (e.key === 'Escape') { closeSettings(); cmd.focus(); } };
+    q.focus();
+  },
+  scm: () => sheet('scm', pre(`# källkontroll
+main · ${S ? S.cleared : 0} block lösta · 0 commits
+# Allt du gjort den här rundan är ocommittat. Som vanligt.
+# git add, git commit och git push övar du i paketet Git & GitHub.`)),
+  run: () => sheet('run', pre(`# kör och felsök
+# F5 startar felsökning i VS Code. I en webbläsare laddar F5 om sidan, och då är rundan borta.`) + (S ? '' : '<div class="actions"><button data-act="start">&#9654; starta rundan</button></div>')),
+  ext: () => sheet('ext', pre(`# tillägg
+Installerade: 47. Använda: 2.
+# Rekommenderat för dig: ett tillägg som kan terminalen åt dig. Det finns inte. Du får spela.`)),
+  readme: () => sheet('readme', pre(README)),
+  stats: () => mode === 'sheet' && closeSettings(),
+  keys: () => sheet('keys', pre(`# kortkommandon
+Enter       kör kommandot
+↑ ↓         förra och nästa kommando
+Esc         pausa och fortsätt
+Ctrl+C      kopiera markerad text, annars avbryt raden
+Ctrl+P      sök kommandon
+Ctrl+,      inställningar
+s           byt skal i menyn`)),
+  about: () => sheet('about', `${pre(`# om
+./terminal: lär dig terminalen genom att spela.
+Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://github.com/buildapp-se/terminal" target="_blank" rel="noopener">källkoden på GitHub</a> · <a href="https://buildapp.se/ai/integritet.html" target="_blank" rel="noopener">integritet</a></p>`),
+  issue: () => window.open('https://github.com/buildapp-se/terminal/issues/new', '_blank', 'noopener'),
+  zen: () => { document.documentElement.classList.add('zen'); say('# Zen-läge. Esc tar tillbaka ramen.'); },
+  fullscreen: () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} },
+  problems: () => {
+    const landed = S ? S.blocks.filter(b => b.landed) : [];
+    sheet('problems', landed.length ? `<p class="cmt"># problem: block som landade, och svaren</p>${landed.map(b => `<p><span class="err">&#8855;</span> ${esc(b.text)}</p><p class="dim">  ${sig()}${esc(show(b.steps[b.step][0].raw))}</p>`).join('')}` : pre('Inga problem har upptäckts i arbetsytan. Än.'));
+  },
+  output: () => {
+    const sc = scoresLoad();
+    sheet('output', sc.length ? pre(['# utdata: din topplista', ...sc.map((x, i) => `${String(i + 1).padStart(2)}. ${fmt(x.s)} p · nivå ${x.l} · ${x.c} CPM · ${PACKS[x.p].name} · ${x.d}`)].join('\n')) : pre('Ingen utdata än. Spela en runda.'));
+  },
+  debug: () => { sfx('error'); sheet('debug', pre(`> S.score = 999999
+Fusk upptäckt. Larmet har gått.
+# Skämt, men poängen räknas bara när du skriver kommandona själv.`)); },
+  ports: () => sheet('ports', pre(`PORT   PROCESS
+3000   node server.js   används redan
+# Porten är alltid upptagen. Den som håller den stänger du med
+# ${(S?.ps ?? isPS()) ? 'Stop-Process -Id <id> (PID:en står i Get-NetTCPConnection -LocalPort 3000)' : 'kill <pid> (PID:en står i lsof -i :3000)'}`)),
+  terminal: () => mode === 'sheet' && closeSettings(),
+  min: () => (mode === 'play' ? pause(true) : say('# Minimerat. Fast inte, det här är en webbsida.')),
+  max: () => DO.fullscreen(),
+  close: () => say(`# Det här fönstret stänger du inte med krysset. Skriv exit${S ? ' för att avsluta rundan' : ''}.`),
+};
+// [text, kortkommando, data-do eller en kommentar som skrivs i terminalen]
+const MENUS = {
+  File: [['Ny runda', 'Enter', 'start'], ['Spara', 'Ctrl+S', 'save'], ['Öppna mapp…', '', 'explorer'], 0, ['Avsluta', 'exit', 'quit']],
+  Edit: [['Ångra', 'Ctrl+Z', '# Ctrl+Z ångrar inte i terminalen. rm har ingen papperskorg.'], ['Kopiera', 'Ctrl+C', '# Markera text och tryck Ctrl+C. Utan markering betyder Ctrl+C avbryt, som i en riktig terminal.'], 0, ['Sök', 'Ctrl+F', 'search']],
+  Selection: [['Markera allt', 'Ctrl+A', '# I bash hoppar Ctrl+A till början av raden och Ctrl+E till slutet. I rutan här markerar den allt.'], ['Lägg till markör', 'Alt+klick', '# Flera markörer i en terminal heter tmux. Det är en annan dag.']],
+  View: [['Utforskaren', 'Ctrl+Shift+E', 'explorer'], ['Sök', 'Ctrl+Shift+F', 'search'], ['Källkontroll', '', 'scm'], 0, ['Helskärm', 'F11', 'fullscreen'], ['Zen-läge', '', 'zen']],
+  Go: [['Gå till fil…', 'Ctrl+P', 'search'], ['Gå till rad…', 'Ctrl+G', '# Rad 42. Det är alltid rad 42.'], ['Tillbaka', 'Alt+←', '# cd - tar dig tillbaka till förra mappen i bash. cd .. går upp en nivå.']],
+  Run: [['Starta felsökning', 'F5', 'run'], ['Kör utan felsökning', 'Enter', 'start']],
+  Terminal: [['Ny terminal', '', 'start'], ['Dela terminal', '', '# Två terminaler, dubbelt så många block. Nej.'], ['Döda terminal', 'exit', 'quit']],
+  Help: [['README', '', 'readme'], ['Kortkommandon', '', 'keys'], 0, ['Rapportera problem', '', 'issue'], ['Om', '', 'about']],
+};
+const pop = $('#pop');
+function openMenu(btn) {
+  closeMenu();
+  btn.setAttribute('aria-expanded', 'true');
+  pop.innerHTML = MENUS[btn.dataset.menu].map(it => it ? `<button type="button" role="menuitem" data-item="${esc(it[2])}">${esc(it[0])}<kbd>${esc(it[1])}</kbd></button>` : '<hr>').join('');
+  const r = btn.getBoundingClientRect();
+  pop.style.left = r.left + 'px'; pop.style.top = r.bottom + 2 + 'px';
+  pop.hidden = false;
+}
+function closeMenu() {
+  pop.hidden = true;
+  document.querySelectorAll('[data-menu][aria-expanded=true]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+}
+document.addEventListener('click', e => {
+  const m = e.target.closest('[data-menu]'), it = e.target.closest('[data-item]'), d = e.target.closest('[data-do]');
+  if (m) return m.getAttribute('aria-expanded') === 'true' ? closeMenu() : openMenu(m);
+  closeMenu();
+  const act = it?.dataset.item ?? d?.dataset.do;
+  if (!act) return;
+  act.startsWith('#') ? say(act) : DO[act]();
+  if (!$('#q')) cmd.focus();
+});
+document.addEventListener('mouseover', e => { const m = e.target.closest('[data-menu]'); if (m && !pop.hidden && m.getAttribute('aria-expanded') !== 'true') openMenu(m); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!pop.hidden) { closeMenu(); cmd.focus(); }
+  document.documentElement.classList.remove('zen');
 });
 
 const typing = e => !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete');
@@ -1460,9 +1634,12 @@ cmd.addEventListener('keydown', e => {
     else if (!typing(e)) return;
     return e.preventDefault();
   }
-  if (mode === 'settings') {
+  if (/^[pf]$/i.test(k) && e.ctrlKey && mode !== 'shell') { e.preventDefault(); return DO.search(); } // Ctrl+P, Ctrl+F, Ctrl+Shift+P/F
+  if (k.toLowerCase() === 'e' && e.ctrlKey && e.shiftKey && mode !== 'shell') { e.preventDefault(); return DO.explorer(); }
+  if (k === 's' && e.ctrlKey) { e.preventDefault(); return DO.save(); }
+  if (mode === 'settings' || mode === 'sheet') {
     if (k === 'Escape') closeSettings();
-    else if (k === 's' && backTo === 'menu') setShell(otherShell());
+    else if (k === 's' && mode === 'settings' && backTo === 'menu') setShell(otherShell());
     else if (!typing(e)) return;
     return e.preventDefault();
   }
