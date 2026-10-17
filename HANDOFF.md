@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Granskningsfynden i frågorna, sedan resten enligt BACKLOG.md
+nextAction: Testagenternas småfynd i BACKLOG.md, sedan Som Claude Code ombyggt med Patriks !-kommandon
 blockers: []
 reviewedAt: 2026-10-17
 ---
@@ -10,6 +10,8 @@ reviewedAt: 2026-10-17
 # Handoff: ./terminal
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.
+
+**2026-10-17, nya paket och utskrifter.** Terminalvett och Cloudflare & Firebase, 15 uppgifter vardera (`d82d1e9`). Rätt svar utanför Filer & mappar visar nu en typisk utskrift (Patrik: rätt kommando visade inget). Debug-flikens fuskskämt larmar på riktigt (rött blink, siren, 999 999 i statusraden, sedan riktiga poängen). Små paket frös när alla uppgifter låg landade; rotfix i `draw`/`spawn` (`7fdb26d`). Verifierat: testet (146 uppgifter), `solveall.js` (varje uppgift i fem paket och båda skalen visar något), `alarmcheck.js`, `stallcheck.js` (7 paket, båda skalen, inga stopp), klick-, ägg-, quiz- och tildetesterna i scratchpad.
 
 **2026-10-17, man och Get-Help.** Hjälpkortet går att öppna med riktiga hjälpkommandon i stället för klick: `man` i bash, `Get-Help`/`help`/`man` i PowerShell, med eller utan kommandonamn. Verifierat: `terminal.test.js` och `mancheck.js` (scratchpad) i Chromium, båda skalen, rätt block, okänt namn, bash `help` orörd.
 

@@ -46,6 +46,12 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   block i taget: ny mapp ger först "lista", sedan "kör programmet" om det finns ett, sedan
   "gå in". Mallorden dras ur filsystemet (dolda namn aldrig) och varje uppgift provkörs på en
   kopia (`doable`). I PowerShell är bara `.git` och `.hemligt` dolda.
+- **Utskrifter (`OUT`, `sample`):** block utanför Filer & mappar skriver en kort, typisk utskrift när
+  de löses (git, gh, npm, curl, ping, wrangler, firebase med flera), i verktygets riktiga form med
+  påhittade värden. Nyckeln är kommandots början, den längsta vinner; tysta kommandon får raden att
+  tystnad betyder att det gick bra. Nytt kommando i `TASKS`: lägg en rad i `OUT`, annars visas inget.
+- **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
+  utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som
   löste något, varje felaktig del i en rad räknas som ett fel. `whoami`, `hostname`, `date`
   och `history` svarar utan att räknas som fel (`toy()`).
