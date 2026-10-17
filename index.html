@@ -410,7 +410,7 @@ const TASKS = [
   ['cc', 2, 'Visa alla miljövariabler', ['env', 'printenv'], 'Miljövariabler är inställningar som varje program du startar får med sig.', "Get-ChildItem env:", "env: är en låtsasenhet, som C:, där miljövariablerna ligger."],
   ['cc', 2, 'Sätt miljövariabeln PORT till 3000', 'export PORT=3000', 'export gör variabeln synlig för program du startar från terminalen.', ["$env:PORT = 3000", "$env:PORT=3000"], "$env: är där miljövariablerna bor. Gäller bara terminalen du står i."],
   ['cc', 2, 'Installera paketet {pkg} i projektet', ['npm install {pkg}', 'npm i {pkg}', 'npm add {pkg}'], 'Paketet hamnar i node_modules och skrivs in i package.json.', '='],
-  ['cc', 3, 'Hitta alla .js-filer under mappen du står i', ['find . -name "*.js"', 'find -name "*.js"', 'find . -type f -name "*.js"'], '-name matchar filnamn. Citattecknen hindrar bash från att tolka * själv.', ["Get-ChildItem -Recurse -Filter *.js", "Get-ChildItem -Recurse *.js", "Get-ChildItem -Recurse -Include *.js"], "-Filter matchar filnamn, -Recurse går ner i alla undermappar."],
+  ['cc', 3, 'Hitta alla .js-filer under mappen du står i', ['find . -name "*.js"', 'find -name "*.js"', 'find . -type f -name "*.js"'], '-name matchar filnamn. Citattecknen skickar *.js orört till find. Utan dem byter bash först *.js mot .js-filerna i mappen du står i: med en träff letar find bara efter den filen, med flera blir det fel. Finns inga där skickas mönstret vidare som det är, och då fungerar det av en slump.', ["Get-ChildItem -Recurse -Filter *.js", "Get-ChildItem -Recurse *.js", "Get-ChildItem -Recurse -Include *.js"], "-Filter matchar filnamn, -Recurse går ner i alla undermappar."],
   ['cc', 3, 'Hitta filen {f} någonstans under mappen du står i', ['find . -name {f}', 'find -name {f}'], 'find går igenom alla undermappar. Punkten betyder: börja här.', ["Get-ChildItem -Recurse -Filter {f}", "Get-ChildItem -Recurse {f}"], "Get-ChildItem -Recurse går igenom alla undermappar."],
   ['cc', 3, 'Räkna hur många rader i {log} som innehåller ERROR', ['grep -c ERROR {log}', 'grep ERROR {log} | wc -l'], '-c = count. Eller grep och wc -l med en pipe |.', "Select-String ERROR {log} | Measure-Object", "Measure-Object räknar träffarna som kommer genom pipen. Select-String räknar också error och Error, grep gör inte det."],
   ['cc', 3, 'Visa raderna med ERROR i {log}, men bara de 20 sista', ['grep ERROR {log} | tail -n 20', 'grep ERROR {log} | tail -20'], '| (pipe) skickar utskriften från ett program in i nästa.', "Select-String ERROR {log} | Select-Object -Last 20", "| (pipe) skickar resultatet vidare. Select-Object -Last tar de sista."],
@@ -498,6 +498,7 @@ const SIGS = {1: 'HUP', 2: 'INT', 9: 'KILL', 15: 'TERM'};
 
 // Delar en rad som bash: citattecken, backslash och operatorer. Oavslutat citat kastar fel.
 // I PowerShell är backslash ett vanligt tecken i sökvägar och backtick är escape.
+// En sträng först i ett PowerShell-kommando är ett uttryck som skrivs ut: "hej" gör samma sak som Write-Output "hej".
 function tokenize(s, ps = false) {
   const escape = ps ? '`' : '\\';
   const out = [];
@@ -506,6 +507,7 @@ function tokenize(s, ps = false) {
   while (i < s.length) {
     const ch = s[i];
     if (/\s/.test(ch)) { push(); i++; continue; }
+    if (ps && !has && (ch === '"' || ch === "'") && (!out.length || ['&&', ';', '||'].includes(out.at(-1)))) out.push('Write-Output');
     if (ch === "'") {
       const j = s.indexOf("'", i + 1);
       if (j < 0) throw new Error("'");
@@ -548,6 +550,7 @@ const path = t => t.replace(/^\.\/(?=.)/, '').replace(/(.)\/$/, '$1');
 function canon(seg, ps = false, keep = false) {
   const out = [];
   let stage = [];
+  if (ps && seg[0]?.startsWith('(')) return [...seg]; // (Get-Content f).Count är ett uttryck, inget kommando: fake läser det som det står
   const flush = () => { if (stage.length) out.push(...(ps ? canonPSStage(stage, keep) : canonStage(stage))); stage = []; };
   for (const t of seg) if (t === '|') { flush(); out.push('|'); } else stage.push(t);
   flush();
@@ -600,6 +603,7 @@ const PSALIAS = {
   curl: 'invoke-webrequest', wget: 'invoke-webrequest', iwr: 'invoke-webrequest', irm: 'invoke-restmethod',
   sort: 'sort-object', measure: 'measure-object', group: 'group-object', ac: 'add-content', sc: 'set-content', clear: 'clear-host', cls: 'clear-host',
   ii: 'invoke-item', start: 'start-process', saps: 'start-process', gi: 'get-item', 'cd..': 'set-location ..', 'cd\\': 'set-location \\', // cd.. och cd\ är egna funktioner i PowerShell
+  tnc: 'test-netconnection', // från modulen NetTCPIP, som laddas första gången du använder den
 };
 // Parametrarna PowerShell känner till per cmdlet, så att förkortningar (-Rec) och felstavningar (-rf) går att avgöra.
 // Värdet efter två punkter är parametrar som är växlar och inte tar något värde.
@@ -1056,8 +1060,108 @@ const PSONLY = new Set(Object.keys(PSCMD).filter(k => !['ls', 'cd', 'cat', 'rm',
 // Miljövariablerna från början. Det du sätter med export eller $env:X hamnar i env, som fake läser och skriver.
 const ENV0 = {
   bash: {HOME: '/home/du', USER: 'du', SHELL: '/bin/bash', PATH: '/usr/local/bin:/usr/bin:/bin:/home/du/.local/bin'},
-  ps: {USERPROFILE: 'C:\\Users\\du', USERNAME: 'du', COMPUTERNAME: 'BUILDAPP', PATH: 'C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\Program Files\\nodejs\\;C:\\Users\\du\\.local\\bin'},
+  ps: {USERPROFILE: 'C:\\Users\\du', USERNAME: 'du', COMPUTERNAME: 'BUILDAPP', PATH: 'C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\nodejs\\;C:\\Program Files\\GitHub CLI\\;' +
+    'C:\\Users\\du\\AppData\\Local\\Programs\\Python\\Python313\\Scripts\\;C:\\Users\\du\\AppData\\Local\\Programs\\Python\\Python313\\;C:\\Users\\du\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\du\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\Users\\du\\.local\\bin'},
 };
+// Programmen på Windows, som where.exe skriver dem: i PATH-ordning, alla träffar. python finns två gånger, den andra är Microsoft Stores genväg.
+const SYS32 = 'C:\\Windows\\System32\\', APPDATA = 'C:\\Users\\du\\AppData\\Local\\';
+const WINPATH = {
+  node: ['C:\\Program Files\\nodejs\\node.exe'], npm: ['C:\\Program Files\\nodejs\\npm', 'C:\\Program Files\\nodejs\\npm.cmd'], npx: ['C:\\Program Files\\nodejs\\npx', 'C:\\Program Files\\nodejs\\npx.cmd'],
+  git: ['C:\\Program Files\\Git\\cmd\\git.exe'], gh: ['C:\\Program Files\\GitHub CLI\\gh.exe'], py: ['C:\\Windows\\py.exe'],
+  python: [APPDATA + 'Programs\\Python\\Python313\\python.exe', APPDATA + 'Microsoft\\WindowsApps\\python.exe'],
+  code: [APPDATA + 'Programs\\Microsoft VS Code\\bin\\code', APPDATA + 'Programs\\Microsoft VS Code\\bin\\code.cmd'],
+  winget: [APPDATA + 'Microsoft\\WindowsApps\\winget.exe'], uv: ['C:\\Users\\du\\.local\\bin\\uv.exe'], claude: ['C:\\Users\\du\\.local\\bin\\claude.exe'],
+  ssh: [SYS32 + 'OpenSSH\\ssh.exe'], explorer: ['C:\\Windows\\explorer.exe'], notepad: [SYS32 + 'notepad.exe', 'C:\\Windows\\notepad.exe', APPDATA + 'Microsoft\\WindowsApps\\notepad.exe'],
+  ...Object.fromEntries('PING.EXE ipconfig.exe NETSTAT.EXE tasklist.exe taskkill.exe findstr.exe where.exe tree.com curl.exe TRACERT.EXE'.split(' ').map(f => [f.split('.')[0].toLowerCase(), [SYS32 + f]])),
+};
+// Filen Get-Command visar (Source): mappen skrivs som i PATH, C:\WINDOWS\system32. npm och npx har ett .ps1-skript som PowerShell väljer före .cmd.
+const winSrc = n => {
+  const p = WINPATH[n];
+  if (!p) return;
+  return (/^np[mx]$/.test(n) ? p[0] + '.ps1' : p.find(x => /\.\w+$/.test(x))).replace(/^C:\\Windows\\(System32\\)?/, (m, s) => 'C:\\WINDOWS\\' + (s ? 'system32\\' : ''));
+};
+// $PSVersionTable, avläst i Windows PowerShell 5.1 på Windows 11 (2026-10-17)
+const PSVER = [['PSVersion', '5.1.26100.9711'], ['PSEdition', 'Desktop'], ['PSCompatibleVersions', '{1.0, 2.0, 3.0, 4.0...}'], ['BuildVersion', '10.0.26100.9711'],
+  ['CLRVersion', '4.0.30319.42000'], ['WSManStackVersion', '3.0'], ['PSRemotingProtocolVersion', '2.3'], ['SerializationVersion', '1.1.0.1']];
+const nameValue = rows => ['', 'Name                           Value', '----                           -----', ...rows.map(([k, v]) => k.padEnd(30) + ' ' + v), ''];
+
+// Windows egna program i PowerShell. De tar /växlar, inte -parametrar. Processerna och portarna är världens:
+// node med PID 4821 håller port 3000, som i Get-Process, Get-NetTCPConnection och PORTS-fliken.
+const TASKLIST = [['System Idle Process', 0, 'Services', 0, '8 K'], ['System', 4, 'Services', 0, '1 524 K'], ['svchost.exe', 1204, 'Services', 0, '14 220 K'],
+  ['explorer.exe', 4408, 'Console', 1, '172 060 K'], ['node.exe', 4821, 'Console', 1, '52 108 K'], ['powershell.exe', 5102, 'Console', 1, '78 344 K'],
+  ['Code.exe', 6120, 'Console', 1, '248 512 K'], ['tasklist.exe', 7344, 'Console', 1, '9 876 K']];
+const NETSTAT = [['TCP', '0.0.0.0:135', '0.0.0.0:0', 'LISTENING', 1204], ['TCP', '0.0.0.0:445', '0.0.0.0:0', 'LISTENING', 4], ['TCP', '192.168.1.42:52144', '140.82.112.25:443', 'ESTABLISHED', 6120],
+  ['TCP', '[::]:135', '[::]:0', 'LISTENING', 1204], ['TCP', '[::]:3000', '[::]:0', 'LISTENING', 4821], ['UDP', '0.0.0.0:5353', '*:*', '', 6120]];
+// findstr: orden i mönstret är alternativ (findstr "fel varning" hittar båda), /c:"text" är en hel fras. /i, /v, /n, /s.
+// ponytail: mönstret jämförs som text, findstr:s egna små reguljära uttryck (. * ^ $) kan spelet inte
+function findstrArgs(a) {
+  const opt = o => a.some(t => t.toLowerCase() === o), phrase = a.find(t => /^\/c:/i.test(t))?.slice(3), rest = a.filter(t => !t.startsWith('/'));
+  const [pat, ...files] = phrase === undefined ? rest : [phrase, ...rest];
+  const re = pat === undefined ? null : new RegExp((phrase === undefined ? pat.split(' ').filter(Boolean) : [pat]).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), opt('/i') ? 'i' : '');
+  return {re, files, hit: l => re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
+}
+function winExe(fs, cwd, c, a) {
+  const val = s => { const i = a.findIndex(t => t.toLowerCase() === s); return i < 0 ? undefined : a[i + 1] ?? ''; };
+  if (c === 'netstat') { // -a: även de som väntar (LISTENING), -n: siffror i stället för namn, -o: processens PID
+    const f = a.filter(t => /^[-/][a-z]+$/i.test(t)).join('').toLowerCase(), num = f.includes('n'), pid = f.includes('o');
+    const name = x => (num ? x : x.replace(/^(0\.0\.0\.0|\[::\]):0$/, 'BUILDAPP:0').replace(/^192\.168\.1\.42:/, 'BUILDAPP:').replace('140.82.112.25:443', 'lb-140-82-112-25-iad:https'));
+    return ['', 'Active Connections', '', '  Proto  Local Address          Foreign Address        State' + (pid ? '           PID' : ''),
+      ...NETSTAT.filter(r => f.includes('a') || r[3] === 'ESTABLISHED').map(([p, l, r, s, id]) => '  ' + p.padEnd(7) + name(l).padEnd(22) + ' ' + name(r).padEnd(22) + ' ' + (pid ? s.padEnd(16) + id : s))];
+  }
+  if (c === 'tasklist') {
+    const bad = a.find((t, i) => !/^\/fi$/i.test(t) && !/^\/fi$/i.test(a[i - 1] ?? ''));
+    if (bad) throw new Error(`ERROR: Invalid argument/option - '${bad}'.\nType "TASKLIST /?" for usage.`);
+    const fi = val('/fi'), m = fi?.match(/^(imagename|pid)\s+eq\s+(.+)$/i);
+    if (fi !== undefined && !m) throw new Error('ERROR: The search filter cannot be recognized.');
+    const rows = TASKLIST.filter(r => !m || (/pid/i.test(m[1]) ? String(r[1]) === m[2] : r[0].toLowerCase() === m[2].toLowerCase()));
+    if (!rows.length) return ['INFO: No tasks are running which match the specified criteria.'];
+    return ['', 'Image Name                     PID Session Name        Session#    Mem Usage', '========================= ======== ================ =========== ============',
+      ...rows.map(([n, p, s, k, mem]) => `${n.padEnd(25)} ${String(p).padStart(8)} ${s.padEnd(16)} ${String(k).padStart(11)} ${mem.padStart(12)}`)];
+  }
+  if (c === 'taskkill') {
+    // Utan /F ber taskkill processen att stänga sig, och det kan bara program med fönster. node har inget fönster och måste tvingas.
+    const id = val('/pid'), im = val('/im');
+    if (id === undefined && im === undefined) throw new Error('ERROR: Invalid syntax. Neither /FI nor /PID nor /IM were specified.\nType "TASKKILL /?" for usage.');
+    const r = TASKLIST.find(x => (id !== undefined ? String(x[1]) === id : x[0].toLowerCase() === im.toLowerCase()));
+    if (!r) throw new Error(`ERROR: The process "${id ?? im}" not found.`);
+    const who = id !== undefined ? `with PID ${r[1]}` : `"${r[0]}" with PID ${r[1]}`, why = `ERROR: The process ${who} could not be terminated.\nReason: `;
+    if (r[2] === 'Services') throw new Error(why + 'Access is denied.');
+    if (a.some(t => t.toLowerCase() === '/f')) return [`SUCCESS: The process ${who} has been terminated.`];
+    if (!/^(explorer|Code)\.exe$/.test(r[0])) throw new Error(why + 'This process can only be terminated forcefully (with /F option).');
+    return [`SUCCESS: Sent termination signal to the process ${who}.`];
+  }
+  if (c === 'findstr') {
+    const {re, files, hit, n, s} = findstrArgs(a);
+    if (!re) throw new Error('FINDSTR: Bad command line');
+    if (!files.length) return ['# findstr utan fil väntar på text från tangentbordet. Ctrl+C avbryter.'];
+    const out = [], errs = [], label = s || files.length > 1 || files.some(isGlob);
+    const scan = (f, text) => text.split('\n').forEach((l, i) => { if (hit(l)) out.push((label ? f + ':' : '') + (n ? i + 1 + ':' : '') + l); });
+    for (const f of files) {
+      if (s) { // /s: mappen du står i först, sedan undermapparna
+        const fre = globRe(f, true), walk = (node, rel) => {
+          const ents = Object.entries(node).filter(([k]) => !PSHIDDEN.has(k)).sort(([x], [y]) => x.localeCompare(y));
+          for (const [k, v] of ents) if (typeof v === 'string' && fre.test(k)) scan([...rel, k].join('\\'), v);
+          for (const [k, v] of ents) if (typeof v === 'object') walk(v, [...rel, k]);
+        };
+        walk(look(fs, cwd, true).node, []);
+        continue;
+      }
+      for (const g of isGlob(f) ? glob(fs, cwd, f, true) : [f]) {
+        const {node} = look(fs, resolve(cwd, g), true);
+        if (typeof node === 'string') scan(g.replace(/\//g, '\\'), node); else errs.push(`FINDSTR: Cannot open ${g}`);
+      }
+    }
+    if (errs.length && !out.length) throw new Error(errs.join('\n'));
+    return [...out, ...errs];
+  }
+  if (c === 'where') { // where.exe. Bara where är Where-Object i PowerShell.
+    const names = a.filter(t => !t.startsWith('/')).map(t => t.toLowerCase().replace(/\.exe$/, ''));
+    if (!names.length) return ['The syntax of this command is:', '', 'WHERE [/R dir] [/Q] [/F] [/T] pattern...', '# where.exe node visar var programmet node ligger.'];
+    if (names.length === 1 && !WINPATH[names[0]]) throw new Error('INFO: Could not find files for the given pattern(s).');
+    return [...names.flatMap(x => WINPATH[x] ?? []), ...names.filter(x => !WINPATH[x]).map(x => `INFO: Could not find "${x}".`)];
+  }
+  return null;
+}
 const envAll = (ps, env, cwd) => Object.entries({...ENV0[ps ? 'ps' : 'bash'], ...(ps ? {} : {PWD: where(cwd, false)}), ...env})
   .filter(([k, v]) => k !== '?' && v != null).sort(([a], [b]) => a.localeCompare(b));
 // $HOME, $PATH, $? och det du själv satt. bash: skiftläget räknas, okänd variabel blir tom, ~ först i ordet är hemmappen.
@@ -1073,6 +1177,7 @@ function expand(t, cwd, ps, env) {
 }
 // Jokertecken i sista ledet av en sökväg: *.txt, spel/*.py. Dolda namn bara när mönstret själv börjar med punkt.
 const isGlob = t => /[*?[]/.test(t);
+const isFlag = t => /^-(-?[A-Za-z?]|\d)/.test(t);
 const globRe = (p, i) => new RegExp('^' + p.replace(/[.+^${}()|\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', i ? 'i' : '');
 function glob(fs, cwd, pat, ps) {
   const k = Math.max(pat.lastIndexOf('/'), pat.lastIndexOf('\\')), dir = pat.slice(0, k + 1), last = pat.slice(k + 1), re = globRe(last, ps);
@@ -1118,6 +1223,27 @@ function fake(fs, cwd, key, ps, env = {}) {
   const [c, ...raw] = key, rest = raw.map(t => expand(t, cwd, ps, env));
 
   // Variabler som kommandon: $HOME ensam, $env:PORT = 3000, PORT=3000
+  if (ps && /^\$psversiontable(\.psversion)?$/i.test(c)) { // vilken PowerShell du har. 5.1 följer med Windows, 7 heter pwsh.
+    if (rest.length) throw new Error(`Unexpected token '${raw[0]}' in expression or statement.`);
+    return ok(/\./.test(c) ? ['', 'Major  Minor  Build  Revision', '-----  -----  -----  --------', '5      1      26100  9711', ''] : nameValue(PSVER));
+  }
+  // (Get-Content f).Count och (Get-Command node).Source: kör kommandot i parentesen och läs en egenskap på svaret
+  if (ps && c.startsWith('(')) {
+    const toks = [c.slice(1), ...key.slice(1)], m = toks.at(-1).match(/^(.*)\)\.(\w+)$/);
+    if (!m) return null;
+    toks[toks.length - 1] = m[1];
+    const inner = toks.filter(Boolean), cmd = (PSALIAS[inner[0].toLowerCase()] || inner[0].toLowerCase()).split(' ')[0], prop = m[2].toLowerCase();
+    if (cmd === 'get-command') {
+      const n = (inner[1] ?? '').toLowerCase().replace(/\.exe$/, ''), src = winSrc(n), alias = Object.hasOwn(PSALIAS, n), cmdlet = isCmdlet(n) && (PSPARAMS[n] || PSOP[n]);
+      if (!src && !alias && !cmdlet) throw new Error(`Get-Command : The term '${inner[1] ?? ''}' is not recognized as the name of a cmdlet, function, script file, or operable program.\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.`);
+      // Ett alias har ingen fil: (Get-Command curl).Source är tom, eftersom curl är Invoke-WebRequest
+      if (alias) return ok(prop === 'source' ? [''] : []);
+      return ok(prop === 'source' ? [src ?? 'Microsoft.PowerShell.Management'] : prop === 'path' && src ? [src] : prop === 'name' && src ? [src.split('\\').at(-1)] : []);
+    }
+    const r = fake(fs, cwd, canon([...inner, ...(cmd === 'get-childitem' ? ['-Name'] : [])], true, true), ps, env); // -Name: ett namn per rad, så att Count blir antalet filer
+    if (!r) return null;
+    return ok(['count', 'length'].includes(prop) ? [String(r.out.length)] : []);
+  }
   if (ps && c.startsWith('$')) {
     const [, e, k, v] = c.match(/^\$(env:)?(\w+|\?)(?:=(.*))?$/i) || [];
     if (!k) return null;
@@ -1133,12 +1259,16 @@ function fake(fs, cwd, key, ps, env = {}) {
     const n = v.startsWith('/') && HOMEPATH.test(v) ? look(fs, resolve(cwd, v), ps).node : undefined; // $HOME är en mapp, inget program
     throw new Error(`bash: ${v}: ${!v.startsWith('/') ? 'command not found' : typeof n === 'object' ? 'Is a directory' : n !== undefined ? 'Permission denied' : 'No such file or directory'}`);
   }
+  const win = ps && winExe(fs, cwd, c, rest);
+  if (win) return ok(win, {note: NONE});
+  if (ps && c === 'where-object') return ok([], {note: '# where är Where-Object i PowerShell, ett filter i en pipe, och utan något att filtrera blir det tyst. Programmet som letar i PATH heter where.exe.'});
   const script = ps && /^\.[\\/]/.test(c);
-  if (ps && !PSOP[c] && !script && !['python', 'python3', 'node', 'tree', 'explorer'].includes(c)) return null; // touch, head, wc: not recognized
+  if (ps && !PSOP[c] && !script && !['python', 'python3', 'py', 'node', 'tree', 'explorer'].includes(c)) return null; // touch, head, wc: not recognized
   const op = ps ? PSOP[c] || c : c;
   if (!ps && PSONLY.has(op)) return null;
-  const flags = rest.filter(t => t.startsWith('-') && t !== '-');
-  let args = rest.filter(t => !t.startsWith('-') || t === '-'); // cd - är ett argument
+  // Flaggor börjar med streck och en bokstav (eller är -5). "- [ ] ny punkt" är text, även om citattecknen är borta här.
+  const flags = rest.filter(isFlag);
+  let args = rest.filter(t => !isFlag(t)); // cd - är ett argument
   // bash byter jokertecken mot filnamnen innan kommandot körs. Utan träff står mönstret kvar, som på riktigt.
   if (!ps && !['find', 'grep', 'export'].includes(op)) args = args.flatMap(a => (isGlob(a) && glob(fs, cwd, a, ps).length ? glob(fs, cwd, a, ps) : [a]));
   const a0 = args[0];
@@ -1202,16 +1332,28 @@ function fake(fs, cwd, key, ps, env = {}) {
     const how = {sh: `bash ${name} i Git Bash`, py: `python ${name}`, js: `node ${name}`}[ext];
     return ok([`# PowerShell kör inte .${ext ?? ''}-filer själv. Windows öppnar ${name} med programmet som hör till ändelsen, som när du dubbelklickar.${how ? ` Kör den med ${how}.` : ''}`]);
   }
-  const prog = op.startsWith('./') ? op.slice(2) : ['python', 'python3', 'node', 'bash', 'sh'].includes(op) ? a0 : null;
+  const prog = op.startsWith('./') ? op.slice(2) : ['python', 'python3', 'node', 'bash', 'sh'].includes(op) || op === 'py' ? a0 : null;
   if (prog) {
     const {node} = get(prog);
     if (op.startsWith('./') && typeof node === 'object') fail(`bash: ${op}: Is a directory`);
     // ponytail: bara .sh-filer är körbara, chmod +x ändrar inget här
     if (op.startsWith('./') && typeof node === 'string' && !prog.endsWith('.sh')) fail(`bash: ${op}: Permission denied`);
+    // Windows skriver hela sökvägen till python.exe först, och sökvägen till filen med dubbla backslash (Pythons egen stavning av en sträng)
     if (typeof node !== 'string') fail(op.startsWith('./') || op.endsWith('sh') ? `bash: ${op.startsWith('./') ? op : prog}: No such file or directory` :
       op === 'node' ? `Error: Cannot find module '${full(prog)}'` : `${op}: can't open file '${full(prog)}': [Errno 2] No such file or directory`,
-      op === 'node' ? `Error: Cannot find module '${full(prog)}'` : `python: can't open file '${full(prog)}': [Errno 2] No such file or directory`);
+      op === 'node' ? `Error: Cannot find module '${full(prog)}'` : `${WINPATH.python[0]}: can't open file '${full(prog).replace(/\\/g, '\\\\')}': [Errno 2] No such file or directory`);
     const name = at(prog).at(-1);
+    // node kör allt som JavaScript, även en Python-fil. Med import blir den en ES-modul, och då vägrar node ändelsen .py.
+    // Utan import körs den som vanligt skript: print("hej") blir ReferenceError, eftersom JavaScript inte har print. ponytail: stackspåret är kortat.
+    if (op === 'node' && /\.py$/i.test(name) && node.trim()) {
+      const first = node.split('\n').find(l => l.trim()), f = full(prog), call = first.match(/^\s*([A-Za-z_]\w*)\s*(\(|$)/)?.[1];
+      const msg = [...(/^\s*(import|from)\s/m.test(node)
+        ? ['node:internal/modules/esm/get_format:185', '  throw new ERR_UNKNOWN_FILE_EXTENSION(ext, filepath);', '        ^', '', `TypeError [ERR_UNKNOWN_FILE_EXTENSION]: Unknown file extension ".py" for ${f}`,
+          '    at Object.getFileProtocolModuleFormat [as file:] (node:internal/modules/esm/get_format:185:9) {', "  code: 'ERR_UNKNOWN_FILE_EXTENSION'", '}']
+        : [`${f}:1`, first, '^', '', call ? `ReferenceError: ${call} is not defined` : 'SyntaxError: Invalid or unexpected token', ...(call ? [`    at Object.<anonymous> (${f}:1:1)`] : [])]),
+        '', 'Node.js v24.14.0', `# node kör JavaScript, även när filen heter .py. Python-filer kör du med ${ps ? 'python eller py' : 'python'}.`].join('\n');
+      fail(msg, msg);
+    }
     return ok(name in PROGS ? PROGS[name].split('\n') : runFile(node));
   }
   switch (op) {
@@ -1251,7 +1393,9 @@ function fake(fs, cwd, key, ps, env = {}) {
         walk(node, real);
         return ok(out, {seen: real.join('/')});
       }
-      // bash: -a, -l, -1, -R, -d och flera sökvägar: filerna först, sedan varje mapp under sitt namn
+      // bash: -a, -l, -1, -R, -d och flera sökvägar: filerna först, sedan varje mapp under sitt namn. Bokstäverna ls inte har ger GNU:s fel.
+      const odd = flags.find(x => /^-[A-Za-z0-9]$/.test(x) && !'abcdfghiklmnopqrstuvwxABCDFGHILNQRSTUXZ1'.includes(x[1]));
+      if (odd) fail(`ls: invalid option -- '${odd[1]}'\nTry 'ls --help' for more information.`);
       const all = has('-a', '-A'), long = has('-l');
       const items = node => {
         const list = Object.entries(node).filter(([n]) => all || !n.startsWith('.')).sort(([a], [b]) => a.replace(/^\./, '').localeCompare(b.replace(/^\./, '')));
@@ -1343,6 +1487,8 @@ function fake(fs, cwd, key, ps, env = {}) {
       return ok(ps ? psTable(at(tgt).slice(0, -1), [[name, dir ? {} : value]]) : []);
     }
     case 'rm': case 'rmdir': {
+      // rmdir frågar kärnan, som svarar Invalid argument för . och Directory not empty för .. (där ligger ju mappen du står i). rm vägrar själv.
+      if (!ps && op === 'rmdir' && /(^|\/)\.\.?\/?$/.test(a0)) fail(`rmdir: failed to remove '${a0}': ${/(^|\/)\.\.\/?$/.test(a0) ? 'Directory not empty' : 'Invalid argument'}`);
       if (/(^|[\\/])\.\.?[\\/]?$/.test(a0)) fail(`rm: refusing to remove '.' or '..' directory: skipping '${a0}'`, `# PowerShell vägrar inte här, men hela mappen du står i hade försvunnit. Spelet säger stopp.`);
       if (!at(a0).length) throw new Error('# nej. Det här är hela din hemmapp. På en riktig dator hade allt varit borta nu, utan papperskorg.');
       const {node, real} = get(a0);
@@ -1532,7 +1678,7 @@ function piped(fs, cwd, key, ps, env = {}) {
   const [first, ...rest] = stages, c = ps ? PSOP[first[0]] || first[0] : first[0];
   const n = flags => +(flags.find(f => /^-(n|first|last)=\d+$/.test(f))?.split('=')[1] ?? flags.find(f => /^-\d+$/.test(f))?.slice(1) ?? 10);
   const table = rows => ['', ...rows.map(([k, v]) => `${k.padEnd(8)} : ${v}`), ''];
-  const start = first.find((t, i) => i && !t.startsWith('-')) ?? '.';
+  const start = first.find((t, i) => i && !isFlag(t)) ?? '.';
   // Mappstorlek i PowerShell räknas på filerna, inte på tabellen som Get-ChildItem skriver
   if (ps && c === 'ls' && rest.length === 1 && rest[0][0] === 'measure-object') {
     const node = look(fs, resolve(cwd, start), ps).node;
@@ -1561,13 +1707,14 @@ function piped(fs, cwd, key, ps, env = {}) {
   let lines = !ps && c === 'ls' ? r.out.flatMap(l => l.split(/ {2,}/)) : c === 'sls' ? r.out.filter(Boolean) : r.out; // ls i en pipe skriver ett namn per rad
   const hs = l => parseFloat(l) * ({K: 1, M: 1024, G: 1048576}[l.match(/^[\d.]+([KMG])/)?.[1]] ?? 1);
   for (const [f, ...fl] of rest) {
-    const word = fl.find(t => !t.startsWith('-'));
+    const word = fl.find(t => !isFlag(t));
     if (f === 'head' || (f === 'select-object' && fl.some(x => x.startsWith('-first')))) lines = lines.slice(0, n(fl));
     else if (f === 'tail' || (f === 'select-object' && fl.some(x => x.startsWith('-last')))) lines = lines.slice(-n(fl));
     else if (f === 'sort') { lines = [...lines].sort((a, b) => fl.includes('-h') ? hs(a) - hs(b) : a.localeCompare(b)); if (fl.includes('-r')) lines.reverse(); }
     else if (f === 'wc') lines = [String(lines.length)];
     else if (f === 'grep' && word) { const re = mkre(word, fl.includes('-i')); lines = lines.filter(l => re.test(l) !== fl.includes('-v')); if (fl.includes('-c')) lines = [String(lines.length)]; }
     else if (f === 'select-string' && word) { const re = mkre(word, !fl.includes('-casesensitive')); lines = lines.filter(l => re.test(l)); }
+    else if (ps && f === 'findstr' && findstrArgs(fl).re) { const {hit, n: nr} = findstrArgs(fl); lines = lines.map((l, i) => [l, i + 1]).filter(([l]) => hit(l)).map(([l, i]) => (nr ? i + ':' : '') + l); } // netstat -ano | findstr :3000
     else if (f === 'measure-object' && fl.includes('-line')) lines = ['', 'Lines Words Characters Property', '----- ----- ---------- --------', String(lines.filter(Boolean).length).padStart(5), ''];
     else if (f === 'measure-object') lines = table([['Count', lines.length], ['Average', ''], ['Sum', ''], ['Maximum', ''], ['Minimum', ''], ['Property', '']]);
     else if ((f === 'out-file' || f === 'set-content' || f === 'add-content' || f === 'tee') && word) {
@@ -2014,11 +2161,11 @@ function target(key) {
 // Fel kommando: skriv det bash hade skrivit, eller rödmarkera det som skiljer mot närmaste block
 // Vanliga kommandon som spelet inte har block för svarar ändå, utan att räknas som fel
 // Versionen: första felsökningen, och aldrig fel. Flaggan skiljer sig: python -v betyder verbose, -V är versionen.
-const VERS = {git: ['--version', '-v', 'version'], node: ['--version', '-v'], npm: ['--version', '-v'], python: ['--version', '-V'], python3: ['--version', '-V'], gh: ['--version', 'version'], uv: ['--version', '-V', 'version']};
+const VERS = {git: ['--version', '-v', 'version'], node: ['--version', '-v'], npm: ['--version', '-v'], python: ['--version', '-V'], python3: ['--version', '-V'], py: ['--version', '-V'], gh: ['--version', 'version'], uv: ['--version', '-V', 'version']};
 function toy(u, notes) {
   const v0 = u[0].toLowerCase().replace(/.exe$/, '');
-  if (u.length === 2 && VERS[v0]?.includes(u[1]) && !(S.ps && v0 === 'python3')) {
-    notes.push({git: S.ps ? 'git version 2.47.1.windows.1' : 'git version 2.47.1', node: 'v24.14.0', npm: '10.9.2', python: 'Python 3.13.1', python3: 'Python 3.13.1',
+  if (u.length === 2 && VERS[v0]?.includes(u[1]) && !(S.ps && v0 === 'python3') && !(!S.ps && v0 === 'py')) {
+    notes.push({git: S.ps ? 'git version 2.47.1.windows.1' : 'git version 2.47.1', node: 'v24.14.0', npm: '10.9.2', python: 'Python 3.13.1', python3: 'Python 3.13.1', py: 'Python 3.13.1',
       gh: 'gh version 2.63.0 (2024-11-27)\nhttps://github.com/cli/cli/releases/tag/v2.63.0', uv: 'uv 0.5.11'}[v0]);
     return true;
   }
@@ -2036,9 +2183,10 @@ function toy(u, notes) {
   }
   // Get-Command: alias pekar på sin cmdlet, cmdlets och program har var sin rad. Okänt namn blir ett fel via explain.
   if (S.ps && psCmd(c) === 'get-command' && names.length === 1) {
-    const n = names[0].toLowerCase(), real = psCmd(n);
+    const n = names[0].toLowerCase(), real = psCmd(n), file = winSrc(n.replace(/\.exe$/, ''));
     const row = Object.hasOwn(PSALIAS, n) ? ['Alias', `${n} -> ${PSNAME[real] || real}`, '']
       : isCmdlet(n) && (KNOWNPS.has(n) || PSPARAMS[n]) ? ['Cmdlet', PSNAME[n] || names[0], 'Microsoft.PowerShell.Management']
+      : file ? ['Application', file.split('\\').at(-1), file]
       : KNOWNPS.has(n) && !isCmdlet(n) ? ['Application', `${n}.exe`, `C:\\Program Files\\${n}\\${n}.exe`] : null;
     if (!row) return false;
     const src = COLS >= 64; // smal skärm: Source-kolumnen bryts annars till en egen rad
@@ -2409,7 +2557,17 @@ const OUT = {
   'host': 'buildapp.se has address 185.199.108.153',
   'resolve-dnsname': '\nName          Type   TTL   Section    IPAddress\n----          ----   ---   -------    ---------\nbuildapp.se   A      3600  Answer     185.199.108.153\n',
   'nc': 'Connection to buildapp.se port 443 [tcp/https] succeeded!',
-  'test-netconnection': a => a.includes('-TraceRoute') ? OUT.tracert : '\nComputerName     : buildapp.se\nRemoteAddress    : 185.199.108.153\nRemotePort       : 443\nTcpTestSucceeded : True\n',
+  // Test-NetConnection och tnc: utan -Port pingar den, med -Port provar den en anslutning. Bara node på 3000 lyssnar på din egen dator.
+  'test-netconnection': a => {
+    if (a.some(t => /^-tr/i.test(t))) return OUT.tracert;
+    const i = a.findIndex(t => /^-p(o|or|ort)?$/i.test(t)), rest = a.slice(1).filter((t, k) => k + 1 !== i && k + 1 !== i + 1);
+    const host = rest.find(t => !t.startsWith('-')) ?? 'internetbeacon.msedge.net', port = i > 0 ? a[i + 1] : rest.find(t => /^\d+$/.test(t) && t !== host);
+    const local = /^(localhost|127\.0\.0\.1|::1)$/i.test(host), ip = local ? '::1' : {'buildapp.se': '185.199.108.153', 'google.com': '142.250.74.46', 'github.com': '140.82.112.4', 'internetbeacon.msedge.net': '13.107.4.52'}[host.toLowerCase()] ?? '93.184.215.14';
+    const open = !local || port === '3000', rows = [['ComputerName', host], ['RemoteAddress', ip], ...(port ? [['RemotePort', port]] : []), ['InterfaceAlias', local ? 'Loopback Pseudo-Interface 1' : 'Ethernet'],
+      ['SourceAddress', local ? '::1' : '192.168.1.42'], ...(port && open ? [] : [['PingSucceeded', 'True'], ['PingReplyDetails (RTT)', local ? '0 ms' : '9 ms']]), ...(port ? [['TcpTestSucceeded', open ? 'True' : 'False']] : [])];
+    const w = Math.max(...rows.map(r => r[0].length));
+    return (open ? '' : `WARNING: TCP connect to (::1 : ${port}) failed\nWARNING: TCP connect to (127.0.0.1 : ${port}) failed\n`) + '\n' + rows.map(([k, v]) => `${k.padEnd(w)} : ${v}`).join('\n') + '\n';
+  },
   'traceroute': 'traceroute to buildapp.se (185.199.108.153), 30 hops max\n 1  192.168.1.1  1.204 ms\n 2  10.12.0.1  6.118 ms\n 3  185.199.108.153  9.877 ms',
   'tracert': '\nTracing route to buildapp.se [185.199.108.153]\n  1    1 ms    1 ms    1 ms  192.168.1.1\n  2    6 ms    6 ms    7 ms  10.12.0.1\n  3   10 ms    9 ms   10 ms  185.199.108.153\n\nTrace complete.',
   // echo, $HOME, $env:PATH, env och export skrivs av fake ur ENV0 och det du själv satt

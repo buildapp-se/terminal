@@ -2,12 +2,14 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: P1 i granskningsavsnittet (låsta block i Filer & mappar), Patriks beslut om samtidiga block, sedan speltestarens fynd och Som Claude Code ombyggt med Patriks !-kommandon
+nextAction: Bit och dcg, Vad Claude gör ur loggarna, sedan underhåll (PS-tabellerna samlade, mer i pure)
 blockers: []
 reviewedAt: 2026-10-17
 ---
 
 # Handoff: ./terminal
+
+**2026-10-17, prioritetslistan med fyra agenter.** Patrik bad om en priolista och att dela ut jobbet. Brain: ljudmotor i inställningarna (`?ljud=`), fria giltiga kommandon visar utskrift men räknas som fel (mellanläge, låst beslut kvar), högst nivå + 1 fallande block och `maxLvFor` 7 (låst beslut omprövat, Patrik ja), Bit varnar när ett fritt kommando gör ett block olösbart, `explain` säger när bara något saknas, färre Lista filerna, paketen i svårighetsordning. Agenter i egna worktrees, sammanslagna efter granskning: A likvärdiga former i rättningen, B git-världen som riktig git plus staging/stash/reset, C låtsasskalet (PS-uttryck, Windows-program, bash), D mobil och småfel. Två testkonflikter (båda sidor behölls). Verifierat efter varje sammanslagning: `terminal.test.js`, alla Playwright-skript i sessionens scratchpad samt B:s och C:s egna kontroller mot main. Worktrees ligger kvar i `.claude/worktrees/` (ignorerat).
 
 **2026-10-17, Bit i panelen och Antigravitys granskning.** Bit bor i ett sidofält till höger från 1 000 px (`9bce473`), med lampor, mätare och etiketterad logg; mobilen har kvar hörnet. Antigravity (gemini-4-argon-high, plan-läge i sandlåda, 14 min) granskade `4caaf67`; rapporten kontrollerades mot koden, ett påstående var fel (`-Conmanmad` godkändes inte). Åtgärdat: rättningen (`powershell -c`, `\` i sökvägar efter program i PowerShell, långa flaggor med värde, `-D` på flera grenar, `-m "- text"`), låtsasskalet (`Select-String | Measure-Object` räknade luftraderna, `ii`/`start` gav "cmdlet undefined", `> fil` efter en pipe, `Measure-Object -Line` hoppar över tomma rader, `git commit -am` visade inte meddelandet, `$?` efter syntaxfel), dubbel-Tab i PowerShell kraschade, landade kedjeblock visade fel steg, brunnen kunde krympa till noll (game over) när redigeraren drogs ner, fokusfällor, README dold för skärmläsare, Bit hoppade över stadier och föreslog ogiltiga flaggor, nollornas kontrast. Resten i BACKLOG. Verifierat: `terminal.test.js` med nya regressionstester, Playwright (`fixes.js`, `petgame.js`, `browser.js`).
 

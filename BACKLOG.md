@@ -44,11 +44,11 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 - [x] Fel som lär ut fel: versionsfrågor, Hello world med > i PowerShell, `npx firebase-tools`, Confirm-frågan för icke-tom mapp (`4caaf67`).
 - [x] git-världen säger nej som riktig git (agent B 2026-10-17): switch/merge/branch -d med gits fel, grenar under remotes/origin/, init Reinitialized, clone 'mapp', status i klonen. Texterna `used by worktree at` och `not found.` är inte avlästa mot riktig git (dcg stoppade provet). Kvar: `git checkout nope` och `git add` på saknad fil ger inget fel.
-- [ ] PS-uttryck: `"hej"`, `"hej" > f`, `$PSVersionTable`, `$env:USERPROFILE`, `(Get-Content f).Count`, `(Get-Command node).Source`.
-- [ ] Windows-program i PS: netstat, findstr, tasklist, taskkill, where.exe, py, tnc (alias för Test-NetConnection).
+- [x] PS-uttryck (agent C 2026-10-17): `"hej"`, `"hej" > f`, `$PSVersionTable`, `(Get-Content f).Count`, `(Get-Command node).Source`, avlästa på riktig PowerShell 5.1.
+- [x] Windows-program i PS (agent C): netstat, findstr, tasklist, taskkill, where.exe (`where` är Where-Object: lärdom), py, tnc. Siffrorna stämmer med PORTS och Get-Process. Kvar: taskkill tar inte bort processen ur världen; findstr kan inte sina egna reguljära uttryck.
 - [x] Godkänn likvärdiga former (agent A 2026-10-17, normalisering i `canonStage`/`canonPSStage`: `LONGFLAG`, `NOOP`, `SIGS`, `PSDROP`). Kvar: `-Force` inuti `powershell -Command "..."` (citatet är en token), `git push origin HEAD`, `tnc`-aliaset.
 - [x] Giltiga fria kommandon (`node --version`, `ping`) visar `sample()` och "# rätt kommando, men inget block bad om det", räknas fortfarande som fel (låst beslut, mellanläge Patrik 2026-10-17).
-- [ ] bash: `ls -z` ska ge "invalid option", `rmdir ..` fel text, `node spel.py` kör Python. Förklaringen till `find -name *.js` utan citattecken: nyansera.
+- [x] bash (agent C): `ls -z` (GNU-texten, Git Bash säger `unknown option`), `rmdir ..`/`.` (ej avlästa, dcg), `node spel.py` ger nodes fel, `find -name *.js` nyanserad.
 - [x] "Lista filerna" var 9 av 40 block i Filer & mappar, nu 3 till 4 (2026-10-17): tvingas fram i nya mappar bara de tre första gångerna och dras inte slumpvis där man redan listat.
 - [x] Mobil (agent D 2026-10-17): paus och kugghjul i panelens flikrad under 700 px, knappraden fast i bladets botten, dt över dd under 600 px, hjälpkortet börjar överst. Kvar: Bits bubbla och ägg täcker terminalens nedersta rad på 390 px.
 - [x] Smått (agent D): quizräknaren "X av Y rätt hittills", OUTPUT mitt i rundan, skal (`sh`) i topplista och delning (integritet 1.2), källkontrollens platshållare växer (`field-sizing`, inte i Firefox).
@@ -61,7 +61,7 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [x] `[P1]` Fria kommandon kan låsa ett block i Filer & mappar (`touch backup` före "Skapa mappen backup"). Byggt 2026-10-17: spelet städar inte, Bit varnar en gång per block med skalets eget fel och vad man gör (ta bort det som står i vägen, eller skapa det som saknas). Patrik: man får ta bort den själv.
 - [x] Samtidiga block (låst beslut omprövat, Patrik ja 2026-10-17): högst nivå + 1 i luften, `maxLvFor`-gränsen 7 så att git börjar på svårighet 1.
 - [x] Rödmarkeringen i `explain` (2026-10-17): saknas bara något säger spelet "# rätt kommando, men en flagga eller ett argument saknas" i stället för att färga rätta ord; commit-meddelande utan citattecken får en förklaring. Kvar: citerad fel text markeras inte (`echo` delar på mellanslag).
-- [ ] Låtsasskalet: text som börjar med streck räknas som flagga, så `echo "- [ ] ny punkt" >> todo.md` och `Add-Content todo.md "- [ ] ny"` går fel (rättningen klarar det sedan 2026-10-17).
+- [x] Text som börjar med streck i `fake`/`piped` (agent C).
 - [x] `vim`/`claude` i quizet släpps vid resultat och bossfråga (`plainPrompt`, agent D).
 - [x] Antalet filer följer fönstret och Bits panel (`relane`, agent D), men byts först när inget block ligger landat (staplar slås aldrig ihop).
 - [ ] Underhåll: PowerShell-cmdlets står i åtta tabeller (`PSALIAS`, `PSPARAMS`, `PSPOS`, `PSOP`, `PSCMD`, `PSNAME`, `KNOWNPS`...) som har glidit isär; samla i en. `node()` vid källkontrollen dubblerar `look()`.
