@@ -233,8 +233,8 @@ kbd{font:inherit;color:var(--yellow)}
 const PACKS = {
   fs: {name: 'Filer & mappar', tag: 'fil', c: '#4FC1FF', hint: 'mkdir, cd, ls, rm, mv, cp', psHint: 'New-Item, Set-Location, Get-ChildItem'},
   git: {name: 'Git & GitHub', tag: 'git', c: '#DCDCAA', hint: 'git, gh'},
-  cc: {name: 'Vibe-kodaren', tag: 'claude', c: '#C586C0', hint: 'det du kör utan att veta vad det är: grep, curl, jq, npm', psHint: 'det du kör utan att veta vad det är: Select-String, npm'},
-  stop: {name: 'Din tur', tag: 'du', c: '#D97757', hint: 'det Claude lämnar åt dig: gh auth, git push, wrangler'},
+  cc: {name: 'Vad Claude gör', tag: 'claude', c: '#C586C0', hint: 'det som rullar förbi när Claude jobbar: grep, curl, jq, npm', psHint: 'det som rullar förbi när Claude jobbar: Select-String, npm'},
+  stop: {name: 'Vibe-kodaren', tag: 'du', c: '#D97757', hint: 'det du kör utan att veta vad det är: gh auth, git push, wrangler'},
   vett: {name: 'Terminalvett', tag: 'vett', c: '#4EC9B0', hint: 'ping, PATH, uv, ssh-keygen, winget', psHint: 'ipconfig, Resolve-DnsName, $env:PATH'},
   moln: {name: 'Cloudflare & Firebase', tag: 'moln', c: '#F38020', hint: 'wrangler, firebase'},
   all: {name: 'Allt', hint: 'alla paketen blandat'},
@@ -391,7 +391,7 @@ const TASKS = [
   ['moln', 4, 'Visa workerns senaste versioner', ['npx wrangler deployments list', 'wrangler deployments list'], 'Varje deploy blir en version med id, tid och vem som gjorde den.', '='],
   ['moln', 4, 'Gå tillbaka till workerns förra version', ['npx wrangler rollback', 'wrangler rollback'], 'rollback tar fram förra versionen på sekunder. Snabbare än att laga och publicera igen.', '='],
   ['moln', 5, 'Publicera bara databasreglerna för Firestore', ['firebase deploy --only firestore:rules', 'npx firebase deploy --only firestore:rules'], 'Reglerna bestämmer vem som får läsa och skriva. Testa dem i emulatorn först.', '='],
-  // Din tur (förr När agenten stannar): kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
+  // Vibe-kodaren (förr När agenten stannar): kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
   ['stop', 1, 'Logga in på GitHub, i webbläsaren', ['gh auth login', 'gh auth login -w', 'gh auth login -h github.com -w', 'gh auth login --web'], 'Agenten stannar: inloggningen sker i webbläsaren, och där kan den inte klicka. -w = web.', '='],
   ['stop', 1, 'Logga in på Cloudflare med wrangler', ['npx wrangler login', 'wrangler login'], 'Agenten stannar: wrangler öppnar webbläsaren och vill att du godkänner.', '='],
   ['stop', 1, 'Skicka dina commits till GitHub', 'git push', 'Agenten stannar: push publicerar koden, och det vill den ha ditt ja till.', '='],
@@ -595,7 +595,7 @@ function fill(task, pick, ps = false) {
 // Hjälpkortet: vad varje del av ett svar betyder. Nyckeln är "kommando del" (eller "git branch -d"),
 // längsta matchningen vinner, och sist prövas delen ensam för det som betyder samma överallt.
 const GLOSS = {
-  // Din tur
+  // Vibe-kodaren
   'gh auth login -w': 'öppna inloggningen i webbläsaren, -w = web',
   'gh auth login --web': 'öppna inloggningen i webbläsaren',
   'gh auth login -h': '-h = host, vilken GitHub-server',
