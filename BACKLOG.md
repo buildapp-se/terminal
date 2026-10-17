@@ -8,9 +8,9 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Påskägg "formatera om datorn" byggt 2026-10-17, beskrivning i `CONTEXT.md`.
 - [x] Påskägg "gå in i en agent" byggt 2026-10-17 (`027e37c`): `claude`, `codex`, `opencode` med flera byter prompten mot agentens (`>`). Där inne rensar bara `!ls` block; skriver man `ls` utan `!` går det som en fråga till agenten, som svarar roligt men inte hjälper (spinnerord som "Funderar…" medan blocken faller, "Du har helt rätt!", ger rätt svar i fel skal, ber om lov med y/n och rensar ett block på `y` innan "usage limit, återställs kl 03.00"). Esc avbryter tänkandet. Ut med `/exit` eller Ctrl+C två gånger, som på riktigt; hjälpkortet visar alltid vägen ut. Lärdomen: i Claude Code skickar du text till agenten, `!` kör skalet (i Git Bash). Varje skämt ska bära en sådan lärdom, annars stryks det. Patrik 2026-10-17: alla idéerna är bra, även agentläget som riktig mekanik i Som Claude Code (varannan våg kräver `!`).
 - [x] Quizläge 2026-10-17: tio frågor per paket ur spelets egna uppgifter, flerval och para ihop, resultat efter varje quiz. Bossfrågan läser fortfarande ai-quizet (Patrik gillade dem).
-- [ ] `[P1]` README öppnas som flik i redigeraren, som i VS Code, inte i terminalen (Patrik 2026-10-17).
-- [ ] `[P1]` Terminalpanelen går att dra upp och ner, som i VS Code (Patrik 2026-10-17).
-- [ ] `[P1]` Allt klickbart till vänster (aktivitetsfältet, sidofältets vyer) ser ut ungefär som i VS Code (Patrik 2026-10-17).
+- [x] README öppnas som flik i redigeraren, som i VS Code, inte i terminalen (Patrik 2026-10-17).
+- [x] Terminalpanelen går att dra upp och ner, som i VS Code (Patrik 2026-10-17).
+- [x] Allt klickbart till vänster (aktivitetsfältet, sidofältets vyer) ser ut ungefär som i VS Code (Patrik 2026-10-17).
 - [x] VS Code-ramen klickbar 2026-10-17: menyer, README-flik, utforskaren, sök med påskägg, källkontroll, PROBLEMS, OUTPUT, DEBUG CONSOLE, PORTS, fönsterknappar, zen-läge.
 - [ ] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
 - [ ] Bygg om paketet Som Claude Code från loggdatan (2026-10-17: grep, head, git, curl, uv, ls, tail, node i topp; PowerShell mest för att döda dev-servrar). Ta också med kommandon Patrik kör själv med `!` (bash-input i transkripten), t.ex. `powershell -Command "Stop-Process -Id N"`: det han gör på riktigt ska han kunna öva på.

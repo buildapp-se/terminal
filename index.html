@@ -30,7 +30,7 @@ svg{display:block}
 .pop button{display:flex;width:100%;gap:2em;justify-content:space-between;padding:3px 10px;border-radius:4px;color:var(--fg);text-align:left}.pop button:hover,.pop button:focus{background:var(--accent);color:#fff;outline:0}.pop kbd{color:var(--dim);font:inherit}.pop button:hover kbd,.pop button:focus kbd{color:#fff}.pop hr{border:0;border-top:1px solid #454545;margin:4px 0}
 .q{width:min(100%,60ch);font:inherit;color:var(--fg);background:#313131;border:1px solid var(--accent);border-radius:4px;padding:3px 8px;margin:.6em 0}
 .crash{position:fixed;inset:0;z-index:100;padding:24px;overflow:auto;font:15px/1.5 var(--mono);white-space:pre-wrap;background:#000;color:#ccc}.crash.bsod{background:#0078D7;color:#fff;font-family:var(--ui);font-size:20px;padding:10vh 10vw}.crash.bsod big{font-size:120px;line-height:1;display:block;margin-bottom:.3em}.crash input{font:inherit;color:inherit;background:none;border:0;outline:0;width:60ch;max-width:100%}
-.zen .titlebar,.zen .activity,.zen .editor,.zen .status{display:none}
+.zen .titlebar,.zen .activity,.zen .side,.zen .editor,.zen .sash,.zen .status{display:none}
 .cmdcenter{flex:0 1 380px;margin:0 auto;height:24px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #3C3C3C;border-radius:6px;background:#222;color:var(--dim)}
 .winctl{display:flex;height:100%}
 .winctl button{width:46px;display:grid;place-items:center;height:100%}.winctl button:hover{background:#2A2D2E}.winctl button:last-child:hover{background:#C42B1C;color:#fff}.cmdcenter:hover{border-color:#555}
@@ -39,16 +39,43 @@ svg{display:block}
 .activity{width:48px;flex:none;border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding-top:4px;color:#868686}
 .activity>button{width:48px;height:48px;display:grid;place-items:center}.activity>button:hover{color:#D7D7D7}
 .activity>button.on{color:#D7D7D7;box-shadow:inset 2px 0 var(--accent)}
-.activity .gear{margin-top:auto;width:48px;height:48px;display:grid;place-items:center;color:inherit}.activity .gear:hover{color:#D7D7D7}
+.activity .acct{margin-top:auto;width:48px;height:48px;display:grid;place-items:center;color:inherit}.activity .acct:hover{color:#D7D7D7}
+.activity .gear{width:48px;height:48px;display:grid;place-items:center;color:inherit}.activity .gear:hover{color:#D7D7D7}
 .work{flex:1;display:flex;flex-direction:column;min-width:0}
 
-.editor{flex:none;background:var(--editor)}
-.tabs{display:flex;height:35px;background:var(--bg);border-bottom:1px solid var(--border)}
+.editor{flex:none;display:flex;flex-direction:column;overflow:hidden;background:var(--editor)}
+.side{width:250px;flex:none;display:flex;flex-direction:column;min-height:0;background:var(--bg);border-right:1px solid var(--border)}
+.side[hidden]{display:none}
+.side-h{height:35px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 20px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}
+.side-h .x{display:none;font-size:18px;padding:0 4px}
+.side-b{flex:1;overflow:auto;min-height:0}
+.sec{display:flex;align-items:center;height:22px;width:100%;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;text-align:left}
+.row{display:flex;align-items:center;gap:5px;height:22px;width:100%;padding-right:8px;white-space:nowrap;text-align:left;color:var(--fg)}
+.row:hover,.sec:hover{background:#2A2D2E}.row.sel{background:#37373D}.row:focus-visible,.sec:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
+.tw{width:16px;flex:none;color:var(--fg);display:grid;place-items:center}.open>.tw svg{transform:rotate(90deg)}
+.ic{width:16px;flex:none;font:700 9px/1 var(--mono);text-align:center}
+.row .d{color:var(--faint);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.st{margin-left:auto;font-weight:700;font-size:12px}.st-U{color:#73C991}.st-M{color:#E2C08D}.st-D{color:#C74E39}
+.side .q{display:block;width:calc(100% - 24px);margin:4px 12px 8px}
+.side textarea.q{resize:none;font:inherit}
+.hit{display:block;width:100%;text-align:left;padding:3px 12px 3px 22px}.hit:hover{background:#2A2D2E}
+.hit code{display:block;font:12px/1.5 var(--mono);color:var(--yellow);white-space:pre-wrap}.hit small{display:block;color:var(--faint);font-size:12px}
+#hits pre{padding:4px 22px;font:12px/1.5 var(--mono);white-space:pre-wrap}
+.note{padding:8px 20px;color:var(--faint);font-size:12px}
+.btn{display:block;width:calc(100% - 24px);margin:6px 12px;padding:4px;border-radius:2px;background:var(--accent);color:#fff;text-align:center}.btn:hover{background:#026EC1}
+.ext{display:flex;gap:10px;padding:8px 12px}.ext:hover{background:#2A2D2E}
+.ext i{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:4px;font:700 13px var(--mono);color:#fff;font-style:normal}
+.ext b{display:block;font-weight:600}.ext small{display:block;color:var(--dim);font-size:12px}
+.sash{flex:none;height:4px;margin:-2px 0;position:relative;z-index:3;cursor:ns-resize;touch-action:none}
+.sash:hover,.sash.drag,.sash:focus-visible{background:var(--accent);outline:0;transition:background .1s .2s}
+.mdh{color:#569CD6;font-weight:700}
+.tab.preview{font-style:italic}
+.tabs{flex:none;display:flex;height:35px;background:var(--bg);border-bottom:1px solid var(--border)}
 .tab{display:flex;align-items:center;gap:6px;padding:0 12px;border-right:1px solid var(--border);color:var(--dim)}
 .tab:hover{color:#fff}.tab.on{background:var(--editor);color:#fff;box-shadow:inset 0 1px var(--accent);margin-bottom:-1px}
 .tab b{color:var(--brace);font-weight:400;font-family:var(--mono)}
-.crumbs{padding:2px 16px;color:var(--dim);font-size:12px}
-.code{display:grid;grid-template-columns:50px 1fr;font:13px/19px var(--mono);padding:2px 0 8px;white-space:pre}
+.crumbs{flex:none;padding:2px 16px;color:var(--dim);font-size:12px}
+.code{flex:1;min-height:0;overflow:auto;align-content:start;display:grid;grid-template-columns:50px 1fr;font:13px/19px var(--mono);padding:2px 0 8px;white-space:pre}
 .code .ln{color:var(--faint);text-align:right;padding-right:22px}
 .k{color:var(--key)}.s{color:var(--str)}.n{color:var(--num)}.br{color:var(--brace)}
 
@@ -126,8 +153,8 @@ kbd{font:inherit;color:var(--yellow)}
 .status .sp{margin-left:auto}
 .status>button:hover{background:#2A2D2E}
 
-@media (max-height:760px),(max-width:700px){.editor{display:none}}
-@media (max-width:700px){.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
+@media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
+@media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
 @media (prefers-reduced-motion:reduce){.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
@@ -151,15 +178,18 @@ kbd{font:inherit;color:var(--yellow)}
       <button type="button" data-do="scm" title="Källkontroll" aria-label="Källkontroll"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="5" r="2"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 7v10M17 10c0 4-10 3-10 7"/></svg></button>
       <button type="button" data-do="run" title="Kör och felsök" aria-label="Kör och felsök"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m8 5 11 7-11 7z"/></svg></button>
       <button type="button" data-do="ext" title="Tillägg" aria-label="Tillägg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 10h6v10H4zM10 14h6v6h-6zM14 4h6v6h-6z"/></svg></button>
+      <button class="acct" type="button" data-do="account" title="Konton" aria-label="Konton"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="9" r="3.5"/><path d="M5.5 19c1.2-3 3.7-4.5 6.5-4.5s5.3 1.5 6.5 4.5"/><circle cx="12" cy="12" r="9"/></svg></button>
       <button class="gear" id="gear" type="button" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></button>
     </nav>
+    <aside class="side" id="side" hidden><div class="side-h"><span id="sidet"></span><span class="dim" aria-hidden="true">&#8943;</span><button type="button" class="x" data-side="close" aria-label="Stäng sidofältet">&times;</button></div><div class="side-b" id="sideb"></div></aside>
 
     <div class="work">
       <section class="editor">
-        <div class="tabs"><button type="button" class="tab on" data-do="stats"><b>{}</b> stats.json</button><button type="button" class="tab" data-do="readme">README.md</button></div>
-        <div class="crumbs" aria-hidden="true">terminal &rsaquo; <b class="br" style="font-weight:400">{}</b> stats.json</div>
+        <div class="tabs"><button type="button" class="tab on" data-do="stats"><b>{}</b> stats.json</button><button type="button" class="tab" data-do="readme"><span class="ic" style="color:#519ABA">M&#8595;</span> README.md</button><button type="button" class="tab preview" data-do="file" hidden></button></div>
+        <div class="crumbs" id="crumbs" aria-hidden="true"></div>
         <div class="code" id="code" aria-hidden="true"></div>
       </section>
+      <div class="sash" id="sash" role="separator" aria-orientation="horizontal" aria-label="Dra för att ändra terminalens höjd, eller använd pil upp och ner" tabindex="0"></div>
 
       <section class="panel">
         <div class="ptabs">
@@ -1097,6 +1127,7 @@ function start() {
   document.body.className = 'play';
   cmd.value = ''; sync(); cmd.focus();
   music();
+  refreshSide();
 }
 
 // ---------- block ----------
@@ -1393,6 +1424,7 @@ function run(raw) {
   }
   echo(raw, bad, '', at);
   if (S.cwd !== at) applyShell();
+  refreshSide();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
   notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : ''));
@@ -1441,7 +1473,7 @@ function stats() {
   lastStats = key;
   const lines = ['<span class="br">{</span>', ...rows.map(([k, v], i) =>
     `  <span class="k">"${k}"</span>: ${typeof v === 'string' ? `<span class="s">"${esc(v)}"</span>` : `<span class="n">${v}</span>`}${i < rows.length - 1 ? ',' : ''}`), '<span class="br">}</span>'];
-  $('#code').innerHTML = lines.map((l, i) => `<span class="ln">${i + 1}</span><span>${l}</span>`).join('');
+  if (edTab === 'stats') $('#code').innerHTML = codeLines(lines);
   $('#problems').textContent = $('#problems').dataset.n = landed;
   $('#st-err').innerHTML = `&#8855; ${S?.errors ?? 0} &#9888; ${landed}`;
   $('#st-level').textContent = `nivå ${S?.level ?? prefs.level}`;
@@ -1481,6 +1513,7 @@ function menu() {
   screen.hidden = false;
   stats();
   music();
+  refreshSide();
 }
 
 // ---------- skal och inställningar ----------
@@ -1533,7 +1566,7 @@ function settings() {
   screen.hidden = false;
 }
 function closeSettings() {
-  lit('stats'); lit('terminal'); document.querySelectorAll('.activity .on').forEach(b => b.classList.remove('on'));
+  lit('terminal');
   if (backTo === 'pause') { mode = 'play'; pause(true); } else menu();
 }
 
@@ -1733,6 +1766,138 @@ function quizEnd() {
     ${Q.missed.length ? `<h2># öva på de här</h2><dl class="parts">${Q.missed.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.text)}</dd>`).join('')}</dl>` : '<p class="hot">Allt rätt!</p>'}
     <div class="actions"><button data-act="quiz"><kbd>Enter</kbd> nytt quiz</button><button data-act="start">spela i stället</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`;
   screen.scrollTop = 0;
+}
+
+// ---------- sidofältet, redigeraren och draglisten, som i VS Code ----------
+// Aktivitetsfältets ikoner öppnar ett sidofält; klick på den aktiva ikonen stänger det. Filer öppnas som förhandsflik.
+const side = $('#side'), editor = $('.editor'), sash = $('#sash');
+let sideView = null, edTab = 'stats', edFile = null;
+const openDirs = new Set(['projekt']);
+const CHEV = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="m6 4 4 4-4 4"/></svg>';
+const FILEICON = {md: ['M&#8595;', '#519ABA'], js: ['JS', '#CBCB41'], json: ['{}', '#CBCB41'], py: ['py', '#4B8BBE'], sh: ['$', '#89E051'], html: ['&lt;&gt;', '#E37933'], css: ['#', '#519ABA'], yml: ['!', '#A074C4'], env: ['&#9881;', '#E5C07B'], gitignore: ['&#9670;', '#E44D26']};
+const fileIcon = n => { const [t, c] = FILEICON[n.split('.').pop().toLowerCase()] || ['&#8801;', '#A0A0A0']; return `<span class="ic" style="color:${c}">${t}</span>`; };
+const codeLines = lines => lines.map((l, i) => `<span class="ln">${i + 1}</span><span>${l}</span>`).join('');
+const mdLine = l => (/^#/.test(l) ? `<span class="mdh">${esc(l)}</span>` : /^\s*- /.test(l) ? esc(l).replace('-', '<span class="br">-</span>') : esc(l));
+const node = path => path.split('/').reduce((n, k) => (n && typeof n === 'object' && Object.hasOwn(n, k) ? n[k] : undefined), S?.fs ?? WORLD);
+
+// Vad git skulle visa som ändrat: jämför låtsasfilsystemet med hur det såg ut från början
+function changes(a, b, path = []) {
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])].filter(k => k !== '.git').flatMap(k => {
+    const p = [...path, k];
+    if (!Object.hasOwn(b, k)) return [[p, 'D']];
+    if (!Object.hasOwn(a, k)) return [[p, 'U']];
+    if (typeof a[k] === 'object' && typeof b[k] === 'object') return changes(a[k], b[k], p);
+    return a[k] === b[k] ? [] : [[p, 'M']];
+  });
+}
+
+const VIEWS = {
+  explorer: () => {
+    const here = (S?.cwd ?? ['projekt']).join('/'), ps = S?.ps ?? isPS();
+    const rows = (n, path, depth) => Object.keys(n).filter(k => k !== '.git' && k !== '.hemligt')
+      .sort((x, y) => (typeof n[y] === 'object') - (typeof n[x] === 'object') || x.localeCompare(y, 'sv')).flatMap(k => {
+        const pth = [...path, k].join('/'), dir = typeof n[k] === 'object', open = dir && openDirs.has(pth);
+        return [`<button type="button" class="row${open ? ' open' : ''}${pth === here || pth === edFile ? ' sel' : ''}" data-path="${esc(pth)}" style="padding-left:${depth * 8}px"><span class="tw">${dir ? CHEV : ''}</span>${dir ? '' : fileIcon(k)}<span>${esc(k)}</span>${pth === here ? '<span class="d">du står här</span>' : ''}</button>`,
+          ...(open ? rows(n[k], [...path, k], depth + 1) : [])];
+      });
+    return ['Explorer', `<div class="sec open"><span class="tw">${CHEV}</span>hemmapp (~)</div>${rows(S?.fs ?? WORLD, [], 1).join('')}
+      <p class="note">Två mappar syns inte här. Dolda saker hittar du med ${ps ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`];
+  },
+  search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon">
+    ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
+  scm: () => {
+    const ch = S ? changes(WORLD, S.fs) : [];
+    return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Ctrl+Enter för commit på 'main')" aria-label="Commit-meddelande"></textarea>
+      <button type="button" class="btn" data-side="commit">&#10003; Commit</button>
+      <div class="sec open"><span class="tw">${CHEV}</span>Changes<span class="badge" data-n="${ch.length}">${ch.length}</span></div>
+      ${ch.map(([pth, st]) => `<button type="button" class="row" style="padding-left:20px">${fileIcon(pth.at(-1))}<span>${esc(pth.at(-1))}</span><span class="d">${esc(pth.slice(0, -1).join('/'))}</span><span class="st st-${st}">${st}</span></button>`).join('')}
+      <p class="note">${ch.length ? 'U = ny, M = ändrad, D = borttagen. Det är vad git status visar.' : 'Inga ändringar än.'} Allt du gjort den här rundan är ocommittat. Som vanligt.</p>`];
+  },
+  run: () => ['Run and Debug', `<button type="button" class="btn" data-side="run">&#9654; ${S ? 'Rundan kör redan' : 'Starta rundan'}</button>
+    <p class="note">F5 startar felsökning i VS Code. I en webbläsare laddar F5 om sidan, och då är rundan borta.</p>`],
+  ext: () => ['Extensions', `<input class="q" placeholder="Sök tillägg i Marketplace" disabled aria-label="Sök tillägg">
+    <div class="sec open"><span class="tw">${CHEV}</span>Installerade<span class="badge" data-n="47">47</span></div>
+    <div class="ext"><i style="background:#2C5591">PS</i><div><b>PowerShell</b><small>Språkstöd för PowerShell. Färgar koden, terminalen kan du redan.</small></div></div>
+    <div class="ext"><i style="background:#D97757">&gt;_</i><div><b>Claude Code</b><small>Agenten i terminalen. Skriv claude mitt i en runda.</small></div></div>
+    <div class="ext"><i style="background:#555">?</i><div><b>Terminal Autopilot</b><small>Kan terminalen åt dig. Finns inte. Du får spela.</small></div></div>
+    <p class="note">Installerade: 47. Använda: 2.</p>`],
+};
+function openSide(name, toggle = false) {
+  if (toggle && sideView === name) return closeSide();
+  sideView = name;
+  const [title, html] = VIEWS[name]();
+  $('#sidet').textContent = title;
+  $('#sideb').innerHTML = html;
+  side.hidden = false;
+  document.querySelectorAll('.activity>button').forEach(b => b.classList.toggle('on', b.dataset.do === name));
+  resized();
+}
+function closeSide() {
+  side.hidden = true;
+  sideView = null;
+  document.querySelectorAll('.activity .on').forEach(b => b.classList.remove('on'));
+  resized();
+  cmd.focus();
+}
+const refreshSide = () => { if (sideView && sideView !== 'search') openSide(sideView); };
+side.addEventListener('click', e => {
+  const r = e.target.closest('[data-path]'), a = e.target.closest('[data-side]')?.dataset.side;
+  if (a === 'close') return closeSide();
+  if (a === 'commit') return say(`# Knappen kör git commit åt dig. I terminalen: git add . ${(S?.ps ?? isPS()) ? ';' : '&&'} git commit -m "meddelande".`);
+  if (a === 'run') return S ? say('# Rundan kör redan.') : start();
+  if (!r) return;
+  const pth = r.dataset.path, n = node(pth);
+  if (typeof n === 'object') { openDirs.has(pth) ? openDirs.delete(pth) : openDirs.add(pth); return openSide('explorer'); }
+  edFile = pth;
+  if (!showEditor('file')) sheet('explorer', `<p class="cmt"># ${esc(pth)}</p>${pre(n)}`);
+  openSide('explorer');
+});
+side.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeSide(); } });
+
+// Redigeraren: stats.json, README.md och en förhandsflik för filen du klickat på i utforskaren
+function showEditor(tab) {
+  if (getComputedStyle(editor).display === 'none') return false;
+  edTab = tab;
+  const prev = editor.querySelector('.preview');
+  if (tab === 'file' && edFile) { prev.hidden = false; prev.innerHTML = `${fileIcon(edFile.split('/').pop())} ${esc(edFile.split('/').pop())}`; }
+  editor.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.do === tab));
+  const crumb = parts => { $('#crumbs').innerHTML = parts.join(' &rsaquo; '); };
+  if (tab === 'stats') { lastStats = ''; stats(); crumb(['terminal', '<b class="br" style="font-weight:400">{}</b> stats.json']); }
+  if (tab === 'readme') { $('#code').innerHTML = codeLines(README.split('\n').map(mdLine)); crumb(['terminal', 'README.md']); }
+  if (tab === 'file') {
+    const n = node(edFile ?? '');
+    $('#code').innerHTML = codeLines(typeof n === 'string' ? n.split('\n').map(edFile.endsWith('.md') ? mdLine : esc) : ['<span class="dim">Filen finns inte längre. Någon körde rm.</span>']);
+    crumb(['~', ...(edFile ?? '').split('/').map(esc)]);
+  }
+  $('#code').scrollTop = 0;
+  return true;
+}
+
+// Draglisten mellan redigeraren och panelen: dra, eller pil upp och ner när den har fokus
+function setEditor(h) {
+  const max = $('.work').clientHeight - 150;
+  editor.style.height = Math.round(Math.max(35, Math.min(max, h))) + 'px';
+  resized();
+}
+sash.addEventListener('pointerdown', e => {
+  const y0 = e.clientY, h0 = editor.offsetHeight;
+  sash.setPointerCapture(e.pointerId);
+  sash.classList.add('drag');
+  sash.onpointermove = m => setEditor(h0 + m.clientY - y0);
+  sash.onpointerup = () => { sash.onpointermove = null; sash.classList.remove('drag'); };
+  e.preventDefault();
+});
+sash.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  e.preventDefault();
+  setEditor(editor.offsetHeight + (e.key === 'ArrowUp' ? -19 : 19));
+});
+// Spelet mäter brunnen: när panelen ändrar storlek följer fallhöjden med
+function resized() {
+  if (editor.style.height && editor.offsetHeight > $('.work').clientHeight - 150) editor.style.height = Math.max(35, $('.work').clientHeight - 150) + 'px';
+  if (!S) return;
+  S.H = well.clientHeight;
+  for (const b of S.blocks) b.h = b.el.offsetHeight;
 }
 
 // ---------- påskägg: formatera om datorn ----------
@@ -1946,7 +2111,6 @@ function sheet(name, html) {
   if (mode === 'play') pause(true);
   if (mode !== 'sheet' && mode !== 'settings') backTo = mode === 'pause' ? 'pause' : 'menu';
   mode = 'sheet';
-  document.querySelectorAll('.activity .on').forEach(b => b.classList.remove('on'));
   lit(name);
   screen.innerHTML = html + '<div class="actions"><button data-act="back"><kbd>Esc</kbd> tillbaka</button></div>';
   screen.hidden = false;
@@ -2004,28 +2168,24 @@ const DO = {
   start: () => (['play', 'pause', 'boss'].includes(mode) ? say('# Rundan kör redan. Buggarna också.') : start()),
   quit: () => (S ? gameOver() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
-  explorer: () => sheet('explorer', `<p class="cmt"># utforskaren: din hemmapp just nu</p>${pre(treeLines(S?.fs ?? WORLD).join('\n'))}<p class="dim"># Två mappar syns inte här. Dolda saker hittar du med ${(S?.ps ?? isPS()) ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`),
-  search: () => {
+  explorer: icon => openSide('explorer', icon),
+  search: icon => {
     if (['boss', 'quiz', 'quizover'].includes(mode)) return;
-    const round = backTo === 'pause' || mode === 'play' || mode === 'pause';
-    sheet('search', `<p class="cmt"># sök: skriv vad du vill göra, som "radera mapp" eller "commit"</p>${round ? '<p class="dim">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : ''}<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon"><div id="hits"></div>`);
-    if (round && S) S.blocks.forEach(b => { b.helped = true; });
+    if (sideView === 'search' && !icon) return $('#q')?.focus();
+    if (S && (mode === 'play' || mode === 'pause')) { S.blocks.forEach(b => { b.helped = true; }); pause(true); }
+    openSide('search', icon);
     const q = $('#q');
+    if (!q) return;
     q.oninput = () => hits(q.value);
-    q.onkeydown = e => { if (e.key === 'Escape') { closeSettings(); cmd.focus(); } };
     q.focus();
   },
-  scm: () => sheet('scm', pre(`# källkontroll
-main · ${S ? S.cleared : 0} block lösta · 0 commits
-# Allt du gjort den här rundan är ocommittat. Som vanligt.
-# git add, git commit och git push övar du i paketet Git & GitHub.`)),
-  run: () => sheet('run', pre(`# kör och felsök
-# F5 startar felsökning i VS Code. I en webbläsare laddar F5 om sidan, och då är rundan borta.`) + (S ? '' : '<div class="actions"><button data-act="start">&#9654; starta rundan</button></div>')),
-  ext: () => sheet('ext', pre(`# tillägg
-Installerade: 47. Använda: 2.
-# Rekommenderat för dig: ett tillägg som kan terminalen åt dig. Det finns inte. Du får spela.`)),
-  readme: () => sheet('readme', pre(README)),
-  stats: () => mode === 'sheet' && closeSettings(),
+  scm: icon => openSide('scm', icon),
+  run: icon => openSide('run', icon),
+  ext: icon => openSide('ext', icon),
+  account: () => say('# Inloggad som du. Konton i VS Code synkar inställningar; terminalen loggar du in i med till exempel gh auth login.'),
+  readme: () => showEditor('readme') || sheet('readme', pre(README)),
+  file: () => showEditor('file'),
+  stats: () => showEditor('stats'),
   keys: () => sheet('keys', pre(`# kortkommandon
 Enter       kör kommandot
 ↑ ↓         förra och nästa kommando
@@ -2090,7 +2250,7 @@ document.addEventListener('click', e => {
   closeMenu();
   const act = it?.dataset.item ?? d?.dataset.do;
   if (!act) return;
-  act.startsWith('#') ? say(act) : DO[act]();
+  act.startsWith('#') ? say(act) : DO[act](!!d?.closest('.activity'));
   if (!$('#q')) cmd.focus();
 });
 document.addEventListener('keydown', e => {
@@ -2180,11 +2340,7 @@ cmd.addEventListener('keydown', e => {
 });
 
 window.addEventListener('blur', () => pause(true));
-window.addEventListener('resize', () => {
-  if (!S) return;
-  S.H = well.clientHeight;
-  for (const b of S.blocks) b.h = b.el.offsetHeight;
-});
+window.addEventListener('resize', resized);
 $('#sound').addEventListener('click', () => setSound(!soundOn));
 $('#gear').addEventListener('click', () => { settings(); cmd.focus(); });
 
@@ -2197,6 +2353,8 @@ function frame(now) {
 
 setSound(soundOn);
 if (prefs.shell) { applyShell(); menu(); } else { askShell(); applyShell(); }
+showEditor('stats');
+if (editor.offsetHeight) editor.style.height = editor.offsetHeight + 'px';
 if (load(CRASH, null)) reboot(load(CRASH, null)); // kraschen sitter kvar efter vanlig F5
 sync();
 cmd.focus();
