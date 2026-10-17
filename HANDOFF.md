@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Påskägget "gå in i en agent", sedan quizet som bossfråga, enligt BACKLOG.md
+nextAction: Quizet som bossfråga, sedan påskägget formatera om datorn, enligt BACKLOG.md
 blockers: []
 reviewedAt: 2026-10-17
 ---
@@ -10,6 +10,8 @@ reviewedAt: 2026-10-17
 # Handoff: ./terminal
 
 **2026-10-17, flytt till eget repo.** Spelet låg som `terminal.html` i `buildapp-se/ai`; nu `index.html` här, historiken kvar via `git filter-repo` (12 commits). Den gamla adressen togs bort, ingen vidarebefordran (aldrig länkad). `localStorage` delas med `/ai/` (samma ursprung), så topplista och skalval följde med. Egen dörr på `buildapp.se`. Struktur i `CONTEXT.md`.
+
+**2026-10-17, agentläge och paketet När agenten stannar.** `claude`, `codex`, `opencode` eller `gemini` mitt i en runda byter prompten mot agentens `>`: text går till agenten som tänker och svarar roligt utan att hjälpa, `!` kör skalet, Esc avbryter, `/exit` eller Ctrl+C två gånger går ut, och svarar man `y` på dess fråga rensas ett block innan användningsgränsen slår till. Nytt paket nummer 4, När agenten stannar: 18 uppgifter ur loggarna (logga in, pusha, merga, radera grenar, wrangler, winget, öppna filer, mellan skal) där förklaringen säger varför agenten stannade. Verifierat: testet (116 uppgifter), `agentcheck.js` och `stopcheck.js` i Chromium och Firefox, klicktestet i tre motorer.
 
 **2026-10-17, VS Code-ramen klickbar.** Menyerna, sidofältet, flikarna, panelflikarna och fönsterknapparna gör något, alla med en lärdom: sök hittar kommandot för det du vill göra, PORTS lär ut Stop-Process, Ångra påminner om att rm saknar papperskorg. Hjälp ger 0 poäng för blocket i stället för att stänga ute rundan. Klicktest i Chromium, Firefox och WebKit (`chromecheck.js` i sessionens scratchpad): alla menyer, vyer, sök, påskägg, Esc, 0 poäng med hjälp, 390 px utan sidledsscroll.
 

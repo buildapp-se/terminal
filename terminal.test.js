@@ -5,8 +5,8 @@ const fs = require('fs');
 
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD} =
-  new Function(src + '; return {TASKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -55,7 +55,7 @@ for (const t of TASKS) {
       n++;
     }
   }
-  assert.ok(['fs', 'git', 'cc'].includes(t[0]) && t[1] >= 1 && t[1] <= 5, `fel paket eller nivå: ${t[2]}`);
+  assert.ok(Object.hasOwn(PACKS, t[0]) && t[0] !== 'all' && t[1] >= 1 && t[1] <= 5, `fel paket eller nivå: ${t[2]}`);
   assert.ok(!/—/.test(t[2] + t[4]), `tankstreck i: ${t[2]}`);
 }
 // {x2} skiljer sig alltid från {x}, även när slumpen alltid väljer det första ordet
@@ -169,6 +169,13 @@ sh.bad('rm -f notes.txt', /ambiguous. Possible matches include: -Filter -Force/)
 sh.bad('rm -rf spel', /parameter name 'rf'\./);
 assert.ok(/\.hemligt/.test(sh.out('gci -fo')), '-fo är -Force, inte tvetydigt');
 assert.ok(sh('cd').same && sh.cwd.length, 'cd utan argument står kvar i PowerShell 5.1');
+
+// När agenten stannar: Patriks egna kommandon, flaggor i valfri ordning
+eq('gh pr merge -R Elwyndaz/forskning 8 --merge', 'gh pr merge 8 -R Elwyndaz/forskning --merge');
+eq('gh pr merge 8 --merge --repo Elwyndaz/forskning', 'gh pr merge 8 --repo Elwyndaz/forskning --merge');
+ne('gh pr merge 9 -R Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning --merge');
+ne('gh pr merge 8 -R Elwyndaz/annat --merge', 'gh pr merge 8 -R Elwyndaz/forskning --merge');
+eq('git branch -D fix-login dark-mode', 'git branch -D fix-login dark-mode');
 
 // Varje uppgift i Filer & mappar går att köra mot världen utan att skalet kraschar
 for (const ps of [false, true]) for (const t of TASKS) if (t[0] === 'fs' && (!ps || t[5])) for (const pick of [a => a[0], a => a[a.length - 1]]) {

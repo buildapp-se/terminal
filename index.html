@@ -192,7 +192,8 @@ const PACKS = {
   fs: {name: 'Filer & mappar', tag: 'fil', c: '#4FC1FF', hint: 'mkdir, cd, ls, rm, mv, cp', psHint: 'New-Item, Set-Location, Get-ChildItem'},
   git: {name: 'Git & GitHub', tag: 'git', c: '#DCDCAA', hint: 'git, gh'},
   cc: {name: 'Som Claude Code', tag: 'claude', c: '#C586C0', hint: 'grep, curl, find, jq, npm', psHint: 'Select-String, Invoke-WebRequest, npm'},
-  all: {name: 'Allt', hint: 'alla tre blandat'},
+  stop: {name: 'När agenten stannar', tag: 'du', c: '#D97757', hint: 'gh auth, git push, wrangler, winget'},
+  all: {name: 'Allt', hint: 'alla paketen blandat'},
 };
 
 const POOLS = {
@@ -313,12 +314,31 @@ const TASKS = [
   ['cc', 5, 'Kopiera {f} till mappen /var/www på server.example.com, som användaren deploy', 'scp {f} deploy@server.example.com:/var/www', 'scp = secure copy. Samma inloggning som ssh.', '=', "scp följer med ssh i Windows."],
   ['cc', 5, 'Visa de 5 vanligaste raderna i {log}', ['sort {log} | uniq -c | sort -rn | head -n 5', 'sort {log} | uniq -c | sort -rn | head -5'], 'Klassisk kedja: sortera, räkna dubbletter, sortera på antal, ta topp 5.', "Get-Content {log} | Group-Object | Sort-Object Count -Descending | Select-Object -First 5", "Group-Object räknar likadana rader. Sortera på antal och ta topp 5."],
   ['cc', 5, 'Klona {user}/{repo}, gå in i mappen och installera paketen', [['git clone https://github.com/{user}/{repo}.git', 'git clone https://github.com/{user}/{repo}', 'gh repo clone {user}/{repo}'], ['cd {repo}'], ['npm install', 'npm i']], 'Det första du gör med nästan varje JavaScript-projekt.', [["git clone https://github.com/{user}/{repo}.git", "git clone https://github.com/{user}/{repo}", "gh repo clone {user}/{repo}"], ["Set-Location {repo}"], ["npm install", "npm i"]], "Det första du gör med nästan varje JavaScript-projekt."],
+  // När agenten stannar: kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
+  ['stop', 1, 'Logga in på GitHub, i webbläsaren', ['gh auth login', 'gh auth login -w', 'gh auth login -h github.com -w', 'gh auth login --web'], 'Agenten stannar: inloggningen sker i webbläsaren, och där kan den inte klicka. -w = web.', '='],
+  ['stop', 1, 'Logga in på Cloudflare med wrangler', ['npx wrangler login', 'wrangler login'], 'Agenten stannar: wrangler öppnar webbläsaren och vill att du godkänner.', '='],
+  ['stop', 1, 'Skicka dina commits till GitHub', 'git push', 'Agenten stannar: push publicerar koden, och det vill den ha ditt ja till.', '='],
+  ['stop', 1, 'Öppna {f} i programmet som brukar öppna sådana filer', ['open {f}', 'xdg-open {f}', 'start {f}'], 'Agenten stannar: den ser inte din skärm. open på Mac, xdg-open på Linux.', ["Invoke-Item {f}", "ii {f}", "start {f}"], "Agenten stannar: den ser inte din skärm. Invoke-Item öppnar filen som ett dubbelklick."],
+  ['stop', 2, 'Ge gh rätt att ändra GitHub Actions-filer', ['gh auth refresh -s workflow', 'gh auth refresh --scopes workflow'], 'Agenten stannar: nya rättigheter godkänner du själv i webbläsaren. -s = scope, en sorts behörighet.', '='],
+  ['stop', 2, 'Byt till ditt andra GitHub-konto i gh', 'gh auth switch', 'Agenten stannar: vilket konto som ska användas är ditt beslut.', '='],
+  ['stop', 2, 'Ångra dina ändringar i {f} sedan senaste commit', ['git checkout -- {f}', 'git restore {f}'], 'Agenten stannar: ändringarna försvinner för gott. -- betyder: här kommer filnamn, inte grenar.', '='],
+  ['stop', 2, 'Öppna mappen du står i i Utforskaren', ['explorer.exe .', 'explorer .', 'open .', 'xdg-open .'], 'Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i.', ["explorer .", "Invoke-Item .", "ii ."], "Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i."],
+  ['stop', 2, 'Installera Git med winget', ['winget install --id Git.Git -e', 'winget install -e --id Git.Git', 'winget install Git.Git'], 'Agenten stannar: installationen ber om administratörsrätt i en ruta den inte når. -e = exakt id.', '='],
+  ['stop', 3, 'Skicka grenen {b} första gången och koppla den till origin', ['git push -u origin {b}', 'git push --set-upstream origin {b}'], 'Agenten stannar: grenen blir synlig på GitHub. -u kopplar ihop den, sedan räcker git push.', '='],
+  ['stop', 3, 'Pusha repot i mappen {repo} utan att gå in i mappen', 'git -C {repo} push', 'Agenten stannar före varje push. -C kör git som om du stod i mappen.', '='],
+  ['stop', 3, 'Radera den lokala grenen {b}, även om den inte är sammanslagen', ['git branch -D {b}', 'git branch --delete --force {b}'], 'Agenten stannar: -D tvingar fram raderingen, och det som bara fanns på grenen är borta.', '='],
+  ['stop', 3, 'Slå ihop pull request 8 och pressa ihop commitsen till en', ['gh pr merge 8 --squash', 'gh pr merge 8 -s'], 'Agenten stannar: en merge hamnar på main direkt. --squash gör alla commits till en.', '='],
+  ['stop', 4, 'Slå ihop pull request 8 i repot Elwyndaz/forskning med en merge-commit', ['gh pr merge 8 -R Elwyndaz/forskning --merge', 'gh pr merge 8 --repo Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning -m'], 'Agenten stannar: en merge går ut på main och ångras inte med en knapp. -R = vilket repo, så du slipper stå i mappen.', '='],
+  ['stop', 4, 'Spara hemligheten API_KEY i Cloudflare-workern', ['npx wrangler secret put API_KEY', 'wrangler secret put API_KEY'], 'Agenten stannar: hemligheten skriver du själv, så att den aldrig hamnar i en logg eller ett transkript.', '='],
+  ['stop', 4, 'Kör schema.sql mot den riktiga D1-databasen db', ['npx wrangler d1 execute db --remote --file=schema.sql', 'wrangler d1 execute db --remote --file=schema.sql', 'npx wrangler d1 execute db --file=schema.sql --remote'], 'Agenten stannar: --remote är produktionen med riktiga användare, inte din lokala kopia.', '='],
+  ['stop', 4, 'Avsluta processen 4821 från bash, med PowerShell', ['powershell -Command "Stop-Process -Id 4821"', 'powershell.exe -Command "Stop-Process -Id 4821"'], 'Agenten stannar: att döda en process kan stoppa något du jobbar med. -Command kör en rad PowerShell och går tillbaka.'],
+  ['stop', 5, 'Gå in i mappen {repo} och radera grenarna {b} och {b2}', [['cd {repo}'], ['git branch -D {b} {b2}']], 'Agenten stannar: -D raderar även grenar som inte är sammanslagna. Flera grenar går i samma kommando.', [['Set-Location {repo}', 'cd {repo}'], ['git branch -D {b} {b2}']], "Agenten stannar: -D raderar även grenar som inte är sammanslagna. git fungerar likadant i PowerShell."],
 ];
 
 const OPS = new Set(['|', '>', '>>', '&&', ';', '||']);
 const ANY = '{any}';
 // Korta flaggor som tar ett värde, per kommando, så att -m "text" hålls ihop när flaggorna sorteras
-const VALS = {git: 'mbcCdD', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k'};
+const VALS = {git: 'mbcCdD', gh: 'Rh', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k'};
 const LONGVALS = new Set(['--source', '--message', '--title', '--body', '--output', '--header', '--data', '--request', '--json']);
 
 // Delar en rad som bash: citattecken, backslash och operatorer. Oavslutat citat kastar fel.
@@ -497,6 +517,61 @@ function fill(task, pick, ps = false) {
 // Hjälpkortet: vad varje del av ett svar betyder. Nyckeln är "kommando del" (eller "git branch -d"),
 // längsta matchningen vinner, och sist prövas delen ensam för det som betyder samma överallt.
 const GLOSS = {
+  // När agenten stannar
+  'gh auth login -w': 'öppna inloggningen i webbläsaren, -w = web',
+  'gh auth login --web': 'öppna inloggningen i webbläsaren',
+  'gh auth login -h': '-h = host, vilken GitHub-server',
+  'github.com': 'vanliga GitHub',
+  'gh auth refresh': 'förnya inloggningen med fler rättigheter',
+  'gh auth refresh -s': '-s = scope, rättigheten som ska läggas till',
+  'gh auth refresh --scopes': 'rättigheterna som ska läggas till',
+  'workflow': 'rätten att ändra filerna för GitHub Actions',
+  'gh auth switch': 'byt till ett annat konto du är inloggad med',
+  'gh pr merge': 'slå ihop pull requesten',
+  'gh -R': '-R = repo, vilket repo det gäller, ägare/namn',
+  'gh --repo': 'vilket repo det gäller, ägare/namn',
+  'Elwyndaz/forskning': 'repot forskning hos användaren Elwyndaz',
+  'gh pr merge --merge': 'en vanlig merge-commit, all historik behålls',
+  'gh pr merge -m': '-m = merge, en vanlig merge-commit',
+  'gh pr merge --squash': 'pressa ihop alla commits till en',
+  'gh pr merge -s': '-s = squash, alla commits blir en',
+  'git -C': '-C = kör git som om du stod i mappen efter',
+  'git branch --delete': 'radera grenen',
+  'git branch --force': 'tvinga, även om grenen inte är sammanslagen',
+  'db': 'databasens namn',
+  'Git.Git': 'Gits id i winget',
+  'winget': 'Windows pakethanterare',
+  'winget install': 'installera ett program',
+  'winget install --id': 'programmets id',
+  'winget install -e': '-e = exact, bara precis det id:t',
+  'open': 'öppna med standardprogrammet, på Mac',
+  'xdg-open': 'öppna med standardprogrammet, på Linux',
+  'start': 'öppna med standardprogrammet, på Windows',
+  'Invoke-Item': 'öppna som ett dubbelklick',
+  'ii': 'alias för Invoke-Item',
+  'explorer': 'Utforskaren i Windows',
+  'explorer.exe': 'Utforskaren i Windows, med filändelsen',
+  'powershell': 'starta Windows PowerShell',
+  'powershell.exe': 'starta Windows PowerShell, med filändelsen',
+  'powershell -Command': 'kör raden efter och gå tillbaka',
+  'powershell.exe -Command': 'kör raden efter och gå tillbaka',
+  'Stop-Process -Id 4821': 'raden PowerShell kör: avsluta processen med id 4821',
+  'wrangler': 'Cloudflares terminalverktyg',
+  'npx wrangler': 'Cloudflares terminalverktyg',
+  'wrangler login': 'logga in på Cloudflare i webbläsaren',
+  'npx wrangler login': 'logga in på Cloudflare i webbläsaren',
+  'wrangler secret': 'hemligheter för workern',
+  'npx wrangler secret': 'hemligheter för workern',
+  'wrangler secret put': 'spara en hemlighet, värdet skriver du in efteråt och det syns inte',
+  'npx wrangler secret put': 'spara en hemlighet, värdet skriver du in efteråt och det syns inte',
+  'wrangler d1': 'Cloudflares databas D1',
+  'npx wrangler d1': 'Cloudflares databas D1',
+  'wrangler d1 execute': 'kör SQL mot databasen',
+  'npx wrangler d1 execute': 'kör SQL mot databasen',
+  'wrangler d1 execute --remote': 'mot den riktiga databasen i molnet, inte din lokala kopia',
+  'npx wrangler d1 execute --remote': 'mot den riktiga databasen i molnet, inte din lokala kopia',
+  'wrangler d1 execute --file': 'filen med SQL som ska köras',
+  'npx wrangler d1 execute --file': 'filen med SQL som ska köras',
   // operatorer och sökvägar
   '|': 'pipe: skickar utskriften från kommandot före in i kommandot efter', '>': 'skriv utskriften till en fil i stället för skärmen, och skriv över filen',
   '>>': 'lägg till utskriften sist i en fil', '&&': 'kör nästa kommando bara om det förra lyckades',
@@ -585,7 +660,7 @@ Object.assign(GLOSS, {python: 'programmet Python, som kör .py-filer', python3: 
 const POOLNAME = {d: 'namnet på mappen', f: 'namnet på filen', log: 'loggfilen', py: 'Python-filen som körs', js: 'JavaScript-filen som körs', b: 'namnet på grenen', repo: 'namnet på repot', msg: 'meddelandet, i citattecken eftersom det har mellanslag',
   word: 'ordet du söker efter', user: 'användarnamnet på GitHub', pkg: 'paketet som installeras'};
 const POOLOF = Object.fromEntries(Object.entries(POOLS).flatMap(([k, vs]) => vs.map(v => [v, k])));
-const NUMS = {head: 'antal rader', tail: 'antal rader', kill: 'processens id, PID', 'Get-Content': 'antal rader', 'Select-Object': 'antal', 'Stop-Process': 'processens id, PID', 'Get-NetTCPConnection': 'portnumret'};
+const NUMS = {gh: 'numret på pull requesten', head: 'antal rader', tail: 'antal rader', kill: 'processens id, PID', 'Get-Content': 'antal rader', 'Select-Object': 'antal', 'Stop-Process': 'processens id, PID', 'Get-NetTCPConnection': 'portnumret'};
 
 // Delar upp ett svar i [del, förklaring]. Förklaringen är null om ordlistan saknar delen.
 function parts(raw, ps = false) {
@@ -1296,9 +1371,9 @@ function menu() {
     <div class="cols"><div>
     <h2># skal <span class="dim">(s byter)</span></h2>
     <div class="opts">${shellOpts()}</div>
-    <h2># paket <span class="dim">(↑ ↓ eller 1 till 4)</span></h2>
+    <h2># paket <span class="dim">(↑ ↓ eller 1 till ${Object.keys(PACKS).length})</span></h2>
     <div class="opts">${Object.entries(PACKS).map(([k, p], i) =>
-      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(16)}<span class="dim">${isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
+      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
     <h2># startnivå <span class="dim">(← →)</span></h2>
     <div class="lvl"><button data-lv="-1" aria-label="Lägre nivå">&lsaquo;</button><b id="lv">${prefs.level}</b><span class="hot" id="bar">[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]</span><button data-lv="1" aria-label="Högre nivå">&rsaquo;</button></div>
     <div class="actions"><button data-act="start"><kbd>Enter</kbd> starta</button></div>
@@ -1727,7 +1802,7 @@ cmd.addEventListener('keydown', e => {
   if (mode === 'menu') {
     if (k === 'Enter') start();
     else if (k === 's') setShell(otherShell());
-    else if (k >= '1' && k <= '4') setPack(Object.keys(PACKS)[k - 1]);
+    else if (k >= '1' && k <= String(Object.keys(PACKS).length)) setPack(Object.keys(PACKS)[k - 1]);
     else if (k === 'ArrowUp' || k === 'ArrowDown') {
       const keys = Object.keys(PACKS), i = keys.indexOf(prefs.pack) + (k === 'ArrowUp' ? -1 : 1);
       setPack(keys[(i + keys.length) % keys.length]);
