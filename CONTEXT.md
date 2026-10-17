@@ -84,6 +84,10 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   Räknaren syns binärt i hela nibbles med inledande nollor (`binStr`, Patrik: 0000, 0001, 0010), klick förklarar platsvärdena (`binParts`).
   Humör i `petSVG`: sover i menyn, rädd när högen når övre tredjedelen och vid `PET_FEAR` (rm -rf, sudo, push --force, reset --hard),
   ledsen vid fel, knuff mot hjälpkortet efter tre fel i rad. Blicken följer lägsta fallande block. Pratar sparsamt (minst 30 s mellan tips).
+  Från 1 000 px bor Bit i ett sidofält till höger (`#chat`, som Copilot Chat och Claude Code i VS Code, Patrik 2026-10-17): stor figur, binärregistret som lampor med
+  platsvärdena under, mätare till nästa stadium och en logg med etiketterna Tips, Varning, Kul att veta (`FACTS`, högst varannan minut) och Nytt
+  (nivå, kombo från tre, clear-laddning, rundans slut, tillväxt). Varningar skrivs också i terminalen. Knappen i titelraden stänger panelen.
+  Smalare: Bit i terminalens hörn med pratbubblor (`placePet`).
   Sparas i `term-pet` (integritetstexten 1.1). Test: `terminal.test.js` för de rena delarna.
 - **Tab** (`complete`): bash fyller i det entydiga och listar vid andra Tab, PowerShell bläddrar. Dolda namn bara efter punkt.
 - **Versionsfrågor** (`VERS` i `toy`): `git --version`, `node -v`, `python -V` med flera är aldrig fel. `python -v` är verbose, inte version.

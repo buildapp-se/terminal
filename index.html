@@ -186,6 +186,28 @@ kbd{font:inherit;color:var(--yellow)}
 @media (max-width:700px){.pet{width:46px;height:46px}.pet .bin{right:48px}}
 .bubble{position:absolute;right:10px;bottom:86px;z-index:5;max-width:min(320px,calc(100% - 20px));padding:6px 10px;border:1px solid #454545;border-radius:6px;background:#252526;color:var(--fg);font:12px/1.45 var(--ui);box-shadow:0 2px 8px #0008}
 .bubble::after{content:'';position:absolute;right:22px;bottom:-6px;width:10px;height:10px;background:#252526;border:solid #454545;border-width:0 1px 1px 0;transform:rotate(45deg)}
+.chat{width:270px;flex:none;display:flex;flex-direction:column;min-height:0;background:var(--bg);border-left:1px solid var(--border)}
+.chat[hidden]{display:none}
+.chat-pet{flex:none;display:grid;place-items:center;padding:14px 0 4px}
+.pet.big{position:relative;right:auto;bottom:auto;width:132px;height:132px}.pet.big .bin{display:none}.pet.big .fly{font-size:16px}
+.reg{flex:none;padding:0 16px 12px;text-align:center;font-size:12px;border-bottom:1px solid var(--border)}
+.reg .nm{font-weight:600;color:var(--fg);margin-bottom:8px}
+.lamps{display:flex;justify-content:center;gap:2px;flex-wrap:wrap}.lamps .gap{width:6px}
+.lamp{display:flex;flex-direction:column;align-items:center;width:26px}.lamps.many{gap:1px}.lamps.many .lamp{width:16px}
+.lamp b{display:grid;place-items:center;width:calc(100% - 2px);height:28px;border-radius:4px;background:#262626;color:#5A5A5A;font:400 15px var(--mono)}.lamps.many .lamp b{height:22px;font-size:12px}
+.lamp.on b{background:#1E4D3E;color:#8FE3C8;box-shadow:0 0 8px #8FE3C866}
+.lamp small{font:9px var(--mono);color:var(--faint);margin-top:2px}
+.reg .sum{margin-top:8px;font:12px var(--mono);color:var(--dim)}
+.reg .meter{height:4px;margin:10px 0 4px;border-radius:2px;background:#262626;overflow:hidden}.reg .meter i{display:block;height:100%;background:linear-gradient(90deg,#8FE3C8,#B8C4FF)}
+.reg .left{font-size:11px;color:var(--faint)}
+.chat-log{flex:1;overflow:auto;min-height:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.chat-log .empty{color:var(--faint);font-size:12px;line-height:1.5}
+.msg{padding:7px 10px;border-radius:6px;background:#202020;border-left:3px solid var(--k);font-size:12.5px;line-height:1.5;color:var(--fg)}
+.msg .lbl{display:block;font:600 10px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--k);margin-bottom:2px}
+.msg.new{animation:pop .35s ease-out}@keyframes pop{from{translate:0 6px;opacity:0}}
+.k-tips{--k:#4FC1FF}.k-varning{--k:#F14C4C}.k-fakta{--k:#D3B8FF}.k-nytt{--k:#8FE3C8}
+.bitbtn{display:grid;place-items:center;width:30px;height:26px;border-radius:4px;color:var(--dim)}.bitbtn:hover{background:#2A2D2E}.bitbtn[aria-pressed="true"]{color:var(--fg)}
+@media (max-width:999px){.bitbtn{display:none}}
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
 @media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
 @media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
@@ -197,6 +219,7 @@ kbd{font:inherit;color:var(--yellow)}
     <img src="favicon.svg" alt="">
     <div class="menu"><button type="button" data-menu="File" aria-haspopup="true" aria-expanded="false">File</button><button type="button" data-menu="Edit" aria-haspopup="true" aria-expanded="false">Edit</button><button type="button" data-menu="Selection" aria-haspopup="true" aria-expanded="false">Selection</button><button type="button" data-menu="View" aria-haspopup="true" aria-expanded="false">View</button><button type="button" data-menu="Go" aria-haspopup="true" aria-expanded="false">Go</button><button type="button" data-menu="Run" aria-haspopup="true" aria-expanded="false">Run</button><button type="button" data-menu="Terminal" aria-haspopup="true" aria-expanded="false">Terminal</button><button type="button" data-menu="Help" aria-haspopup="true" aria-expanded="false">Help</button></div>
     <button type="button" class="cmdcenter" data-do="search" title="Sök kommandon (Ctrl+P)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3.5 3.5"/></svg>terminal</button>
+    <button type="button" class="bitbtn" data-do="bitbar" title="Visa eller dölj Bit (sidofältet till höger)" aria-label="Visa eller dölj Bit" aria-pressed="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M10 2.5v11" /><path d="M10.5 3h3.5v10h-3.5z" fill="currentColor" stroke="none"/></svg></button>
     <div class="winctl">
       <button type="button" data-do="min" aria-label="Minimera"><svg width="10" height="10"><path d="M0 5h10" stroke="currentColor"/></svg></button>
       <button type="button" data-do="max" aria-label="Helskärm"><svg width="10" height="10"><rect x=".5" y=".5" width="9" height="9" fill="none" stroke="currentColor"/></svg></button>
@@ -237,6 +260,12 @@ kbd{font:inherit;color:var(--yellow)}
         </div>
       </section>
     </div>
+    <aside class="chat" id="chat" aria-label="Bit" hidden>
+      <div class="side-h"><span>Bit</span><span class="dim" aria-hidden="true">&#8943;</span></div>
+      <div class="chat-pet" id="chatpet"></div>
+      <div class="reg" id="reg"></div>
+      <div class="chat-log" id="chatlog" aria-live="polite"><p class="empty">Bit lyssnar på terminalen. Tips, varningar, kul fakta och det som händer i rundan hamnar här.</p></div>
+    </aside>
   </div>
 
   <div class="pop" id="pop" role="menu" hidden></div>
@@ -684,7 +713,7 @@ const petStage = bits => PET_STAGES.findLastIndex(([n]) => bits >= n);
 // Ett tal som summan av platsvärdena där binärtalet har en etta: 13 = 1101 = 8 + 4 + 1
 // Binärt i hela nibbles med inledande nollor, som lampor i ett register: 5 = 0101, 18 = 0001 0010 (Patrik 2026-10-17)
 const binStr = n => { const b = n.toString(2); return b.padStart(Math.ceil(b.length / 4) * 4, '0').replace(/(.{4})(?=.)/g, '$1 '); };
-const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).join(' + ') || '0';
+const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).map(v => v.toLocaleString('sv-SE')).join(' + ') || '0';
 
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
@@ -1710,7 +1739,7 @@ function start() {
   music();
   render();
   petFeel('happy', 1200);
-  if (!pet.hello) { pet.hello = true; save(PET, pet); petSay('Hej, jag är Bit! Jag äter en bit för varje steg du löser och växer vid 1, 2, 4, 8 och så vidare. Klicka på mig så ser du hur det går.', 12000); }
+  if (!pet.hello) { pet.hello = true; save(PET, pet); petSay('Hej, jag är Bit! Jag äter en bit för varje steg du löser och växer vid 1, 2, 4, 8 och så vidare. Klicka på mig så ser du hur det går.', 'nytt', 12000); }
 }
 // Ny värld: filsystemet, mappen, git och en tom logg. Spelet och quizet börjar båda här.
 function fresh() {
@@ -1944,7 +1973,35 @@ function editorCmd(u, notes) {
 // Pratar sparsamt: när den växer, ett tips om en flagga du inte använde, när du kört fast, och när du skriver något farligt.
 const PET = 'term-pet';
 const pet = load(PET, {bits: 0, last: '', hello: false});
-const petEl = $('#pet'), bubble = $('#bubble');
+const petEl = $('#pet'), bubble = $('#bubble'), chat = $('#chat'), chatLog = $('#chatlog'), reg = $('#reg');
+// Breda skärmar: Bit bor i sidofältet till höger, som Copilot Chat och Claude Code i VS Code (Patrik 2026-10-17). Smala: i terminalens hörn med bubblor.
+const wideBit = matchMedia('(min-width: 1000px)');
+let bitClosed = false, lastFact = performance.now(), factI = Math.floor(Math.random() * 100);
+const LABEL = {tips: 'Tips', varning: 'Varning', fakta: 'Kul att veta', nytt: 'Nytt'};
+// Sant och kollat. Varje fakta lär något om verktygen i spelet.
+const FACTS = [
+  'Ordet bug kommer från 1947: en nattfjäril fastnade i datorn Harvard Mark II, och teamet tejpade in den i loggboken.',
+  '~ betyder hemmappen för att terminalen ADM-3A, där redigeraren vi skrevs, hade ~ och ordet HOME på samma tangent.',
+  'grep kommer från kommandot g/re/p i redigeraren ed: global, regular expression, print.',
+  'Pipen | hittades på av Doug McIlroy och kom med i Unix 1973. Små program som gör en sak, ihopkopplade.',
+  'Exitkoden 0 betyder att allt gick bra, allt annat är ett fel. echo $? visar senaste koden i bash, $? i PowerShell svarar True eller False.',
+  'Ctrl+C skickar signalen SIGINT, avbryt. Ctrl+D betyder slut på indata och stänger ofta skalet.',
+  'git skrevs av Linus Torvalds 2005, på ett par veckor, när Linux inte längre fick använda BitKeeper gratis.',
+  'PowerShell 5.1 följer med Windows. Den nyare PowerShell 7 installeras separat och startas med pwsh.',
+  'Terminal hette förr en skärm och ett tangentbord som var kopplade till en dator i ett annat rum. Fönstret du skriver i nu låtsas vara en sådan.',
+  'rm har ingen papperskorg. Det som tas bort är borta, därför kör vana användare ls före rm.',
+  'En punkt först i namnet, som .env och .git, gör filen dold i bash. Det är bara en vana: ls hoppar över dem om du inte skriver ls -a.',
+  'Tab-komplettering kom med skalet tcsh på 1980-talet. Proffs trycker Tab hela tiden, för att slippa stavfel.',
+];
+function placePet() {
+  const big = wideBit.matches && !bitClosed;
+  chat.hidden = !big;
+  (big ? $('#chatpet') : $('#term')).append(petEl);
+  bubble.hidden = true;
+  $('.bitbtn').setAttribute('aria-pressed', big);
+  petMood = ''; petDraw(petBase());
+  if (typeof resized === 'function') resized();
+}
 let petMood = '', petT = 0, bubbleT = 0, petSaid = 0, tabHinted = false;
 const PET_COLORS = ['#FFF1DC', '#C9F2E0', '#A8E6CF', '#8FE3C8', '#9AD0F5', '#B8C4FF', '#D3B8FF', '#F2B8FF', '#FFB3D9', '#FFC4A8', '#FFE08A', '#FFF0A0']; // pastell, från mint till guld
 function petSVG(st, mood) {
@@ -1999,12 +2056,22 @@ function petDraw(mood) {
   petEl.dataset.bits = pet.bits;
   const st = petStage(pet.bits);
   petMood = mood;
-  petEl.className = 'pet ' + mood;
+  petEl.className = 'pet ' + mood + (chat.hidden ? '' : ' big');
   petEl.style.setProperty('--s', .78 + st * .02);
   petEl.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${petSVG(st, mood)}</svg><span class="bin" aria-hidden="true">${[...binStr(pet.bits)].map(d => (d === '1' ? '<b>1</b>' : d)).join('')}</span>`;
   petEl.setAttribute('aria-label', `Bit, ${PET_STAGES[st][1]}, ${bitar(pet.bits)} uppätna. Klicka för att klappa.`);
+  petPanel();
 }
 // Ett humör en stund, sedan tillbaka till grundläget (petIdle i tick)
+// Registret i panelen: en lampa per bit med platsvärdet under, summan och mätaren till nästa stadium
+function petPanel() {
+  if (chat.hidden) return;
+  const st = petStage(pet.bits), [cur, name] = PET_STAGES[st], next = PET_STAGES[st + 1];
+  const d = binStr(pet.bits).replace(/ /g, ''), n = d.length;
+  const lamps = [...d].map((x, i) => (i && i % 4 === 0 ? '<span class="gap"></span>' : '') + `<span class="lamp${x === '1' ? ' on' : ''}"><b>${x}</b><small title="${2 ** (n - 1 - i)}">${n > 8 ? '2' + [...String(n - 1 - i)].map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join('') : 2 ** (n - 1 - i)}</small></span>`).join('');
+  reg.innerHTML = `<div class="nm">${esc(name)}</div><div class="lamps${n > 8 ? " many" : ""}" aria-label="${binStr(pet.bits)} binärt">${lamps}</div><div class="sum">${fmt(pet.bits)} = ${binParts(pet.bits)}</div>`
+    + (next ? `<div class="meter"><i style="width:${Math.round(100 * (pet.bits - cur) / (next[0] - cur))}%"></i></div><div class="left">${bitar(next[0] - pet.bits)} kvar till ${esc(next[1])}</div>` : '<div class="left">fullvuxen</div>');
+}
 function petFeel(mood, ms = 1500) {
   clearTimeout(petT);
   petDraw(mood);
@@ -2021,6 +2088,7 @@ function petIdle() {
     const ax = r.left + r.width / 2 - (me.left + me.width / 2), ay = r.top + r.height / 2 - (me.top + me.height / 2), d = Math.hypot(ax, ay) || 1;
     dx = Math.round(ax / d * 12) / 10; dy = Math.round(ay / d * 12) / 10;
   }
+  if (mode === 'play' && !chat.hidden && performance.now() - lastFact > 100000) { lastFact = performance.now(); petSay(FACTS[factI++ % FACTS.length], 'fakta'); }
   petEl.style.setProperty('--lx', dx + 'px'); petEl.style.setProperty('--ly', dy + 'px');
 }
 // Små saker som flyger: ettor och nollor in i munnen när Bit äter, hjärtan upp när man klappar
@@ -2036,10 +2104,22 @@ function petFly(kind, n) {
     setTimeout(() => s.remove(), 1200 + i * 110);
   }
 }
-function petSay(text, ms = 7000) {
+function petSay(text, kind = 'tips', ms = 7000) {
+  petSaid = performance.now();
+  if (!chat.hidden) { // panelen: en logg som finns kvar, varningar syns också i terminalen
+    chatLog.querySelector('.empty')?.remove();
+    const m = document.createElement('div');
+    m.className = `msg new k-${kind}`;
+    m.innerHTML = `<span class="lbl">${LABEL[kind]}</span>`;
+    m.append(text);
+    chatLog.append(m);
+    while (chatLog.children.length > 50) chatLog.firstChild.remove();
+    chatLog.scrollTop = chatLog.scrollHeight;
+    if (kind === 'varning' && S) out('# Bit: ' + text, 'hot');
+    return;
+  }
   bubble.textContent = text;
   bubble.hidden = false;
-  petSaid = performance.now();
   clearTimeout(bubbleT);
   bubbleT = setTimeout(() => { bubble.hidden = true; }, ms);
 }
@@ -2062,15 +2142,15 @@ function petFeed(n, u) {
     const [, name, fact] = PET_STAGES[now];
     petFeel('happy', 3000);
     const n0 = PET_STAGES[now][0], why = `${fmt(n0)} är ${binStr(n0)} binärt: ettan har flyttat ett steg åt vänster, och varje steg åt vänster är värt dubbelt.`;
-    petSay(`${before ? 'Jag växte' : 'Jag kläcktes'}: ${name}! ${now > 1 ? why + ' ' : ''}${fact}`, 16000);
-    out(`# Bit ${before ? 'växte till' : 'kläcktes:'} ${name}. ${now > 1 ? why + ' ' : ''}${fact}`, 'hot');
+    petSay(`${before ? 'Jag växte' : 'Jag kläcktes'}: ${name}! ${now > 1 ? why + ' ' : ''}${fact}`, 'nytt', 16000);
+    if (chat.hidden) out(`# Bit ${before ? 'växte till' : 'kläcktes:'} ${name}. ${now > 1 ? why + ' ' : ''}${fact}`, 'hot');
     return sfx('levelUp');
   }
   petFeel('eat', 900);
   petFly('bit', Math.min(n, 6));
   if (performance.now() - petSaid < 30000 || Math.random() < .5) return;
   const b = binStr(pet.bits), tip = u && Math.random() < .6 && petTip(u);
-  petSay(tip || `Nu har jag ätit ${bitar(pet.bits)}. Binärt ${b}, alltså ${binParts(pet.bits)}.`);
+  petSay(tip || `Nu har jag ätit ${bitar(pet.bits)}. Binärt ${b}, alltså ${binParts(pet.bits)}.`, tip ? 'tips' : 'fakta');
 }
 // Farliga kommandon: Bit blir rädd och säger varför. Bara lärdomar, inget stopp.
 const PET_FEAR = [
@@ -2082,13 +2162,14 @@ const PET_FEAR = [
 ];
 function petWatch(raw) {
   const hit = PET_FEAR.find(([re]) => re.test(raw));
-  if (hit) { petFeel('scared', 2500); petSay(hit[1]); }
+  if (hit) { petFeel('scared', 2500); petSay(hit[1], 'varning'); }
 }
 function petPat() {
   const st = petStage(pet.bits), [, name, fact] = PET_STAGES[st], next = PET_STAGES[st + 1];
   petFeel('love', 1600);
   petFly('heart', 4);
-  petSay(`${name} · ${bitar(pet.bits)} uppätna, binärt ${binStr(pet.bits)} (${binParts(pet.bits)}) · ${next ? `${fmt(next[0] - pet.bits)} till ${next[1]}, ${binStr(next[0])} binärt` : 'fullvuxen'}. ${fact}`, 14000);
+  if (!chat.hidden) return petSay(FACTS[factI++ % FACTS.length], 'fakta'); // panelen visar redan läget, så en klapp ger en fakta
+  petSay(`${name} · ${bitar(pet.bits)} uppätna, binärt ${binStr(pet.bits)} (${binParts(pet.bits)}) · ${next ? `${fmt(next[0] - pet.bits)} till ${next[1]}, ${binStr(next[0])} binärt` : 'fullvuxen'}. ${fact}`, 'fakta', 14000);
 }
 petEl.addEventListener('click', () => { petPat(); if (mode === 'play') cmd.focus(); });
 
@@ -2427,20 +2508,20 @@ function run(raw) {
   for (const b of hits) {
     const p = points(b, n, S.level);
     S.score += p; S.cleared++;
-    if (++S.streak % 10 === 0 && S.charges < 3) { S.charges++; out('# 10 rätt i rad: +1 clear. Skriv clear när brunnen börjar bli full.', 'hot'); }
+    if (++S.streak % 10 === 0 && S.charges < 3) { S.charges++; out('# 10 rätt i rad: +1 clear. Skriv clear när brunnen börjar bli full.', 'hot'); petSay('Tio rätt i rad! Du fick en clear. Skriv clear när brunnen börjar bli full, så rensas allt.', 'nytt'); }
     out(`# +${fmt(p)}  ${b.why}`, 'cmt');
     remove(b);
   }
-  if (n > 1) { out(`# kombo x${n}`, 'hot'); sfx('combo', n); } else if (n || progressed) sfx('clear');
+  if (n > 1) { out(`# kombo x${n}`, 'hot'); sfx('combo', n); if (n > 2) petSay(`Kombo x${n}! Flera block med samma Enter: ; kör kommandona efter varandra.`, 'nytt'); } else if (n || progressed) sfx('clear');
   if (progressed) S.stuck = 0;
   petFeed(hits.reduce((s, b) => s + (b.helped ? 0 : b.steps.length), 0), S.lastU);
 
   const lv = S.start + Math.floor(S.cleared / 10);
-  if (lv > S.level) { S.level = lv; out(`# nivå ${lv}: tempot ökar`, 'hot'); sfx('levelUp'); music(); setTimeout(boss, 700); }
+  if (lv > S.level) { S.level = lv; out(`# nivå ${lv}: tempot ökar`, 'hot'); petSay(`Nivå ${lv}! Blocken faller fortare nu, och svårare kommandon kan dyka upp.`, 'nytt'); sfx('levelUp'); music(); setTimeout(boss, 700); }
   if (errs) fail(errs); // varje fel räknas, så att ett makro med ; inte lönar sig
   if (errs && !progressed) {
     petFeel('sad', 1200);
-    if (++S.stuck === 3 && !S.nudged) { S.nudged = true; petSay('Kört fast? Klicka på ett block, så visar hjälpkortet svaret. Blocket ger 0 poäng, men du lär dig kommandot.', 10000); }
+    if (++S.stuck === 3 && !S.nudged) { S.nudged = true; petSay('Kört fast? Klicka på ett block, så visar hjälpkortet svaret. Blocket ger 0 poäng, men du lär dig kommandot.', 'tips', 10000); }
   }
   stats();
 }
@@ -2595,7 +2676,7 @@ function gameOver() {
   stats();
   try { snd()?.stop(); } catch {}
   sfx(place === 1 && S.score > 0 ? 'newHighscore' : 'gameOver');
-  if (S.fed) petSay(`Jag åt ${bitar(S.fed)} den här rundan. Tack!`);
+  petSay(`Rundan slut: ${fmt(S.score)} p på nivå ${S.level}, ${S.cleared} block.${S.fed ? ` Jag åt ${bitar(S.fed)}. Tack!` : ''}${place === 1 && S.score > 0 ? ' Nytt rekord!' : ''}`, 'nytt');
   shared = `./terminal · ${PACKS[S.pack].name} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/terminal/`;
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
@@ -2667,7 +2748,7 @@ function tab() {
   else if (r.line !== v) { cmd.value = r.line; tabbed = {out: r.line}; }
   else if (tabbed?.out === v) { echo(v, new Set()); out(r.list.join('  ')); }
   else tabbed = {out: v};
-  if (cmd.value !== v && !tabHinted) { tabHinted = true; petSay('Tab fyller i åt dig. Proffsen trycker Tab hela tiden: färre stavfel, och du ser vad som finns.'); }
+  if (cmd.value !== v && !tabHinted) { tabHinted = true; petSay('Tab fyller i åt dig. Proffsen trycker Tab hela tiden: färre stavfel, och du ser vad som finns.', 'tips'); }
 }
 document.addEventListener('selectionchange', () => document.activeElement === cmd && sync());
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
@@ -3402,6 +3483,7 @@ const DO = {
   quit: () => (S ? gameOver() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
   explorer: icon => openSide('explorer', icon),
+  bitbar: () => { bitClosed = !bitClosed; placePet(); },
   search: icon => {
     if (['boss', 'quiz', 'quizover'].includes(mode)) return;
     if (sideView === 'search' && !icon) return $('#q')?.focus();
@@ -3628,8 +3710,9 @@ if (prefs.shell) { applyShell(); menu(); } else { askShell(); applyShell(); }
 showEditor('stats');
 resized();
 if (editor.offsetHeight) editor.style.height = editor.offsetHeight + 'px';
-if (pet.last && Date.now() - Date.parse(pet.last) > 3 * 864e5) petSay('Där är du! Jag har saknat dig. Lite terminal varje vecka håller kommandona i fingrarna.');
-petDraw(petBase());
+if (pet.last && Date.now() - Date.parse(pet.last) > 3 * 864e5) petSay('Där är du! Jag har saknat dig. Lite terminal varje vecka håller kommandona i fingrarna.', 'nytt');
+wideBit.addEventListener('change', placePet);
+placePet();
 if (load(CRASH, null)) reboot(load(CRASH, null)); // kraschen sitter kvar efter vanlig F5
 sync();
 cmd.focus();

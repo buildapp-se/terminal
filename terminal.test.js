@@ -317,7 +317,7 @@ assert.deepStrictEqual(PET_STAGES.map(s => s[0]), [0, ...Array.from({length: PET
 assert.deepStrictEqual([0, 1, 3, 4, 7, 8, 9, 1024, 5000].map(petStage), [0, 1, 2, 3, 3, 4, 4, PET_STAGES.length - 1, PET_STAGES.length - 1]);
 assert.deepStrictEqual([0, 1, 2, 3, 4].map(binStr), ['0000', '0001', '0010', '0011', '0100']);
 assert.strictEqual(binStr(18), '0001 0010'); assert.strictEqual(binStr(255), '1111 1111');
-assert.strictEqual(binParts(13), '8 + 4 + 1'); assert.strictEqual(binParts(0), '0'); assert.strictEqual(binParts(16), '16');
+assert.strictEqual(binParts(13), '8 + 4 + 1'); assert.strictEqual(binParts(0), '0'); assert.strictEqual(binParts(16), '16'); assert.strictEqual(binParts(1028), '1 024 + 4', 'svenska mellanslag i tusental');
 for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(text), 'svensk text: inga tankstreck, decimalkomma: ' + text);
 // PowerShell frågar om mappen inte är tom
 sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');
