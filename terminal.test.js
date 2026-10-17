@@ -342,4 +342,38 @@ sh = shell(false);
 sh('cat notes.txt | sort > sorterad.txt');
 assert.ok(typeof sh.fs.projekt['sorterad.txt'] === 'string' && sh.fs.projekt['sorterad.txt'].length, '> efter en pipe skriver filen');
 
+// Speltestarens fynd: likvärdiga former godkänns, men inte allt som liknar
+eq('git push origin main', 'git push'); eq('git pull origin main', 'git pull'); eq('git push origin', 'git push'); eq('git push', 'git push origin main');
+eq('git -C budget push origin main', 'git -C budget push');
+ne('git push -u origin main', 'git push'); ne('git push --force', 'git push'); ne('git push origin main --force', 'git push');
+ne('git push origin dark-mode', 'git push'); ne('git push upstream main', 'git push'); ne('git push -u origin main', 'git push -u origin dark-mode');
+eq('head --lines=10 app.log', 'head -n 10 app.log'); eq('head --lines 10 app.log', 'head -n 10 app.log'); eq('head -n10 app.log', 'head -n 10 app.log');
+eq('head -10 app.log', 'head -n 10 app.log'); eq('tail --lines=20 app.log', 'tail -n 20 app.log'); eq('tail -n20 app.log', 'tail -20 app.log');
+ne('head -n 5 app.log', 'head -n 10 app.log'); ne('tail -n 20 app.log', 'head -n 20 app.log'); ne('wc --lines notes.txt', 'wc -n notes.txt');
+eq('rm --recursive demo', 'rm -r demo'); eq('cp --recursive musik bilder', 'cp -r musik bilder'); eq('grep --recursive TODO .', 'grep -r TODO .');
+eq('grep --ignore-case TODO notes.txt', 'grep -i TODO notes.txt'); eq('grep -i --recursive TODO .', 'grep -ri TODO .');
+ne('rm -r demo', 'rm demo'); ne('rm --recursive demo', 'rm demo'); ne('grep TODO notes.txt', 'grep -i TODO notes.txt');
+eq('git commit --message="fixa menyn"', 'git commit -m "fixa menyn"'); eq('git commit --message "fixa menyn"', 'git commit -m "fixa menyn"');
+eq('git remote --verbose', 'git remote -v'); eq('git branch --delete dark-mode', 'git branch -d dark-mode'); eq('tar --verbose -xzf backup.tar.gz', 'tar -xvzf backup.tar.gz');
+ne('git commit --message="fixa"', 'git commit -m "fixa menyn"'); ne('git branch --delete dark-mode', 'git branch -D dark-mode');
+eq('kill -15 4821', 'kill 4821'); eq('kill -TERM 4821', 'kill 4821'); eq('kill -s TERM 4821', 'kill 4821'); eq('kill -SIGTERM 4821', 'kill 4821');
+eq('kill -9 4821', 'kill -KILL 4821'); eq('kill -s SIGKILL 4821', 'kill -9 4821'); eq('kill -s 9 4821', 'kill -s KILL 4821');
+ne('kill -9 4821', 'kill 4821'); ne('kill 4821', 'kill -9 4821'); ne('kill -HUP 4821', 'kill 4821'); ne('kill 4822', 'kill 4821');
+eq('ps -aux', 'ps aux'); ne('ps -ef', 'ps aux'); eq('chmod a+x deploy.sh', 'chmod +x deploy.sh'); ne('chmod +w deploy.sh', 'chmod +x deploy.sh'); ne('chmod a-x deploy.sh', 'chmod +x deploy.sh');
+eq('curl -s https://example.com', 'curl https://example.com'); eq('curl --silent https://example.com', 'curl https://example.com'); eq('curl -sS https://example.com', 'curl https://example.com');
+eq('curl -so data.json https://example.com/data.json', 'curl -o data.json https://example.com/data.json'); ne('curl -sI https://example.com', 'curl https://example.com');
+eq('ssh-keygen -t ed25519 -C "patrik@buildapp.se"', 'ssh-keygen -t ed25519'); eq('ssh-keygen -C hej -t ed25519', 'ssh-keygen -t ed25519'); ne('ssh-keygen -t rsa', 'ssh-keygen -t ed25519');
+eq('ping -c4 google.com', 'ping -c 4 google.com'); eq('ping google.com -c 4', 'ping -c 4 google.com'); ne('ping -c 5 google.com', 'ping -c 4 google.com');
+eq('gh pr merge 8 --repo=Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning --merge'); eq('gh repo view --repo Elwyndaz/forskning', 'gh repo view -R Elwyndaz/forskning');
+ne('gh pr merge 8 --repo Elwyndaz/annat --merge', 'gh pr merge 8 -R Elwyndaz/forskning --merge');
+eqp('Test-NetConnection -ComputerName buildapp.se -Port 443', 'Test-NetConnection buildapp.se -Port 443'); eqp('Test-NetConnection -TraceRoute buildapp.se', 'Test-NetConnection buildapp.se -TraceRoute');
+eqp('Test-NetConnection -Port 443 -ComputerName buildapp.se', 'Test-NetConnection buildapp.se -Port 443');
+nep('Test-NetConnection buildapp.se -Port 80', 'Test-NetConnection buildapp.se -Port 443'); nep('Test-NetConnection buildapp.se', 'Test-NetConnection buildapp.se -TraceRoute');
+eqp('Resolve-DnsName -Name buildapp.se', 'Resolve-DnsName buildapp.se'); nep('Resolve-DnsName -Name example.com', 'Resolve-DnsName buildapp.se');
+eqp('Test-Connection -ComputerName google.com', 'Test-Connection google.com'); eqp('Test-Connection google.com -Count 4', 'Test-Connection google.com'); nep('Test-Connection google.com -Count 1', 'Test-Connection google.com');
+eqp('Stop-Process -Id 4821 -Force', 'Stop-Process -Id 4821'); eqp('kill 4821 -Force', 'Stop-Process -Id 4821'); nep('Stop-Process -Id 4822 -Force', 'Stop-Process -Id 4821');
+eqp('git push origin main', 'git push'); eqp('curl.exe -s https://example.com', 'curl.exe https://example.com');
+// Låtsasskalet (keep) ser fortfarande -Force
+assert.ok(canon(tokenize('Stop-Process -Id 4821 -Force', true), true, true).includes('-force'));
+
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);
