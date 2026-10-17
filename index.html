@@ -91,7 +91,7 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .pright{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--dim);letter-spacing:0;font-size:12px}
 
 .term{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 20px 6px;font:14px/1.4 var(--mono);cursor:text}
-.well{position:relative;flex:1;min-height:0;overflow:hidden}
+.well{position:relative;flex:1;min-height:120px;overflow:hidden}
 .log{flex:none;height:9.8em;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;white-space:pre-wrap;word-break:break-word}
 .prompt{flex:none;display:flex;flex-wrap:wrap;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
 .u{color:var(--green);font-weight:700}.p{color:var(--blue);font-weight:700}
@@ -167,7 +167,7 @@ kbd{font:inherit;color:var(--yellow)}
 .pet svg{display:block;width:100%;height:100%;transform:scale(var(--s,1));transform-origin:50% 100%;overflow:visible}
 .pet:hover svg{transform:scale(var(--s,1)) rotate(-4deg)}
 .pet:focus-visible{outline:1px solid var(--accent)}
-.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#5A5A5A;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
+.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#7A7A7A;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
 .pet .body{transform-box:fill-box;transform-origin:50% 100%;animation:breathe 2.6s ease-in-out infinite}
 .pet .egg{transform-box:fill-box;transform-origin:50% 100%;animation:wobble 3s ease-in-out infinite}
 .pet.eat .body,.pet.happy .body{animation:boing .32s ease-in-out 3}.pet.scared .body{animation:shiver .12s linear infinite}.pet.sad .body{animation:none;transform:scaleY(.94)}
@@ -194,7 +194,7 @@ kbd{font:inherit;color:var(--yellow)}
 .reg .nm{font-weight:600;color:var(--fg);margin-bottom:8px}
 .lamps{display:flex;justify-content:center;gap:2px;flex-wrap:wrap}.lamps .gap{width:6px}
 .lamp{display:flex;flex-direction:column;align-items:center;width:26px}.lamps.many{gap:1px}.lamps.many .lamp{width:16px}
-.lamp b{display:grid;place-items:center;width:calc(100% - 2px);height:28px;border-radius:4px;background:#262626;color:#5A5A5A;font:400 15px var(--mono)}.lamps.many .lamp b{height:22px;font-size:12px}
+.lamp b{display:grid;place-items:center;width:calc(100% - 2px);height:28px;border-radius:4px;background:#262626;color:#7A7A7A;font:400 15px var(--mono)}.lamps.many .lamp b{height:22px;font-size:12px}
 .lamp.on b{background:#1E4D3E;color:#8FE3C8;box-shadow:0 0 8px #8FE3C866}
 .lamp small{font:9px var(--mono);color:var(--faint);margin-top:2px}
 .reg .sum{margin-top:8px;font:12px var(--mono);color:var(--dim)}
@@ -480,8 +480,8 @@ const TASKS = [
 const OPS = new Set(['|', '>', '>>', '&&', ';', '||']);
 const ANY = '{any}';
 // Korta flaggor som tar ett värde, per kommando, så att -m "text" hålls ihop när flaggorna sorteras
-const VALS = {git: 'mbcCdD', gh: 'Rh', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k'};
-const LONGVALS = new Set(['--source', '--message', '--title', '--body', '--output', '--header', '--data', '--request', '--json']);
+const VALS = {git: 'mbcC', gh: 'Rh', head: 'nc', tail: 'nc', grep: 'eABCm', curl: 'XHdo', lsof: 'ip', ssh: 'ip', kill: 's', tar: 'fC', sed: 'e', du: 'd', sort: 'k'};
+const LONGVALS = new Set(['--source', '--message', '--title', '--body', '--output', '--header', '--data', '--request', '--json', '--repo', '--file', '--id', '--scopes', '--only']);
 
 // Delar en rad som bash: citattecken, backslash och operatorer. Oavslutat citat kastar fel.
 // I PowerShell är backslash ett vanligt tecken i sökvägar och backtick är escape.
@@ -542,15 +542,16 @@ function canon(seg, ps = false, keep = false) {
 }
 function canonStage([cmd, ...rest]) {
   if (cmd === 'find') return [cmd, ...rest.map(path)]; // find har långa flaggor med ett streck, -name
+  if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map(t => (/^-(c|command)$/i.test(t) ? '-Command' : t))];
   const vals = VALS[cmd] || '', pos = [], flags = [];
   for (let i = 0; i < rest.length; i++) {
     const t = rest[i], next = rest[i + 1];
-    const free = next !== undefined && !next.startsWith('-') && !OPS.has(next);
+    const free = next !== undefined && !/^--?[A-Za-z]/.test(next) && !OPS.has(next);
     if (/^--[\w-]+=/.test(t)) { const k = t.indexOf('='); flags.push(t.slice(0, k) + '=' + path(t.slice(k + 1))); }
     else if (/^--[\w-]+$/.test(t)) flags.push(LONGVALS.has(t) && free ? t + '=' + path(rest[++i]) : t);
     else if (/^-[A-Za-z]+$/.test(t)) {
       const letters = [...t.slice(1)];
-      letters.forEach((l, k) => flags.push('-' + l + (k === letters.length - 1 && vals.includes(l) && free ? '=' + rest[++i] : '')));
+      letters.forEach((l, k) => flags.push('-' + l + (k === letters.length - 1 && vals.includes(l) && free ? '=' + path(rest[++i]) : '')));
     }
     else pos.push(t === '>' || t === '>>' ? t : path(t));
   }
@@ -623,7 +624,7 @@ function psparam(cmd, name) {
 // Normalform för PowerShell: små bokstäver, alias utbytta, parametrar med namn, positionella på sina platser
 function canonPSStage([c, ...rest], keep = false) {
   const [cmd, ...pre] = (PSALIAS[c.toLowerCase()] || c.toLowerCase()).split(' ');
-  if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest]); // git, npm, curl.exe: rättas som i bash
+  if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest.map(t => t.replace(/\\/g, '/'))]); // git, npm, curl.exe: rättas som i bash
   // rm a, b är en lista: orden kring kommatecknet blir ett värde, a,b
   const toks = [...pre, ...rest].reduce((o, t) => (o.length && (o.at(-1).endsWith(',') || t.startsWith(',')) ? (o[o.length - 1] += t, o) : (o.push(t), o)), []), pos = [], named = {}, flags = [];
   for (let i = 0; i < toks.length; i++) {
@@ -684,7 +685,7 @@ function complete(fs, cwd, line, ps, cmds) {
   else {
     const node = look(fs, resolve(cwd, dir), ps).node;
     if (typeof node !== 'object') return {line, list: [], base: head + dir};
-    list = Object.keys(node).filter(n => starts(n) && (part.startsWith('.') || !n.startsWith('.'))).sort().map(n => (typeof node[n] === 'object' ? n + sep : n));
+    list = Object.keys(node).filter(n => starts(n) && (part.startsWith('.') || !(ps ? PSHIDDEN.has(n) : n.startsWith('.')))).sort().map(n => (typeof node[n] === 'object' ? n + sep : n));
   }
   const base = head + dir;
   if (!list.length) return {line, list, base};
@@ -1014,7 +1015,7 @@ const PSOP = {'get-childitem': 'ls', 'set-location': 'cd', 'get-location': 'pwd'
   'move-item': 'mv', 'copy-item': 'cp', 'write-output': 'echo', 'set-content': 'set', 'add-content': 'add', 'new-item': 'new',
   'test-path': 'test', 'get-item': 'item', 'write-host': 'host', 'out-file': 'out', 'invoke-item': 'open', 'start-process': 'open', 'select-string': 'sls'};
 const PSCMD = {ls: 'Get-ChildItem', cd: 'Set-Location', cat: 'Get-Content', rm: 'Remove-Item', ren: 'Rename-Item', mv: 'Move-Item', cp: 'Copy-Item',
-  set: 'Set-Content', add: 'Add-Content', new: 'New-Item', echo: 'Write-Output', test: 'Test-Path', item: 'Get-Item', host: 'Write-Host', out: 'Out-File', sls: 'Select-String'};
+  set: 'Set-Content', add: 'Add-Content', new: 'New-Item', echo: 'Write-Output', test: 'Test-Path', item: 'Get-Item', host: 'Write-Host', out: 'Out-File', sls: 'Select-String', open: 'Invoke-Item'};
 const PSONLY = new Set(Object.keys(PSCMD).filter(k => !['ls', 'cd', 'cat', 'rm', 'mv', 'cp', 'echo'].includes(k))); // ren och set finns inte i bash
 
 // Miljövariablerna från början. Det du sätter med export eller $env:X hamnar i env, som fake läser och skriver.
@@ -1060,14 +1061,13 @@ const PTYPE = {path: 'System.String[]', literalpath: 'System.String[]', include:
 // note: visas i stället för tystnad, när tystnaden betyder något annat än att det gick bra (inga träffar).
 // env: miljövariablerna, ändras av export och $env:X. OLDPWD är mappen cd - går tillbaka till.
 function fake(fs, cwd, key, ps, env = {}) {
-  if (key.includes('|')) return piped(fs, cwd, key, ps, env);
   if (ps && key.includes('<')) throw new Error("The '<' operator is reserved for future use.");
   const lt = key.indexOf('<'), stdin = lt > 0; // cat < fil: filen blir indata, och wc skriver då inget filnamn
   if (stdin) key = [...key.slice(0, lt), ...key.slice(lt + 1)];
   const ok = (out = [], extra = {}) => ({cwd, out, ...extra});
   // > och >> för alla kommandon: kör det som står före och skriv utskriften i filen. Write-Host går till skärmen ändå.
   const r = key.findIndex(t => t === '>' || t === '>>');
-  if (r > 0) {
+  if (r > 0 && r > key.lastIndexOf('|')) {
     if (key[r + 1] === undefined) throw new Error(ps ? 'Missing file specification after redirection operator.' : "bash: syntax error near unexpected token `newline'");
     const f = expand(key[r + 1], cwd, ps, env), to = resolve(cwd, f);
     const res = fake(fs, cwd, [...key.slice(0, r), ...key.slice(r + 2)], ps, env);
@@ -1079,6 +1079,7 @@ function fake(fs, cwd, key, ps, env = {}) {
     own(dir, Object.keys(dir).find(k => ps && k.toLowerCase() === name.toLowerCase()) ?? name, key[r] === '>>' && node ? (text ? node + '\n' + text : node) : text);
     return {cwd: res.cwd, out: host ? [...res.out, '# Write-Host skriver bara till skärmen, så > fick ingenting. Write-Output går att skicka vidare till en fil.'] : []};
   }
+  if (key.includes('|')) return piped(fs, cwd, key, ps, env); // efter > ovan, så att cat f | sort > ut.txt skriver filen
   const [c, ...raw] = key, rest = raw.map(t => expand(t, cwd, ps, env));
 
   // Variabler som kommandon: $HOME ensam, $env:PORT = 3000, PORT=3000
@@ -1111,7 +1112,8 @@ function fake(fs, cwd, key, ps, env = {}) {
   const num = (f, d) => +(val(f) ?? flags.find(x => /^-\d+$/.test(x))?.slice(1) ?? d);
   const at = a => resolve(cwd, a), get = a => look(fs, at(a), ps), full = a => where(at(a), ps);
   const parent = a => look(fs, at(a).slice(0, -1), ps).node;
-  const fail = (bash, pse) => { throw new Error(ps ? (PSCMD[op] ? `${PSCMD[op]} : ` : '') + pse : bash); };
+  const name = c === 'start-process' ? 'Start-Process' : PSCMD[op];
+  const fail = (bash, pse) => { throw new Error(ps ? (name ? `${name} : ` : '') + pse : bash); };
   const gone = a => `Cannot find path '${full(a)}' because it does not exist.`;
   const put = (a, v) => { const p = parent(a), n = at(a).at(-1); own(p, Object.keys(p).find(k => ps && k.toLowerCase() === n.toLowerCase()) ?? n, v); };
   const del = real => { delete look(fs, real.slice(0, -1), ps).node[real.at(-1)]; };
@@ -1140,7 +1142,7 @@ function fake(fs, cwd, key, ps, env = {}) {
   if (args.length < need) {
     if (!ps && !args.length) return null;
     if (!ps) fail(`${op}: missing destination file operand after '${a0}'\nTry '${op} --help' for more information.`);
-    throw new Error(`cmdlet ${PSCMD[op]} at command pipeline position 1\nSupply values for the following parameters:\n${!args.length ? (op === 'sls' ? 'Pattern[0]' : 'Path[0]') : op === 'ren' ? 'NewName' : 'Destination'}:`);
+    throw new Error(`cmdlet ${name} at command pipeline position 1\nSupply values for the following parameters:\n${!args.length ? (op === 'sls' ? 'Pattern[0]' : 'Path[0]') : op === 'ren' ? 'NewName' : 'Destination'}:`);
   }
   // Bara argument som är sökvägar: echo /usr/bin är text, och grep /api . söker efter texten /api
   const paths = ['echo', 'host', 'export'].includes(op) ? [] : ['grep', 'sls'].includes(op) ? args.slice(1) : args;
@@ -1521,7 +1523,7 @@ function piped(fs, cwd, key, ps, env = {}) {
   }
   const r = fake(fs, cwd, first, ps, env);
   if (!r) return null;
-  let lines = !ps && c === 'ls' ? r.out.flatMap(l => l.split(/ {2,}/)) : r.out; // ls i en pipe skriver ett namn per rad
+  let lines = !ps && c === 'ls' ? r.out.flatMap(l => l.split(/ {2,}/)) : c === 'sls' ? r.out.filter(Boolean) : r.out; // ls i en pipe skriver ett namn per rad
   const hs = l => parseFloat(l) * ({K: 1, M: 1024, G: 1048576}[l.match(/^[\d.]+([KMG])/)?.[1]] ?? 1);
   for (const [f, ...fl] of rest) {
     const word = fl.find(t => !t.startsWith('-'));
@@ -1531,7 +1533,7 @@ function piped(fs, cwd, key, ps, env = {}) {
     else if (f === 'wc') lines = [String(lines.length)];
     else if (f === 'grep' && word) { const re = mkre(word, fl.includes('-i')); lines = lines.filter(l => re.test(l) !== fl.includes('-v')); if (fl.includes('-c')) lines = [String(lines.length)]; }
     else if (f === 'select-string' && word) { const re = mkre(word, !fl.includes('-casesensitive')); lines = lines.filter(l => re.test(l)); }
-    else if (f === 'measure-object' && fl.includes('-line')) lines = ['', 'Lines Words Characters Property', '----- ----- ---------- --------', String(lines.length).padStart(5), ''];
+    else if (f === 'measure-object' && fl.includes('-line')) lines = ['', 'Lines Words Characters Property', '----- ----- ---------- --------', String(lines.filter(Boolean).length).padStart(5), ''];
     else if (f === 'measure-object') lines = table([['Count', lines.length], ['Average', ''], ['Sum', ''], ['Maximum', ''], ['Minimum', ''], ['Property', '']]);
     else if ((f === 'out-file' || f === 'set-content' || f === 'add-content' || f === 'tee') && word) {
       // | Out-File fil och | tee fil skriver raderna i filen. tee skickar dem också vidare till skärmen.
@@ -2125,19 +2127,26 @@ function petSay(text, kind = 'tips', ms = 7000) {
 }
 // Tips om en flagga till kommandot du just löste med, som du inte använde. Ur hjälpkortets förklaringar.
 function petTip(u) {
-  const c = S.ps ? PSNAME[psCmd(u[0])] || u[0] : u[0], used = u.map(t => t.toLowerCase());
-  const keys = Object.keys(GLOSS).filter(k => k.toLowerCase().startsWith(c.toLowerCase() + ' -') && !used.includes(k.slice(c.length + 1).toLowerCase()));
+  const c = S.ps ? PSNAME[psCmd(u[0])] || u[0] : u[0], sw = PSPARAMS[psCmd(u[0])]?.sw;
+  if (/^(git|gh|npm|npx|uv|uvx|wrangler|firebase|winget)$/.test(c)) return null; // gh --fill finns bara efter pr create
+  const used = [...u, ...canon(u, S.ps)].map(t => t.toLowerCase().split('=')[0]); // canon delar -la i -l och -a
+  const keys = Object.keys(GLOSS).filter(k => {
+    const fl = k.slice(c.length + 1);
+    if (!k.toLowerCase().startsWith(c.toLowerCase() + ' -') || /\s/.test(fl) || used.includes(fl.toLowerCase())) return false;
+    return S.ps ? !!sw?.has(fl.slice(1).toLowerCase()) : !LONGVALS.has(fl) && !(/^-\w$/.test(fl) && (VALS[c] || '').includes(fl[1]));
+  });
   if (!keys.length) return null;
   const k = keys[Math.floor(Math.random() * keys.length)];
   return `Mums, ${c}! Prova ${k} nästa gång (${GLOSS[k].replace(/\.$/, '')}).`;
 }
 function petFeed(n, u) {
   if (!n) return;
-  const before = petStage(pet.bits);
+  const before = pet.shown ?? petStage(pet.bits);
   pet.bits += n; pet.last = new Date().toISOString().slice(0, 10);
+  const now = pet.shown = Math.min(petStage(pet.bits), before + 1); // hoppar den flera stadier visas nästa vid nästa måltid
   save(PET, pet);
   if (S) S.fed = (S.fed || 0) + n;
-  const now = petStage(pet.bits);
+  petFly('bit', Math.min(n, 6));
   if (now > before) {
     const [, name, fact] = PET_STAGES[now];
     petFeel('happy', 3000);
@@ -2147,7 +2156,6 @@ function petFeed(n, u) {
     return sfx('levelUp');
   }
   petFeel('eat', 900);
-  petFly('bit', Math.min(n, 6));
   if (performance.now() - petSaid < 30000 || Math.random() < .5) return;
   const b = binStr(pet.bits), tip = u && Math.random() < .6 && petTip(u);
   petSay(tip || `Nu har jag ätit ${bitar(pet.bits)}. Binärt ${b}, alltså ${binParts(pet.bits)}.`, tip ? 'tips' : 'fakta');
@@ -2200,7 +2208,7 @@ const OUT = {
       ch.length ? 'no changes added to commit (use "git add" and/or "git commit -a")' : 'nothing to commit, working tree clean'].join('\n');
   },
   'git add': '', 'git restore': '', 'git init': (a, ps) => `Initialized empty Git repository in ${ps ? 'C:/Users/du' : '/home/du'}/projekt/.git/`,
-  'git commit': a => `[${S?.branch ?? 'main'} ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
+  'git commit': a => `[${S?.branch ?? 'main'} ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${a[a.findIndex(t => /^-[a-z]*m$/.test(t)) + 1] ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
   'git log': a => {
     const log = S?.commits ?? SEEDLOG.map(([id, msg]) => ({id, msg})), head = i => (i ? '' : ` (HEAD -> ${S?.branch ?? 'main'})`);
     return a.includes('--oneline') ? log.map((c, i) => `${c.id}${head(i)} ${c.msg}`).join('\n')
@@ -2481,7 +2489,7 @@ function run(raw) {
       // Det världen svarade vinner över den påhittade utskriften i OUT; tom utskrift med note (inga träffar) visar noten
       const said = r && (r.out.length ? r.out : r.note ? [r.note] : null);
       if (!b) {
-        if (r) { notes.push(...(said ?? [])); continue; }
+        if (r) { notes.push(...(said ?? (mode === 'play' ? [] : [QUIET]))); continue; }
         if (toy(u, notes) || editorCmd(u, notes)) continue;
         const guess = sample(u, S.ps);
         if (mode !== 'play' && guess.length) { notes.push(...guess); continue; } // i quizet får man prova fritt
@@ -2492,7 +2500,7 @@ function run(raw) {
       notes.push(...(said ?? (r || b.pack === 'fs' ? [QUIET] : sample(u, S.ps)))); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
-      else b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`;
+      else { b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`; if (b.landed) b.el.querySelector('.ans').textContent = sig() + show(b.steps[b.step][0].raw); }
     } finally { S.env['?'] = errs > e0 ? '1' : '0'; } }
     prevOk = errs === errsBefore;
   }
@@ -2527,7 +2535,7 @@ function run(raw) {
 }
 
 function fail(n = 1) {
-  S.streak = 0; S.errors += n;
+  S.streak = 0; S.errors += n; S.env['?'] = '1';
   sfx('error');
 }
 
@@ -2736,7 +2744,7 @@ let tabbed = null;
 function tab() {
   if (!S || S.agent || S.vim) return;
   const v = cmd.value;
-  if (S.ps && tabbed?.out === v) {
+  if (S.ps && tabbed?.list && tabbed.out === v) {
     tabbed.i = (tabbed.i + 1) % tabbed.list.length;
     cmd.value = tabbed.out = tabbed.base + tabbed.list[tabbed.i];
     return;
@@ -2754,7 +2762,7 @@ document.addEventListener('selectionchange', () => document.activeElement === cm
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
 cmd.addEventListener('blur', () => term.classList.add('blur'));
 term.addEventListener('click', e => { if (!e.target.closest('button, input') && !getSelection().toString()) cmd.focus(); });
-document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('button, input, textarea') && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
+document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('input, textarea') && !(e.key === ' ' && e.target.closest?.('button')) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
 
 screen.addEventListener('click', e => {
   const t = e.target.closest('button');
@@ -3035,7 +3043,7 @@ code.addEventListener('click', () => {
 });
 function stopEdit() {
   editing = null;
-  code.setAttribute('aria-hidden', 'true');
+  code.setAttribute('aria-hidden', edTab === 'stats');
   editor.querySelector('.tab.dirty')?.classList.remove('dirty');
   showEditor(edTab);
   cmd.focus();
@@ -3088,6 +3096,7 @@ function showEditor(tab) {
   if (getComputedStyle(editor).display === 'none') return false;
   if (editing) { editing = null; $('#code').setAttribute('aria-hidden', 'true'); editor.querySelector('.tab.dirty')?.classList.remove('dirty'); } // byte av flik slutar redigera, osparat försvinner
   edTab = tab;
+  $('#code').setAttribute('aria-hidden', tab === 'stats');
   const prev = editor.querySelector('.preview');
   if (tab === 'file' && edFile) { prev.hidden = false; prev.innerHTML = `${fileIcon(edFile.split('/').pop())} ${esc(edFile.split('/').pop())}`; }
   editor.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.do === tab));
@@ -3105,7 +3114,7 @@ function showEditor(tab) {
 
 // Draglisten mellan redigeraren och panelen: dra, eller pil upp och ner när den har fokus
 function setEditor(h) {
-  const max = $('.work').clientHeight - 150;
+  const max = $('.work').clientHeight - 340;
   editor.style.height = Math.round(Math.max(35, Math.min(max, h))) + 'px';
   resized();
 }
@@ -3114,7 +3123,7 @@ sash.addEventListener('pointerdown', e => {
   sash.setPointerCapture(e.pointerId);
   sash.classList.add('drag');
   sash.onpointermove = m => setEditor(h0 + m.clientY - y0);
-  sash.onpointerup = () => { sash.onpointermove = null; sash.classList.remove('drag'); };
+  sash.onpointerup = () => { sash.onpointermove = null; sash.classList.remove('drag'); cmd.focus(); };
   e.preventDefault();
 });
 sash.addEventListener('keydown', e => {
@@ -3128,7 +3137,7 @@ function resized() {
   ch.textContent = 'x'.repeat(20); log.append(ch);
   COLS = Math.floor(log.clientWidth / (ch.getBoundingClientRect().width / 20 || 8.4)) || 120; // tecken per rad, för PowerShell-tabellen
   ch.remove();
-  if (editor.style.height && editor.offsetHeight > $('.work').clientHeight - 150) editor.style.height = Math.max(35, $('.work').clientHeight - 150) + 'px';
+  if (editor.style.height && editor.offsetHeight > $('.work').clientHeight - 340) editor.style.height = Math.max(35, $('.work').clientHeight - 340) + 'px';
   if (!S) return;
   S.H = well.clientHeight;
   for (const b of S.blocks) b.h = b.el.offsetHeight;
@@ -3418,13 +3427,6 @@ function sheet(name, html) {
 }
 const pre = t => `<pre>${esc(t)}</pre>`;
 
-function treeLines(n, path = [], depth = 0) {
-  const here = (S?.cwd ?? ['projekt']).join('/'), dir = k => typeof n[k] === 'object';
-  return Object.keys(n).filter(k => k !== '.git' && k !== '.hemligt')
-    .sort((a, b) => dir(b) - dir(a) || a.localeCompare(b, 'sv'))
-    .flatMap(k => [`${'  '.repeat(depth)}${dir(k) ? '▾ ' + k : '  ' + k}${[...path, k].join('/') === here ? '   ← du står här' : ''}`,
-      ...(dir(k) ? treeLines(n[k], [...path, k], depth + 1) : [])]);
-}
 
 const EGGS = {
   hunter2: '*******\n# Konstigt, här syns bara stjärnor. I projekt ligger en .env som inte är lika försiktig.',
@@ -3596,7 +3598,7 @@ document.addEventListener('click', e => {
   const act = it?.dataset.item ?? d?.dataset.do;
   if (!act) return;
   act.startsWith('#') ? say(act) : DO[act](!!d?.closest('.activity'));
-  if (!$('#q')) cmd.focus();
+  if (!$('#q') || !e.target.closest('#side')) cmd.focus();
 });
 document.addEventListener('keydown', e => {
   const hard = (e.key === 'F5' && (e.ctrlKey || e.shiftKey)) || (e.key.toLowerCase() === 'r' && e.ctrlKey && e.shiftKey);
@@ -3695,7 +3697,7 @@ cmd.addEventListener('keydown', e => {
 
 window.addEventListener('blur', () => pause(true));
 window.addEventListener('resize', resized);
-$('#sound').addEventListener('click', () => setSound(!soundOn));
+$('#sound').addEventListener('click', () => { setSound(!soundOn); cmd.focus(); });
 $('#gear').addEventListener('click', () => { settings(); cmd.focus(); });
 
 function frame(now) {

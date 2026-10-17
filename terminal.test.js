@@ -323,4 +323,23 @@ for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.
 sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');
 sh.bad('Remove-Item tom', /Confirm\n[\s\S]*tom has children[\s\S]*\): N\n# spelet svarar N/);
 
+// Antigravitys granskning 2026-10-17: fel som spelet visade eller rättade fel
+const peq = (a, b) => assert.ok(same(pkey(a), pkey(b)), a + '  borde godkännas som  ' + b);
+eq('powershell -command "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
+eq('powershell -c "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
+ne('powershell -Conmanmad "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
+peq('python .\\spel.py', 'python spel.py'); peq('git -C budget\\ push', 'git -C budget push');
+eq('gh pr merge --repo Elwyndaz/forskning 8 --merge', 'gh pr merge 8 --repo=Elwyndaz/forskning --merge');
+eq('npx wrangler d1 execute db --local --file schema.sql', 'npx wrangler d1 execute db --local --file=schema.sql');
+eq('winget install --id=Git.Git -e', 'winget install --id Git.Git -e');
+eq('git branch -d -D fix-login', 'git branch -dD fix-login');
+eq('git commit -m "- fixa"', 'git commit -m "{any}"');
+sh = shell(true);
+assert.match(sh.out('Select-String ERROR app.log | Measure-Object'), /Count\s+: 4\b/, 'Select-String räknar bara träffar');
+for (const c of ['ii', 'start', 'Invoke-Item', 'Start-Process']) sh.bad(c, e => !/undefined/.test(e.message) && /cmdlet (Invoke-Item|Start-Process) /.test(e.message));
+assert.ok(complete(sh.fs, ['projekt'], 'cat .e', true).line.includes('.env'), 'Tab i PowerShell hittar .env');
+sh = shell(false);
+sh('cat notes.txt | sort > sorterad.txt');
+assert.ok(typeof sh.fs.projekt['sorterad.txt'] === 'string' && sh.fs.projekt['sorterad.txt'].length, '> efter en pipe skriver filen');
+
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);

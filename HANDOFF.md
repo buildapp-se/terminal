@@ -2,12 +2,14 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Speltestarens fynd i BACKLOG.md (fel som lär ut fel först), sedan Som Claude Code ombyggt med Patriks !-kommandon
+nextAction: P1 i granskningsavsnittet (låsta block i Filer & mappar), Patriks beslut om samtidiga block, sedan speltestarens fynd och Som Claude Code ombyggt med Patriks !-kommandon
 blockers: []
 reviewedAt: 2026-10-17
 ---
 
 # Handoff: ./terminal
+
+**2026-10-17, Bit i panelen och Antigravitys granskning.** Bit bor i ett sidofält till höger från 1 000 px (`9bce473`), med lampor, mätare och etiketterad logg; mobilen har kvar hörnet. Antigravity (gemini-4-argon-high, plan-läge i sandlåda, 14 min) granskade `4caaf67`; rapporten kontrollerades mot koden, ett påstående var fel (`-Conmanmad` godkändes inte). Åtgärdat: rättningen (`powershell -c`, `\` i sökvägar efter program i PowerShell, långa flaggor med värde, `-D` på flera grenar, `-m "- text"`), låtsasskalet (`Select-String | Measure-Object` räknade luftraderna, `ii`/`start` gav "cmdlet undefined", `> fil` efter en pipe, `Measure-Object -Line` hoppar över tomma rader, `git commit -am` visade inte meddelandet, `$?` efter syntaxfel), dubbel-Tab i PowerShell kraschade, landade kedjeblock visade fel steg, brunnen kunde krympa till noll (game over) när redigeraren drogs ner, fokusfällor, README dold för skärmläsare, Bit hoppade över stadier och föreslog ogiltiga flaggor, nollornas kontrast. Resten i BACKLOG. Verifierat: `terminal.test.js` med nya regressionstester, Playwright (`fixes.js`, `petgame.js`, `browser.js`).
 
 **2026-10-17, Bit och Tab.** Terminaldjuret Bit (Patriks idé, binärräkningen och 0000-formen hans), Tab-komplettering och fyra fel som lärde ut fel (`4caaf67`). Speltestaren (en subagent) hittade inga krascher; resten av fynden i BACKLOG. En Antigravity-granskning av hela projektet kördes på `4caaf67` (`review-lane.mjs`, kopia av aifabrikens `tools/owasp-lane.mjs`). Verifierat: `terminal.test.js` (nu även att hela skriptet går att tolka, efter ett syntaxfel som bara webbläsaren såg), Playwright 1280 och 390 px (kläckning, binärräknare, sparning, Tab, rädsla, klapp, blicken, inga JS-fel).
 

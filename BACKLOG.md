@@ -35,7 +35,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 ## Speltestarens fynd (2026-10-17, efter `5616bec` kvar)
 
 - [x] Fel som lär ut fel: versionsfrågor, Hello world med > i PowerShell, `npx firebase-tools`, Confirm-frågan för icke-tom mapp (`4caaf67`).
-- [ ] git-världen säger ja till omöjligheter: `switch nope`, `merge nope`, `branch -d main` på main. Clone: `cd budget` + `git status` visar "Untracked projekt/budget", `git init` där ska ge "Reinitialized", `git clone url mapp` ska säga 'mapp'.
+- [ ] git-världen säger ja till omöjligheter: `switch nope`, `merge nope`, `branch -d main` på main. Alla grenar i `POOLS.b` finns lokalt från start (`fresh`), så `git branch dark-mode` borde svara "already exists"; låt dem ligga under `remotes/origin/` tills man byter till dem. `git push -C budget` godkänns som `git -C budget push` (`-C` gäller bara före underkommandot). Clone: `cd budget` + `git status` visar "Untracked projekt/budget", `git init` där ska ge "Reinitialized", `git clone url mapp` ska säga 'mapp'.
 - [ ] PS-uttryck: `"hej"`, `"hej" > f`, `$PSVersionTable`, `$env:USERPROFILE`, `(Get-Content f).Count`, `(Get-Command node).Source`.
 - [ ] Windows-program i PS: netstat, findstr, tasklist, taskkill, where.exe, py, tnc (alias för Test-NetConnection).
 - [ ] Godkänn likvärdiga former: `git push/pull origin main`; långa flaggor (`--lines=10`, `--recursive`, `--message=`, `--verbose`, `--delete`, `--ignore-case`), `-n10`, `kill -15/-TERM`, `ps -aux`, `chmod a+x`, `curl -s`, `ssh-keygen -C`, `ping -c4`; PS namngivna `Test-NetConnection -ComputerName`, `Resolve-DnsName -Name`, `Test-Connection -Count`, `Stop-Process -Id -Force`.
@@ -45,3 +45,17 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] Mobil: ingen pausknapp (texten säger Esc), kugghjulet syns inte, "Enter starta" under kanten; quizets para ihop och hjälpkortet: dd hamnar utanför 390 px (dt över dd under 600 px). Hjälpkortets första rad klipps under panelflikarna.
 - [ ] Smått: quizräknaren "2 rätt" blir "13 av 16" (para ihop räknas 4), OUTPUT-fliken säger "Spela en runda" mitt i en runda, topplistan och delningstexten visar inte skal, källkontrollens placeholder klipps.
 - [x] Tab-komplettering (`4caaf67`).
+
+## Antigravitys granskning (2026-10-17, på `4caaf67`, kvar)
+
+Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.md`). Kvar:
+
+- [ ] `[P1]` Fria kommandon kan låsa ett block i Filer & mappar: `New-Item backup` (utan `-ItemType Directory`) eller `touch backup` skapar en fil, och sedan går "Skapa mappen backup" inte att lösa förrän man tar bort filen. Säg varför (`# det blev en fil, inte en mapp`), eller låt `spawn` byta ut ett block som inte längre är `doable`.
+- [ ] Låst beslut utmanat: utanför Filer & mappar kan tre block falla samtidigt efter 14 sekunder på nivå 1, och `maxLvFor` drar in svårighet 2 i git redan på nivå 1 (7 uppgifter, gränsen är 8). Förslag: högst `S.level` fallande block åt gången. Patrik avgör (Skalet låses per runda, ingen "lugn start").
+- [ ] Rödmarkeringen i `explain`: saknas bara en flagga (`grep TODO .` mot `grep -r TODO .`) blir alla rätta argument röda; säg "# rätt kommando, men en flagga saknas". Commit-meddelande utan citattecken får ingen förklaring, och citerad fel text markeras inte (`echo` delar på mellanslag).
+- [ ] Låtsasskalet: text som börjar med streck räknas som flagga, så `echo "- [ ] ny punkt" >> todo.md` och `Add-Content todo.md "- [ ] ny"` går fel (rättningen klarar det sedan 2026-10-17).
+- [ ] `vim` eller `claude` i quizet: prompten fastnar i vim- eller agentläget även på resultatskärmen.
+- [ ] Antalet filer räknas bara vid rundstart (`S.lanes`): stänger man Bits panel eller ändrar fönstret mitt i rundan följer de inte med. Obs: med panelen öppen på 1 280 px är brunnen under 980 px, alltså 2 filer i stället för 3.
+- [ ] Underhåll: PowerShell-cmdlets står i åtta tabeller (`PSALIAS`, `PSPARAMS`, `PSPOS`, `PSOP`, `PSCMD`, `PSNAME`, `KNOWNPS`...) som har glidit isär; samla i en. `node()` vid källkontrollen dubblerar `look()`.
+- [ ] Tester: `OUT`, `sample`, `gitWorld`, `changes`, `petTip` ligger utanför `pure` och testas inte; svaren i andra paket än Filer & mappar körs inte genom `fake()` i testet.
+- [ ] Idéer ur granskningen: klickbara lampor i Bits panel (tänd 8 4 2 1 och se summan, plus chmod-siffran för tre bitar), PORTS-fliken som släpper 4821 när man dödat processen, piratlapp på Bit när man hittat `.hemligt/skatt.txt`, `git diff` som visar spelarens egen ändring.
