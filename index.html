@@ -291,6 +291,15 @@ const TASKS = [
   ['fs', 4, 'Gör skriptet deploy.sh körbart', ['chmod +x deploy.sh', 'chmod u+x deploy.sh', 'chmod 755 deploy.sh'], 'chmod = change mode. +x ger rätten att köra filen som program.'],
   ['fs', 4, 'Kör skriptet deploy.sh i mappen du står i', ['./deploy.sh', 'bash deploy.sh', 'sh deploy.sh'], './ betyder här. Bash letar inte i mappen du står i av säkerhetsskäl.'],
   ['fs', 5, 'Visa hur mycket plats mappen {d} tar totalt', 'du -sh {d}', 'du = disk usage. -s = bara summan, -h = human readable (K, M och G i stället för antal kilobyte-block).', "Get-ChildItem {d} -Recurse | Measure-Object -Property Length -Sum", "Summerar Length, storleken i byte, för alla filer i mappen."],
+  // Hello world: skapa filen, skriv koden i den, kör den. Filen syns i trädet och redigeraren, och programmet skriver det som står i filen (runFile).
+  ['fs', 2, `Hello world i JavaScript: skapa hello.js, skriv console.log("Hello world") i den och kör den med node`, [['touch hello.js'], [`echo 'console.log("Hello world")' > hello.js`, `echo "console.log('Hello world')" > hello.js`], ['node hello.js']],
+    'Det klassiska första programmet. touch skapar filen, echo med > skriver koden i den och node kör den. Enkla citattecken runt koden gör att de dubbla inuti följer med.',
+    [['New-Item hello.js'], [`Set-Content hello.js 'console.log("Hello world")'`, `Write-Output 'console.log("Hello world")' > hello.js`], ['node hello.js']],
+    'Det klassiska första programmet. New-Item skapar filen, Set-Content skriver koden i den och node kör den.'],
+  ['fs', 2, `Hello world i Python: skapa hello.py, skriv print("Hello world") i den och kör den med python`, [['touch hello.py'], [`echo 'print("Hello world")' > hello.py`, `echo "print('Hello world')" > hello.py`], ['python hello.py', 'python3 hello.py']],
+    'Samma tre steg i Python: skapa filen, skriv koden, kör. python läser filen rad för rad.',
+    [['New-Item hello.py'], [`Set-Content hello.py 'print("Hello world")'`, `Write-Output 'print("Hello world")' > hello.py`], ['python hello.py']],
+    'Samma tre steg i Python: New-Item skapar, Set-Content skriver koden, python kör.'],
   ['fs', 5, 'Skapa mappen {d}, gå in i den och skapa filen {f}', [['mkdir {d}'], ['cd {d}'], ['touch {f}']], 'Med && körs nästa kommando bara om det förra lyckades.', [["New-Item -ItemType Directory {d}"], ["Set-Location {d}"], ["New-Item {f}"]], "Med ; körs kommandona efter varandra. && finns bara i PowerShell 7."],
   ['fs', 5, 'Visa de 5 största filerna och mapparna här', ['du -sh * | sort -h | tail -n 5', 'du -sh * | sort -h | tail -5'], 'Tre program med | emellan: mät, sortera efter storlek, visa de sista fem.'],
 
@@ -469,10 +478,10 @@ function units(seg, ps = false) {
 const path = t => t.replace(/^\.\/(?=.)/, '').replace(/(.)\/$/, '$1');
 
 // Normalform: positionella argument i ordning, flaggor sorterade och ihopslagna (-rn = -r -n)
-function canon(seg, ps = false) {
+function canon(seg, ps = false, keep = false) {
   const out = [];
   let stage = [];
-  const flush = () => { if (stage.length) out.push(...(ps ? canonPSStage : canonStage)(stage)); stage = []; };
+  const flush = () => { if (stage.length) out.push(...(ps ? canonPSStage(stage, keep) : canonStage(stage))); stage = []; };
   for (const t of seg) if (t === '|') { flush(); out.push('|'); } else stage.push(t);
   flush();
   return out;
@@ -535,7 +544,7 @@ const PSPOS = {'select-string': ['pattern', 'path'], 'copy-item': ['path', 'dest
   'group-object': ['property'], 'select-object': ['property'], 'stop-process': ['id'], 'get-process': ['name'], 'invoke-webrequest': ['uri'], 'invoke-restmethod': ['uri'],
   'get-command': ['name'], 'get-help': ['name'], 'start-sleep': ['seconds'], 'get-nettcpconnection': ['localaddress']};
 const isCmdlet = c => /^[a-z]+-[a-z]+$/.test(c);
-const psval = t => path(t.toLowerCase().replace(/\\/g, '/'));
+const psval = (t, keep) => path((keep ? t : t.toLowerCase()).replace(/\\/g, '/')); // keep: till låtsasskalet, så Hello world inte blir hello world
 // Hela parameternamnet, även när det är förkortat. null om ingen parameter passar, '' om flera gör det.
 // Filsystemets dynamiska parametrar förlorar mot de vanliga när en förkortning passar båda, som i riktig PowerShell
 const DYNAMIC = new Set(['attributes', 'directory', 'file', 'hidden', 'readonly', 'system', 'followsymlink']);
@@ -547,7 +556,7 @@ function psparam(cmd, name) {
   return hits.length === 1 ? hits[0] : hits.length ? '' : null;
 }
 // Normalform för PowerShell: små bokstäver, alias utbytta, parametrar med namn, positionella på sina platser
-function canonPSStage([c, ...rest]) {
+function canonPSStage([c, ...rest], keep = false) {
   const [cmd, ...pre] = (PSALIAS[c.toLowerCase()] || c.toLowerCase()).split(' ');
   if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest]); // git, npm, curl.exe: rättas som i bash
   const toks = [...pre, ...rest], pos = [], named = {}, flags = [];
@@ -556,10 +565,10 @@ function canonPSStage([c, ...rest]) {
     if (/^-[a-z]/i.test(t)) {
       const [raw, v] = t.slice(1).toLowerCase().split(/:(.*)/);
       const k = psparam(cmd, raw) || raw;
-      if (v !== undefined) named[k] = psval(v);
+      if (v !== undefined) named[k] = psval(v, keep);
       else if (PSPARAMS[cmd]?.sw.has(k) || n === undefined || /^-[a-z]/i.test(n) || OPS.has(n)) flags.push(k);
-      else named[k] = psval(toks[++i]);
-    } else pos.push(t === '>' || t === '>>' ? t : psval(t));
+      else named[k] = psval(toks[++i], keep);
+    } else pos.push(t === '>' || t === '>>' ? t : psval(t, keep));
   }
   const slots = (PSPOS[cmd] || ['path']).map(k => { const v = named[k]; delete named[k]; return v; });
   for (let i = 0; i < slots.length && pos.length; i++) if (slots[i] === undefined) slots[i] = pos.shift();
@@ -676,6 +685,9 @@ const GLOSS = {
   '>>': 'lägg till utskriften sist i en fil', '&&': 'kör nästa kommando bara om det förra lyckades',
   '.': 'mappen du står i', '..': 'mappen ovanför den du står i', '~': 'din hemmapp. Skrivs med AltGr + ¨ och sedan mellanslag', '*': 'alla filer och mappar här',
   '*.js': 'alla filnamn som slutar på .js. * matchar vad som helst', 'ERROR': 'texten som söks efter', 'HEAD~1': 'commiten före den senaste. HEAD är där du står nu', '--hard': 'skriv över filerna också: ocommittade ändringar försvinner för gott', 'origin/main': 'main som den såg ut på GitHub när git senast hämtade (fetch eller pull)', 'HEAD~': 'samma som HEAD~1: commiten före den senaste',
+  'hello.js': 'filen med ditt program. .js betyder JavaScript', 'hello.py': 'filen med ditt program. .py betyder Python',
+  'console.log("Hello world")': 'koden: skriv ut texten Hello world', "console.log('Hello world')": 'koden: skriv ut texten Hello world',
+  'print("Hello world")': 'koden: skriv ut texten Hello world', "print('Hello world')": 'koden: skriv ut texten Hello world',
   'origin': 'namnet på remoten, alltså GitHub-repot du klonade från', '{any}': 'ditt commit-meddelande, valfri text', 'deploy.sh': 'skriptet, en fil full av kommandon', 'node': 'programmet node',
   // filer och mappar
   'pwd': 'print working directory: skriver ut mappen du står i', 'ls': 'list: visar filer och mappar', 'cd': 'change directory: byter mapp', 'mkdir': 'make directory: skapar en mapp',
@@ -771,7 +783,7 @@ function parts(raw, ps = false) {
     let d;
     if (OPS.has(t)) { d = GLOSS[t] || 'kör kommandona efter varandra'; toFile = t[0] === '>'; path = []; }
     else if (!path.length && !toFile) { d = GLOSS[t]; path = [t]; }
-    else if (toFile) d = POOLOF[t] ? 'filen som utskriften hamnar i' : null;
+    else if (toFile) d = POOLOF[t] || GLOSS[t] ? 'filen som utskriften hamnar i' : null;
     else if (look(t)) { d = look(t); if (!t.startsWith('-') && GLOSS[path.join(' ') + ' ' + t]) path.push(t); }
     else if (/^-\d+$/.test(t) && NUMS[path[0]]) d = `${NUMS[path[0]]}: ${t.slice(1)}`;
     else if (/^\d+$/.test(t) && NUMS[path[0]]) d = NUMS[path[0]];
@@ -825,6 +837,9 @@ const PROGS = {
   'server.js': 'Servern lyssnar på http://localhost:3000\n# en riktig server står kvar tills du trycker Ctrl+C',
   'deploy.sh': 'Bygger...\nLaddar upp till buildapp.se... klart, på låtsas',
 };
+// Kör det som står i filen: varje rad console.log(...), print(...), echo ... eller Write-Output ... skriver ut sin text.
+// ponytail: bara utskriftsrader, inga variabler eller loopar. En riktig tolk om spelet får ett eget programspråkspaket.
+const runFile = text => text.split('\n').map(l => l.match(/^\s*(?:console\.log|print|echo|write-output|write-host)\b\s*\(?\s*(["'`]?)(.*?)\1\s*\)?\s*;?\s*$/i)?.[2]).filter(x => x != null);
 const FSKIND = {};
 (function kinds(dir) { for (const [n, v] of Object.entries(dir)) { FSKIND[n] = typeof v === 'string' ? 'filen' : 'mappen'; if (typeof v !== 'string') kinds(v); } })(WORLD);
 
@@ -900,7 +915,8 @@ function fake(fs, cwd, key, ps) {
     if (typeof get(prog).node !== 'string') fail(op.startsWith('./') || op.endsWith('sh') ? `bash: ${op.startsWith('./') ? op : prog}: No such file or directory` :
       op === 'node' ? `Error: Cannot find module '${full(prog)}'` : `${op}: can't open file '${full(prog)}': [Errno 2] No such file or directory`,
       op === 'node' ? `Error: Cannot find module '${full(prog)}'` : `python: can't open file '${full(prog)}': [Errno 2] No such file or directory`);
-    return ok((PROGS[at(prog).at(-1)] || '').split('\n').filter(Boolean));
+    const name = at(prog).at(-1);
+    return ok(name in PROGS ? PROGS[name].split('\n') : runFile(get(prog).node));
   }
   switch (op) {
     case 'pwd': return ok(ps ? ['', 'Path', '----', where(cwd, true), ''] : [where(cwd, false)]);
@@ -1720,7 +1736,7 @@ function run(raw) {
       // Världen ändras av allt du skriver, block eller inte: filsystemet, mappen du står i och git (clone, init, commit).
       // Filsystemets fel räknas bara där filsystemet rättar: fria kommandon och Filer & mappar.
       let r = null;
-      try { r = fake(S.fs, S.cwd, key, S.ps); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
+      try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
       if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
       gitWorld(u); // före utskriften, som visar commitens hash
       if (!b) {
@@ -2778,7 +2794,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
 const MENUS = {
   File: [['Ny runda', 'Enter', 'start'], ['Spara', 'Ctrl+S', 'save'], ['Öppna mapp…', '', 'explorer'], 0, ['Avsluta', 'exit', 'quit']],
   Edit: [['Ångra', 'Ctrl+Z', '# Ctrl+Z ångrar inte i terminalen. rm har ingen papperskorg.'], ['Kopiera', 'Ctrl+C', '# Markera text och tryck Ctrl+C. Utan markering betyder Ctrl+C avbryt, som i en riktig terminal.'], 0, ['Sök', 'Ctrl+F', 'search']],
-  Selection: [['Markera allt', 'Ctrl+A', '# I bash hoppar Ctrl+A till början av raden och Ctrl+E till slutet. I rutan här markerar den allt.'], ['Lägg till markör', 'Alt+klick', '# Flera markörer i en terminal heter tmux. Det är en annan dag.']],
+  Selection: [['Markera allt', 'Ctrl+A', '# I bash hoppar Ctrl+A till början av raden och Ctrl+E till slutet. I rutan här markerar den allt.'], ['Lägg till markör', 'Alt+klick', '# Flera markörer finns i redigeraren, inte i terminalen. Flera terminaler i samma fönster heter tmux. Det är en annan dag.']],
   View: [['Utforskaren', 'Ctrl+Shift+E', 'explorer'], ['Sök', 'Ctrl+Shift+F', 'search'], ['Källkontroll', '', 'scm'], 0, ['Helskärm', 'F11', 'fullscreen'], ['Zen-läge', '', 'zen']],
   Go: [['Gå till fil…', 'Ctrl+P', 'search'], ['Gå till rad…', 'Ctrl+G', '# Rad 42. Det är alltid rad 42.'], ['Tillbaka', 'Alt+←', '# cd - tar dig tillbaka till förra mappen i bash. cd .. går upp en nivå.']],
   Run: [['Starta felsökning', 'F5', 'run'], ['Kör utan felsökning', 'Enter', 'start']],

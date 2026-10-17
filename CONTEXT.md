@@ -66,6 +66,10 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   Debug Console, rör aldrig `S.score`), annan ändring sparas inte och är inget fusk. Test `editcheck.js` i scratchpad.
 - **Debug Console är ett fält** (2026-10-17, förr larmade fliken direkt och Patrik förstod inte varför): `S.score`, `best` eller `S` visar värden,
   `S.score = ...` eller `best = ...` som man skriver själv ger fusklarmet med den inskrivna siffran, okänt ger `ReferenceError`. Test `alarmcheck.js`.
+- **Hello world** (Patriks krav 2026-10-17): två kedjeblock i Filer & mappar (svårighet 2), JavaScript och Python: skapa filen, skriv koden, kör.
+  `node`/`python`/`bash` på en fil som inte finns i `PROGS` kör det som står i filen (`runFile`: bara utskriftsrader, console.log, print, echo,
+  Write-Output), så egna ändringar i redigeraren syns när man kör. PowerShell rättas i gemener, men låtsasskalet får originaltexten
+  (`canon(u, ps, keep)`), annars blev det hello world i filen. Test `hellocheck.js` (trädet, redigeraren, utskriften, löst block, egen text).
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som
