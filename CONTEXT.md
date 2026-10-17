@@ -46,6 +46,13 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   block i taget: ny mapp ger först "lista", sedan "kör programmet" om det finns ett, sedan
   "gå in". Mallorden dras ur filsystemet (dolda namn aldrig) och varje uppgift provkörs på en
   kopia (`doable`). I PowerShell är bara `.git` och `.hemligt` dolda.
+  Sedan 2026-10-17 (testagenternas fynd) kan `fake` det vanligaste i båda skalen: globbar och PowerShells
+  kommalistor (ett kommando per mål via `each`), `>`/`>>` för alla kommandon, variabler (`ENV0` plus `S.env`:
+  `export`, `X=v`, `$env:X = v`, `$?` sätts per kommando i `run`), find, grep, tree, less, test-path, get-item.
+  Resultatet kan bära `note`, som visas i stället för tystnad (inga träffar). Det `fake` svarar vinner över `OUT`.
+  PowerShell-tabeller tappar kolumner när `COLS` (mäts i `resized()`) är under 64. `syntax()` ger bash- och
+  PowerShell-felen för `;;` och tom pipe. `toy` svarar på which/type/Get-Command, `editorCmd` öppnar nano/code/notepad
+  i redigeraren. Test i `terminal.test.js`.
 - **Utskrifter (`OUT`, `sample`):** block utanför Filer & mappar skriver en kort, typisk utskrift när
   de löses (git, gh, npm, curl, ping, wrangler, firebase med flera), i verktygets riktiga form med
   påhittade värden. Nyckeln är kommandots början, den längsta vinner; tysta kommandon får raden att
@@ -74,6 +81,8 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   (`canon(u, ps, keep)`), annars blev det hello world i filen. Test `hellocheck.js` (trädet, redigeraren, utskriften, löst block, egen text).
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
+  Svårighetsspärren är halva nivån men höjs tills minst 8 uppgifter passar (`maxLvFor`): Terminalvett har tre
+  lätta, och Patrik fick ping och ipconfig fyra gånger var (2026-10-17).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som
   löste något, varje felaktig del i en rad räknas som ett fel. `whoami`, `hostname`, `date`
   och `history` svarar utan att räknas som fel (`toy()`).

@@ -15,7 +15,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
 - [ ] Bygg om paketet Vad Claude gör (förr Som Claude Code) från loggdatan (2026-10-17: grep, head, git, curl, uv, ls, tail, node i topp; PowerShell mest för att döda dev-servrar). Ta också med kommandon Patrik kör själv med `!` (bash-input i transkripten), t.ex. `powershell -Command "Stop-Process -Id N"`: det han gör på riktigt ska han kunna öva på.
 - [x] Världen följer allt man skriver (2026-10-17): `render()`, grenar, clone/init/commit/restore, `git status`/`log`/`branch` ur världen, quizets terminal, redigerbara filer med Ctrl+S.
-- [ ] Mer git i världen, i den ordning de lär ut mest (analysagentens lista 2026-10-17): `git add` med en riktig "Staged Changes"-lista och commit som bara tar det stagade; `git stash`/`stash pop`; `git reset` (`--hard` tar tillbaka filerna, `HEAD~1` tar bort senaste commiten); `export`/`$env:X` som `echo` och `env` läser; `git -C mapp` mot rätt mapp.
+- [ ] Mer git i världen, i den ordning de lär ut mest (analysagentens lista 2026-10-17): `git add` med en riktig "Staged Changes"-lista och commit som bara tar det stagade; `git stash`/`stash pop`; `git reset` (`--hard` tar tillbaka filerna, `HEAD~1` tar bort senaste commiten); `git -C mapp` mot rätt mapp.
 - [ ] Patrik spelar och lyssnar: välj ljud bland `terminal-ljud.js`, `?ljud=gemini` och `?ljud=mp3` (bara lokalt, spåren i `_musik/`), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
 - [x] Egen integritetstext för spelet, `integritet.html`, 2026-10-17.
@@ -24,12 +24,6 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] Programspråk som egna paket (Python-REPL, JS-konsol, SQL).
 - [ ] Delad topplista mellan vänner. Kräver backend och ny integritetstext; bara om ni faktiskt tävlar.
 
-## Testagenternas fynd kvar (2026-10-17)
+## Testagenternas fynd (2026-10-17)
 
-Krascher, fusk, mobil och de största PowerShell-avvikelserna är fixade (`db47b77`). Kvar, alla små:
-
-- [ ] bash: `cd -` (förra mappen), globbar (`ls *.txt`, `rm *.log`), `wc` utan flagga ger rader, ord och tecken, flera filer till `cat`/`head`/`wc`, `tail -n +28`, `./notes.txt` ska ge "Permission denied", `ls -1/-R/-d`, `cat < f`, `echo $HOME`, `cd a b` ska ge "too many arguments", `mv a b mapp` med flera källor.
-- [ ] bash: kommandon som saknas: find, grep (fritt), tree, which, less, man, nano, export.
-- [ ] PowerShell: `New-Item -Name` och `-Value`, `-Force` som skriver över, jokertecken, `gci`-filter (`-Name`, `-File`, `-Directory`, `-Hidden`), kommalistor (`rm a, b`), extra positionella argument ("A positional parameter cannot be found..."), `cd..` och `cd\`, `$HOME`/`$PWD`, dold mapp kräver `-Force` för att tas bort, `Rename-Item` med sökväg ska ge fel, `.\deploy.sh`, `ls -l` och `ls -a` ger 5.1:s fel.
-- [ ] PowerShell: kommandon som finns men säger "not recognized": Get-Help, Write-Host, Test-Path, Get-Item, Out-File, ii, start, explorer, tree.
-- [ ] Kosmetiskt: `;;` och `ls |` ger syntaxfel, pil ner återställer halvskriven rad, `Get-ChildItem`-tabellen bryts på 390 px, `s` i menyn byter skal även för den som börjar skriva `ls`.
+- [x] Alla småfynd i bash och PowerShell åtgärdade, plus upprepningen i små paket (`maxLvFor`), `5616bec`.
