@@ -2409,11 +2409,12 @@ document.addEventListener('keydown', e => {
 }, true);
 
 // ---------- påskägg: formatera om datorn ----------
-// rm -rf / med --no-preserve-root eller /*, dd, mkfs, format C:, Remove-Item C:\ ... låtsas krascha datorn.
+// rm -rf / med --no-preserve-root eller /*, dd, mkfs, format C:, Format-Volume, Clear-Disk, Remove-Item C:\ ... låtsas krascha datorn.
+// Ingen fråga först, med flit (Patrik 2026-10-17): sådant ska aldrig köras på chans, i fel fönster eller med fel sak markerad.
 // Kraschen sparas (term-crash) och sitter kvar efter vanlig F5. Ut kommer man genom att installera om exakt rätt,
 // genom hård omladdning (Ctrl+F5, Ctrl+Shift+R) eller genom att rensa webbplatsdata.
 const CRASH = 'term-crash';
-const WIPE = /^(sudo\s+)?rm\s+(-\S+\s+)*(\/\*|--no-preserve-root\s+(-\S+\s+)*\/|\/\s+(-\S+\s+)*--no-preserve-root)(\s|$)|^(sudo\s+)?(dd\s+if=\/dev\/(zero|random|urandom)\s+of=\/dev\/sd|mkfs)|^format\s+c:|^(remove-item|rm|ri|del|erase|rd|rmdir)\s+c:\\\*?\s+.*-r|^del\s+\/s\s+\/q\s+c:\\/i;
+const WIPE = /^(sudo\s+)?rm\s+(-\S+\s+)*(\/\*|--no-preserve-root\s+(-\S+\s+)*\/|\/\s+(-\S+\s+)*--no-preserve-root)(\s|$)|^(sudo\s+)?(dd\s+if=\/dev\/(zero|random|urandom)\s+of=\/dev\/sd|mkfs)|^format\s+c:|^(format-volume|clear-disk)\b|^(remove-item|rm|ri|del|erase|rd|rmdir)\s+c:\\\*?\s+.*-r|^del\s+\/s\s+\/q\s+c:\\/i;
 const SETUP = ps => [
   ['boot usb', 'Ingen startbar enhet hittades. Sätt i installations-USB:n och skriv: boot usb'],
   ['select disk 0', 'Installationsprogrammet startat. Välj disken: select disk 0'],
