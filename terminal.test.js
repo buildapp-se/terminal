@@ -1,9 +1,9 @@
-// Rättningen i terminal.html. Kör: node terminal.test.js
+// Rättningen i index.html. Kör: node terminal.test.js
 // Läser den rena logiken mellan pure:start och pure:end ur sidan.
 const assert = require('assert');
 const fs = require('fs');
 
-const html = fs.readFileSync(__dirname + '/terminal.html', 'utf8');
+const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
 const {TASKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD} =
   new Function(src + '; return {TASKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD};')();

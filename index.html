@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>./terminal | Lär dig terminalen</title>
 <meta name="description" content="Uppgifter faller som tetrisblock. Skriv rätt terminalkommando innan de når botten: filer, git, GitHub och verktygen Claude Code använder.">
-<link rel="canonical" href="https://buildapp.se/ai/terminal.html">
+<link rel="canonical" href="https://buildapp.se/terminal/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1378,7 +1378,7 @@ function gameOver() {
   stats();
   try { snd()?.stop(); } catch {}
   sfx(place === 1 && S.score > 0 ? 'newHighscore' : 'gameOver');
-  shared = `./terminal · ${PACKS[S.pack].name} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/ai/terminal.html`;
+  shared = `./terminal · ${PACKS[S.pack].name} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/terminal/`;
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
     <p><span class="hot">${fmt(S.score)} p</span> · nivå ${S.level} · ${cpm()} CPM · ${S.cleared} block · ${S.errors} fel</p>

@@ -1,0 +1,8 @@
+# Lokala musikspår, bara för att lyssna fram ljudet. Committas inte förrän Lyrias villkor är kollade.
+_musik/
+
+# repowise: lokalt index, regenererbart (kör `repowise update`).
+.repowise/
+
+# Playwright-MCP:s skärmbilder och loggar
+.playwright-mcp/
