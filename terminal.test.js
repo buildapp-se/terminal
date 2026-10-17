@@ -5,8 +5,8 @@ const fs = require('fs');
 
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -198,6 +198,8 @@ for (const ps of [false, true]) for (const pack of Object.keys(PACKS)) for (let 
     assert.strictEqual(q.options[q.answer], q.kind === 'vilket' ? q.it.cmd : q.it.text);
   }
 }
+// NEAR pekar på uppgifterna med deras text, så en omskriven text får inte tappa krocken
+for (const g of NEAR) for (const t of g) assert.ok(TASKS.some(x => x[2] === t), `NEAR: ingen uppgift heter ${t}`);
 const small = Object.entries(sizes).filter(([, n]) => n < 10);
 assert.ok(!small.length, `quiz med färre än tio frågor: ${small.map(x => x.join(' ')).join(', ')}`);
 

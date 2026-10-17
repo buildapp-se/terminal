@@ -263,8 +263,8 @@ const TASKS = [
   ['fs', 2, 'Kopiera {f} till {f2}', 'cp {f} {f2}', 'cp = copy.', "Copy-Item {f} {f2}", "cp och copy är alias för Copy-Item."],
   ['fs', 2, 'Flytta {f} in i mappen {d}', 'mv {f} {d}', 'Är målet en mapp hamnar filen i den, med samma namn.', "Move-Item {f} {d}", "Är målet en mapp hamnar filen i den, med samma namn."],
   ['fs', 2, 'Lista alla filer, även dolda', ['ls -a', 'ls -la', 'ls -A'], 'Filer som börjar med punkt, som .env och .gitignore, är dolda. -a = all.', "Get-ChildItem -Force", "Dolda filer syns bara med -Force. ls -a fungerar inte här."],
-  ['fs', 2, 'Lista filerna med storlek och datum', ['ls -l', 'ls -la', 'ls -lh', 'ls -lah'], '-l = long. Visar rättigheter, ägare, storlek och datum.', "Get-ChildItem", "Get-ChildItem visar redan datum och storlek. ls -l ger fel, -l finns inte."],
-  ['fs', 2, 'Ta bort den tomma mappen {d}', ['rmdir {d}', 'rm -d {d}', 'rm -r {d}'], 'rmdir vägrar om mappen inte är tom. Det är en säkerhetsspärr.', "Remove-Item {d}", "Remove-Item tar bort en tom mapp direkt. Är den inte tom frågar PowerShell först."],
+  ['fs', 2, 'Lista filerna med storlek och datum', ['ls -l', 'ls -la', 'ls -lh', 'ls -lah'], '-l = long. Visar rättigheter, ägare, storlek och datum.', ["Get-ChildItem", "Get-ChildItem -Force"], "Get-ChildItem visar redan datum och storlek. ls -l ger fel: -l läses som -LiteralPath."],
+  ['fs', 2, 'Ta bort den tomma mappen {d}', ['rmdir {d}', 'rm -d {d}', 'rm -r {d}'], 'rmdir vägrar om mappen inte är tom. Det är en säkerhetsspärr.', ["Remove-Item {d}", "Remove-Item {d} -Recurse"], "Remove-Item tar bort en tom mapp direkt. Är den inte tom frågar PowerShell först."],
   ['fs', 2, 'Gå direkt till mappen {d} i din hemmapp', 'cd ~/{d}', '~/ är en genväg till hemmappen, så det funkar var du än står.', ["Set-Location ~/{d}", "Set-Location $HOME/{d}"], "~ är hemmappen. Både / och \\ fungerar i sökvägar på Windows."],
   ['fs', 3, 'Ta bort mappen {d} och allt i den', ['rm -r {d}', 'rm -rf {d}', 'rm -R {d}'], '-r = recursive, allt i mappen följer med. -f = force, inga frågor. Dubbelkolla sökvägen.', ["Remove-Item {d} -Recurse", "Remove-Item {d} -Recurse -Force"], "-Recurse tar med allt inuti, -Force även dolda filer. rm -rf ger fel i PowerShell."],
   ['fs', 3, 'Skapa mappen {d2}/{d}, även om {d2} inte finns än', 'mkdir -p {d2}/{d}', '-p = parents. Skapar mapparna som saknas på vägen.', ["New-Item -ItemType Directory {d2}/{d}", "New-Item -ItemType Directory {d2}/{d} -Force"], "New-Item skapar mapparna som saknas på vägen av sig själv. Ingen -p behövs."],
@@ -275,12 +275,12 @@ const TASKS = [
   ['fs', 4, 'Skriv texten hej till {f} och skriv över det som fanns', 'echo hej > {f}', '> skickar utskriften till en fil i stället för skärmen, och skriver över filen.', ["Set-Content {f} hej", "Write-Output hej > {f}"], "> fungerar i PowerShell också. Set-Content är cmdlet-varianten."],
   ['fs', 4, 'Lägg till raden hej sist i {f}', 'echo hej >> {f}', '>> lägger till sist i filen i stället för att skriva över.', ["Add-Content {f} hej", "Write-Output hej >> {f}"], ">> lägger till sist. Add-Content är cmdlet-varianten."],
   ['fs', 4, 'Följ {log} live medan nya rader skrivs', 'tail -f {log}', '-f = follow. Står kvar och visar nya rader tills du trycker Ctrl+C.', ["Get-Content {log} -Wait", "Get-Content {log} -Wait -Tail 10"], "-Wait står kvar och visar nya rader tills du trycker Ctrl+C."],
-  ['fs', 4, 'Räkna raderna i {f}', 'wc -l {f}', 'wc = word count. -l räknar rader i stället för ord.', "Get-Content {f} | Measure-Object -Line", "Measure-Object räknar det som kommer genom pipen. -Line räknar rader."],
+  ['fs', 4, 'Räkna raderna i {f}', 'wc -l {f}', 'wc = word count. -l visar bara antalet rader.', ["Get-Content {f} | Measure-Object", "Get-Content {f} | Measure-Object -Line"], "Measure-Object räknar det som kommer genom pipen, och Count är antalet rader. -Line hoppar över tomma rader."],
   ['fs', 4, 'Gör skriptet deploy.sh körbart', ['chmod +x deploy.sh', 'chmod u+x deploy.sh', 'chmod 755 deploy.sh'], 'chmod = change mode. +x ger rätten att köra filen som program.'],
   ['fs', 4, 'Kör skriptet deploy.sh i mappen du står i', ['./deploy.sh', 'bash deploy.sh', 'sh deploy.sh'], './ betyder här. Bash letar inte i mappen du står i av säkerhetsskäl.'],
-  ['fs', 5, 'Visa hur mycket plats mappen {d} tar totalt', 'du -sh {d}', 'du = disk usage. -s = bara summan, -h = human readable (MB i stället för byte).', "Get-ChildItem {d} -Recurse | Measure-Object -Property Length -Sum", "Summerar Length, storleken i byte, för alla filer i mappen."],
+  ['fs', 5, 'Visa hur mycket plats mappen {d} tar totalt', 'du -sh {d}', 'du = disk usage. -s = bara summan, -h = human readable (K, M och G i stället för antal kilobyte-block).', "Get-ChildItem {d} -Recurse | Measure-Object -Property Length -Sum", "Summerar Length, storleken i byte, för alla filer i mappen."],
   ['fs', 5, 'Skapa mappen {d}, gå in i den och skapa filen {f}', [['mkdir {d}'], ['cd {d}'], ['touch {f}']], 'Med && körs nästa kommando bara om det förra lyckades.', [["New-Item -ItemType Directory {d}"], ["Set-Location {d}"], ["New-Item {f}"]], "Med ; körs kommandona efter varandra. && finns bara i PowerShell 7."],
-  ['fs', 5, 'Visa de 5 största filerna och mapparna här', ['du -sh * | sort -h | tail -n 5', 'du -sh * | sort -h | tail -5'], 'Tre program med | emellan: mät, sortera efter storlek, visa de sista fem.', "Get-ChildItem | Sort-Object Length -Descending | Select-Object -First 5", "Lista, sortera på storlek störst först, ta de fem första."],
+  ['fs', 5, 'Visa de 5 största filerna och mapparna här', ['du -sh * | sort -h | tail -n 5', 'du -sh * | sort -h | tail -5'], 'Tre program med | emellan: mät, sortera efter storlek, visa de sista fem.'],
 
   ['git', 1, 'Gör mappen du står i till ett git-repo', 'git init', 'init = initialize. Skapar den dolda mappen .git där all historik sparas.', '='],
   ['git', 1, 'Se vilka filer som ändrats sedan senaste commit', 'git status', 'git status är det du kör hela tiden. Det ändrar ingenting.', '='],
@@ -289,24 +289,24 @@ const TASKS = [
   ['git', 1, 'Committa med meddelandet "{msg}"', 'git commit -m "{msg}"', 'commit sparar en ögonblicksbild. -m = message. Citattecknen behövs när meddelandet har mellanslag.', '='],
   ['git', 1, 'Skicka dina commits till GitHub', 'git push', 'push skickar dina commits till remote, oftast GitHub.', '='],
   ['git', 1, 'Hämta det senaste från GitHub', 'git pull', 'pull hämtar andras ändringar och slår ihop dem med dina.', '='],
-  ['git', 2, 'Visa historiken av commits', ['git log', 'git log --oneline'], 'Tryck q för att komma ur loggen. Alla fastnar där första gången.', '='],
+  ['git', 2, 'Visa commit-historiken', ['git log', 'git log --oneline'], 'Tryck q för att komma ur loggen. Alla fastnar där första gången.', '='],
   ['git', 2, 'Visa historiken, en rad per commit', 'git log --oneline', '--oneline ger kort hash och meddelande per rad.', '='],
   ['git', 2, 'Skapa grenen {b}', 'git branch {b}', 'En gren är en parallell version av koden. Du står kvar där du var.', '='],
   ['git', 2, 'Byt till grenen {b}', ['git switch {b}', 'git checkout {b}'], 'switch är det nya namnet. checkout gör samma sak men också mycket annat.', '='],
   ['git', 2, 'Skapa grenen {b} och byt till den direkt', ['git switch -c {b}', 'git checkout -b {b}'], '-c = create.', '='],
-  ['git', 2, 'Lista alla grenar', ['git branch', 'git branch -a'], 'Stjärnan visar vilken gren du står på.', '='],
+  ['git', 2, 'Lista alla grenar, även de på GitHub', 'git branch -a', '-a = all. Stjärnan visar vilken gren du står på.', '='],
   ['git', 2, 'Se exakt vilka rader du har ändrat', 'git diff', 'diff = difference. Rött är borttaget, grönt är tillagt.', '='],
   ['git', 3, 'Klona repot {repo} från GitHub-användaren {user}', ['git clone https://github.com/{user}/{repo}.git', 'git clone https://github.com/{user}/{repo}', 'git clone git@github.com:{user}/{repo}.git', 'gh repo clone {user}/{repo}'], 'clone laddar ner hela repot med all historik.', '='],
   ['git', 3, 'Slå ihop grenen {b} med grenen du står på', 'git merge {b}', 'Har två ändringar rört samma rad blir det en konflikt som du får lösa.', '='],
   ['git', 3, 'Ta bort grenen {b}', ['git branch -d {b}', 'git branch -D {b}'], '-d vägrar om grenen inte är ihopslagen. -D tar bort ändå.', '='],
   ['git', 3, 'Skicka grenen {b} till GitHub första gången', ['git push -u origin {b}', 'git push --set-upstream origin {b}'], '-u kopplar grenen till GitHub, så räcker git push nästa gång.', '='],
-  ['git', 3, 'Kasta ändringarna i {f} sedan senaste commit', ['git restore {f}', 'git checkout -- {f}', 'git checkout {f}'], 'Ändringarna är borta på riktigt, git har aldrig sparat dem.', ["git restore {f}", "git checkout {f}"], "Undvik git checkout -- i PowerShell: -- kan försvinna på vägen till git."],
+  ['git', 3, 'Kasta ändringarna i {f} som inte är stagade', ['git restore {f}', 'git checkout -- {f}', 'git checkout {f}'], 'Ändringarna är borta på riktigt, git har aldrig sparat dem.', '='],
   ['git', 3, 'Lägg undan dina ändringar tillfälligt', 'git stash', 'stash = gömma. Bra när du måste byta gren mitt i något.', '='],
   ['git', 3, 'Ta tillbaka ändringarna du lade undan', 'git stash pop', 'pop tar det senaste du lade undan och lägger tillbaka det.', '='],
   ['git', 3, 'Se vilka remotes repot är kopplat till', 'git remote -v', 'origin är bara ett namn, en konvention för stället du klonade från.', '='],
   ['git', 4, 'Skapa repot {repo} på GitHub från mappen du står i, publikt, och pusha', 'gh repo create {repo} --public --source=. --push', 'gh är GitHubs egen CLI. --source=. betyder mappen du står i.', '='],
   ['git', 4, 'Öppna en pull request', ['gh pr create', 'gh pr create --fill'], 'En pull request ber om att få slå ihop din gren. Där sker kodgranskningen.', '='],
-  ['git', 4, 'Lista öppna pull requests', 'gh pr list', 'gh pr checkout och ett nummer hämtar en PR lokalt.', '='],
+  ['git', 4, 'Lista öppna pull requests', 'gh pr list', 'Visar nummer, titel och gren för varje öppen PR. gh pr checkout och numret hämtar sedan en lokalt.', '='],
   ['git', 4, 'Logga in på GitHub från terminalen', 'gh auth login', 'Efter det kan både gh och git prata med GitHub utan lösenord.', '='],
   ['git', 4, 'Byt meddelande på senaste commit till "{msg}"', 'git commit --amend -m "{msg}"', '--amend skriver om senaste commit. Gör det bara innan du har pushat.', '='],
   ['git', 4, 'Ångra senaste commit men behåll ändringarna', ['git reset HEAD~1', 'git reset --soft HEAD~1', 'git reset HEAD~'], 'HEAD~1 är commiten före den senaste.', '='],
@@ -318,9 +318,9 @@ const TASKS = [
   ['cc', 1, 'Sök efter {word} i {f}', 'grep {word} {f}', 'grep = global regular expression print. Claude Code söker så här hela tiden.', "Select-String {word} {f}", "Select-String är PowerShells grep. sls är aliaset."],
   ['cc', 1, 'Sök efter {word} i alla filer i alla undermappar', ['grep -r {word} .', 'grep -r {word}', 'grep -R {word} .', 'rg {word}'], '-r = recursive. rg (ripgrep) är en snabbare grep, och den Claude Code använder.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg {word}"], "Get-ChildItem -Recurse hämtar filerna, Select-String söker i dem. rg fungerar likadant i båda skalen."],
   ['cc', 1, 'Visa vilken version av node du har', ['node --version', 'node -v'], 'Första felsökningen: kör jag rätt version?', '='],
-  ['cc', 1, 'Installera projektets paket', ['npm install', 'npm i'], 'Läser package.json och laddar ner allt till node_modules.', '='],
+  ['cc', 1, 'Installera projektets paket', ['npm install', 'npm i'], 'Läser package.json och laddar ner allt till node_modules.', '=', "Läser package.json och laddar ner allt till node_modules. Får du 'running scripts is disabled': kör npm.cmd install."],
   ['cc', 1, 'Starta utvecklingsservern (skriptet dev)', 'npm run dev', 'npm run kör skript från package.json. dev brukar starta en lokal server.', '='],
-  ['cc', 1, 'Hämta sidan https://example.com', 'curl https://example.com', 'curl = client URL. Gör en webbförfrågan och skriver ut svaret.', ["Invoke-WebRequest https://example.com", "curl.exe https://example.com", "Invoke-RestMethod https://example.com"], "I Windows PowerShell är curl ett alias för Invoke-WebRequest. Riktiga curl heter curl.exe."],
+  ['cc', 1, 'Hämta sidan https://example.com', 'curl https://example.com', 'curl = client URL. Gör en webbförfrågan och skriver ut svaret.', ["Invoke-WebRequest https://example.com -UseBasicParsing", "Invoke-WebRequest https://example.com", "curl.exe https://example.com", "Invoke-RestMethod https://example.com"], "I Windows PowerShell är curl ett alias för Invoke-WebRequest. Utan -UseBasicParsing frågar den först om skript på sidan. Riktiga curl heter curl.exe."],
   ['cc', 2, 'Sök efter {word} i alla filer och visa radnummer', ['grep -rn {word} .', 'grep -rn {word}', 'rg -n {word}', 'rg {word}'], '-n = line number. Så vet Claude Code exakt vilken rad den ska ändra.', ["Get-ChildItem -Recurse | Select-String {word}", "Get-ChildItem -Recurse -File | Select-String {word}", "rg -n {word}", "rg {word}"], "Select-String visar radnumret av sig själv."],
   ['cc', 2, 'Sök efter {word} i {f} oavsett stora och små bokstäver', 'grep -i {word} {f}', '-i = ignore case.', "Select-String {word} {f}", "Select-String struntar redan i stora och små bokstäver. -CaseSensitive slår på dem."],
   ['cc', 2, 'Kör projektets tester', ['npm test', 'npm run test', 'npm t'], 'Claude Code kör testerna efter en ändring för att se att inget gick sönder.', '='],
@@ -330,17 +330,17 @@ const TASKS = [
   ['cc', 2, 'Installera paketet {pkg} i projektet', ['npm install {pkg}', 'npm i {pkg}', 'npm add {pkg}'], 'Paketet hamnar i node_modules och skrivs in i package.json.', '='],
   ['cc', 3, 'Hitta alla .js-filer under mappen du står i', ['find . -name "*.js"', 'find -name "*.js"', 'find . -type f -name "*.js"'], '-name matchar filnamn. Citattecknen hindrar bash från att tolka * själv.', ["Get-ChildItem -Recurse -Filter *.js", "Get-ChildItem -Recurse *.js", "Get-ChildItem -Recurse -Include *.js"], "-Filter matchar filnamn, -Recurse går ner i alla undermappar."],
   ['cc', 3, 'Hitta filen {f} någonstans under mappen du står i', ['find . -name {f}', 'find -name {f}'], 'find går igenom alla undermappar. Punkten betyder: börja här.', ["Get-ChildItem -Recurse -Filter {f}", "Get-ChildItem -Recurse {f}"], "Get-ChildItem -Recurse går igenom alla undermappar."],
-  ['cc', 3, 'Räkna hur många rader i {log} som innehåller ERROR', ['grep -c ERROR {log}', 'grep ERROR {log} | wc -l'], '-c = count. Eller grep och wc -l med en pipe |.', "Select-String ERROR {log} | Measure-Object", "Measure-Object räknar träffarna som kommer genom pipen."],
+  ['cc', 3, 'Räkna hur många rader i {log} som innehåller ERROR', ['grep -c ERROR {log}', 'grep ERROR {log} | wc -l'], '-c = count. Eller grep och wc -l med en pipe |.', "Select-String ERROR {log} | Measure-Object", "Measure-Object räknar träffarna som kommer genom pipen. Select-String räknar också error och Error, grep gör inte det."],
   ['cc', 3, 'Visa raderna med ERROR i {log}, men bara de 20 sista', ['grep ERROR {log} | tail -n 20', 'grep ERROR {log} | tail -20'], '| (pipe) skickar utskriften från ett program in i nästa.', "Select-String ERROR {log} | Select-Object -Last 20", "| (pipe) skickar resultatet vidare. Select-Object -Last tar de sista."],
-  ['cc', 3, 'Hämta bara svarshuvudena från https://example.com', ['curl -I https://example.com', 'curl --head https://example.com'], '-I visar statuskod och headers. Snabbt sätt att se om en sida svarar.', ["Invoke-WebRequest https://example.com -Method Head", "curl.exe -I https://example.com"], "-Method Head hämtar bara statuskod och headers."],
+  ['cc', 3, 'Hämta bara svarshuvudena från https://example.com', ['curl -I https://example.com', 'curl --head https://example.com'], '-I visar statuskod och headers. Snabbt sätt att se om en sida svarar.', ["Invoke-WebRequest https://example.com -Method Head -UseBasicParsing", "Invoke-WebRequest https://example.com -Method Head", "curl.exe -I https://example.com"], "-Method Head hämtar bara statuskod och headers. -UseBasicParsing slipper frågan om skript på sidan."],
   ['cc', 3, 'Ladda ner https://example.com/data.json och spara som data.json', ['curl -o data.json https://example.com/data.json', 'curl -O https://example.com/data.json', 'wget https://example.com/data.json'], '-o = output till en fil. -O tar filnamnet från adressen.', ["Invoke-WebRequest https://example.com/data.json -OutFile data.json", "curl.exe -o data.json https://example.com/data.json"], "-OutFile sparar svaret i en fil."],
-  ['cc', 3, 'Kör paketet create-vite utan att installera det', ['npx create-vite', 'npx create-vite@latest', 'npm create vite', 'npm create vite@latest'], 'npx kör ett paket direkt och slänger det efteråt.', '='],
+  ['cc', 3, 'Kör paketet create-vite utan att installera det', ['npx create-vite', 'npx create-vite@latest', 'npm create vite', 'npm create vite@latest'], 'npx kör ett paket utan att lägga det i projektet.', '='],
   ['cc', 3, 'Lista processerna som körs', ['ps aux', 'ps -ef', 'ps', 'top', 'htop'], 'Varje program som körs är en process med ett id, PID.', "Get-Process", "ps är ett alias för Get-Process."],
-  ['cc', 3, 'Avsluta processen med id 4821', 'kill 4821', 'kill skickar en signal. Standard är TERM: snälla, avsluta.', "Stop-Process -Id 4821", "kill är ett alias för Stop-Process."],
-  ['cc', 4, 'Tvinga processen 4821 att avsluta direkt', ['kill -9 4821', 'kill -KILL 4821', 'kill -s KILL 4821'], '-9 = KILL. Processen får ingen chans att städa efter sig.', "Stop-Process -Id 4821 -Force", "-Force avslutar direkt, som kill -9 i bash."],
+  ['cc', 3, 'Avsluta processen med id 4821', 'kill 4821', 'kill skickar en signal. Standard är TERM: snälla, avsluta.', "Stop-Process -Id 4821", "kill är ett alias för Stop-Process. Den avslutar alltid direkt, som kill -9."],
+  ['cc', 4, 'Tvinga processen 4821 att avsluta direkt', ['kill -9 4821', 'kill -KILL 4821', 'kill -s KILL 4821'], '-9 = KILL. Processen får ingen chans att städa efter sig.'],
   ['cc', 4, 'Visa vilket program som lyssnar på port 3000', ['lsof -i :3000', 'lsof -i:3000'], 'Klassikern när servern inte vill starta: porten är redan upptagen.', ["Get-NetTCPConnection -LocalPort 3000", "Get-NetTCPConnection -LocalPort 3000 -State Listen"], "Kolumnen OwningProcess är id:t på programmet som håller porten."],
   ['cc', 4, 'Ersätt alla foo med bar i {f}, direkt i filen', "sed -i 's/foo/bar/g' {f}", 'sed = stream editor. s/gammalt/nytt/g, där g betyder alla träffar på raden.'],
-  ['cc', 4, 'Hämta https://api.github.com/users/{user} och plocka ut fältet name med jq', ['curl https://api.github.com/users/{user} | jq .name', 'curl -s https://api.github.com/users/{user} | jq .name', 'curl https://api.github.com/users/{user} | jq -r .name', 'curl -s https://api.github.com/users/{user} | jq -r .name'], 'jq läser JSON. .name plockar ut ett fält. -s gör curl tyst.', ["Invoke-RestMethod https://api.github.com/users/{user} | Select-Object -ExpandProperty name", "Invoke-RestMethod https://api.github.com/users/{user} | Select-Object name"], "Invoke-RestMethod gör om JSON till ett objekt själv. Ingen jq behövs."],
+  ['cc', 4, 'Hämta https://api.github.com/users/{user} och plocka ut fältet name', ['curl https://api.github.com/users/{user} | jq .name', 'curl -s https://api.github.com/users/{user} | jq .name', 'curl https://api.github.com/users/{user} | jq -r .name', 'curl -s https://api.github.com/users/{user} | jq -r .name'], 'jq läser JSON. .name plockar ut ett fält. -s gör curl tyst.', ["Invoke-RestMethod https://api.github.com/users/{user} | Select-Object -ExpandProperty name", "Invoke-RestMethod https://api.github.com/users/{user} | Select-Object name"], "Invoke-RestMethod gör om JSON till ett objekt själv. Ingen jq behövs."],
   ['cc', 4, 'Logga in på servern server.example.com som användaren deploy', 'ssh deploy@server.example.com', 'ssh = secure shell. En terminal på en annan dator.', '=', "Windows har ssh inbyggt, samma kommando som på Mac och Linux."],
   ['cc', 4, 'Följ {log} live och visa bara rader med ERROR', 'tail -f {log} | grep ERROR', 'Två program i en pipe: tail matar, grep filtrerar.', "Get-Content {log} -Wait | Select-String ERROR", "Get-Content -Wait matar, Select-String filtrerar."],
   ['cc', 4, 'Packa upp arkivet backup.tar.gz', ['tar -xzf backup.tar.gz', 'tar xzf backup.tar.gz', 'tar -xvzf backup.tar.gz', 'tar xvzf backup.tar.gz', 'tar -xf backup.tar.gz', 'tar xf backup.tar.gz'], '-x = extract, -z = gzip, -f = file. Moderna tar listar ut z själv.', '=', "Windows har tar inbyggt sedan 2018, med samma flaggor."],
@@ -356,13 +356,13 @@ const TASKS = [
   ['stop', 2, 'Ge gh rätt att ändra GitHub Actions-filer', ['gh auth refresh -s workflow', 'gh auth refresh --scopes workflow'], 'Agenten stannar: nya rättigheter godkänner du själv i webbläsaren. -s = scope, en sorts behörighet.', '='],
   ['stop', 2, 'Byt till ditt andra GitHub-konto i gh', 'gh auth switch', 'Agenten stannar: vilket konto som ska användas är ditt beslut.', '='],
   ['stop', 2, 'Ångra dina ändringar i {f} sedan senaste commit', ['git checkout -- {f}', 'git restore {f}'], 'Agenten stannar: ändringarna försvinner för gott. -- betyder: här kommer filnamn, inte grenar.', '='],
-  ['stop', 2, 'Öppna mappen du står i i Utforskaren', ['explorer.exe .', 'explorer .', 'open .', 'xdg-open .'], 'Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i.', ["explorer .", "Invoke-Item .", "ii ."], "Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i."],
+  ['stop', 2, 'Öppna den här mappen i Utforskaren', ['explorer.exe .', 'explorer .', 'open .', 'xdg-open .'], 'Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i.', ["explorer .", "Invoke-Item .", "ii ."], "Agenten stannar: den kan inte titta i fönster. Punkten är mappen du står i."],
   ['stop', 2, 'Installera Git med winget', ['winget install --id Git.Git -e', 'winget install -e --id Git.Git', 'winget install Git.Git'], 'Agenten stannar: installationen ber om administratörsrätt i en ruta den inte når. -e = exakt id.', '='],
   ['stop', 3, 'Skicka grenen {b} första gången och koppla den till origin', ['git push -u origin {b}', 'git push --set-upstream origin {b}'], 'Agenten stannar: grenen blir synlig på GitHub. -u kopplar ihop den, sedan räcker git push.', '='],
   ['stop', 3, 'Pusha repot i mappen {repo} utan att gå in i mappen', 'git -C {repo} push', 'Agenten stannar före varje push. -C kör git som om du stod i mappen.', '='],
-  ['stop', 3, 'Radera den lokala grenen {b}, även om den inte är sammanslagen', ['git branch -D {b}', 'git branch --delete --force {b}'], 'Agenten stannar: -D tvingar fram raderingen, och det som bara fanns på grenen är borta.', '='],
-  ['stop', 3, 'Slå ihop pull request 8 och pressa ihop commitsen till en', ['gh pr merge 8 --squash', 'gh pr merge 8 -s'], 'Agenten stannar: en merge hamnar på main direkt. --squash gör alla commits till en.', '='],
-  ['stop', 4, 'Slå ihop pull request 8 i repot Elwyndaz/forskning med en merge-commit', ['gh pr merge 8 -R Elwyndaz/forskning --merge', 'gh pr merge 8 --repo Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning -m'], 'Agenten stannar: en merge går ut på main och ångras inte med en knapp. -R = vilket repo, så du slipper stå i mappen.', '='],
+  ['stop', 3, 'Radera den lokala grenen {b}, även om den inte är ihopslagen', ['git branch -D {b}', 'git branch --delete --force {b}'], 'Agenten stannar: -D tvingar fram raderingen, och det som bara fanns på grenen är borta.', '='],
+  ['stop', 3, 'Slå ihop pull request 8 som en enda commit', ['gh pr merge 8 --squash', 'gh pr merge 8 -s'], 'Agenten stannar: en merge hamnar direkt på basgrenen, oftast main. --squash gör alla commits till en.', '='],
+  ['stop', 4, 'Slå ihop pull request 8 i repot Elwyndaz/forskning med en merge-commit', ['gh pr merge 8 -R Elwyndaz/forskning --merge', 'gh pr merge 8 --repo Elwyndaz/forskning --merge', 'gh pr merge 8 -R Elwyndaz/forskning -m'], 'Agenten stannar: en merge går ut på main direkt, och att ångra den kräver en revert-commit. -R = vilket repo, så du slipper stå i mappen.', '='],
   ['stop', 4, 'Spara hemligheten API_KEY i Cloudflare-workern', ['npx wrangler secret put API_KEY', 'wrangler secret put API_KEY'], 'Agenten stannar: hemligheten skriver du själv, så att den aldrig hamnar i en logg eller ett transkript.', '='],
   ['stop', 4, 'Kör schema.sql mot den riktiga D1-databasen db', ['npx wrangler d1 execute db --remote --file=schema.sql', 'wrangler d1 execute db --remote --file=schema.sql', 'npx wrangler d1 execute db --file=schema.sql --remote'], 'Agenten stannar: --remote är produktionen med riktiga användare, inte din lokala kopia.', '='],
   ['stop', 4, 'Avsluta processen 4821 från bash, med PowerShell', ['powershell -Command "Stop-Process -Id 4821"', 'powershell.exe -Command "Stop-Process -Id 4821"'], 'Agenten stannar: att döda en process kan stoppa något du jobbar med. -Command kör en rad PowerShell och går tillbaka.'],
@@ -571,7 +571,7 @@ const GLOSS = {
   'gh pr merge -s': '-s = squash, alla commits blir en',
   'git -C': '-C = kör git som om du stod i mappen efter',
   'git branch --delete': 'radera grenen',
-  'git branch --force': 'tvinga, även om grenen inte är sammanslagen',
+  'git branch --force': 'tvinga, även om grenen inte är ihopslagen',
   'db': 'databasens namn',
   'Git.Git': 'Gits id i winget',
   'winget': 'Windows pakethanterare',
@@ -682,7 +682,7 @@ Object.assign(GLOSS, {
   'Get-NetTCPConnection': 'lista nätverksanslutningar', 'Get-NetTCPConnection -LocalPort': 'bara den här porten på din dator', 'Get-NetTCPConnection -State': 'bara anslutningar i ett visst läge',
   'Get-NetTCPConnection Listen': 'Listen: program som väntar på anslutningar, som en server', 'Get-Command': 'visa var ett kommando finns och vad det är. Alias: gcm',
   'Invoke-WebRequest': 'gör en webbförfrågan. Alias: iwr, och curl i Windows PowerShell', 'Invoke-WebRequest -Method': 'metoden, alltså vad förfrågan ska göra',
-  'Invoke-WebRequest Head': 'HEAD: bara svarshuvudena, inte sidan', 'Invoke-WebRequest -OutFile': 'spara svaret i filen som följer',
+  'Invoke-WebRequest Head': 'HEAD: bara svarshuvudena, inte sidan', 'Invoke-WebRequest -UseBasicParsing': 'tolka sidan enkelt, utan att fråga om skript', 'Invoke-WebRequest -OutFile': 'spara svaret i filen som följer',
   'Invoke-RestMethod': 'webbförfrågan som gör om JSON-svaret till ett objekt. Alias: irm', 'Invoke-RestMethod -Method': 'metoden, alltså vad förfrågan ska göra', 'Invoke-RestMethod Post': 'POST: skicka data',
   'Invoke-RestMethod -ContentType': 'vilken sorts data som skickas', 'Invoke-RestMethod application/json': 'datan är JSON', 'Invoke-RestMethod -Body': 'datan som skickas',
   'Invoke-RestMethod {"namn":"test"}': 'datan, i JSON-format', 'curl.exe': 'riktiga curl. .exe behövs, annars tolkar Windows PowerShell curl som Invoke-WebRequest',
@@ -964,18 +964,40 @@ function quizItems(pack, ps) {
   const pick = (list, k) => (vars[k] ??= rnd0(list.filter(x => !Object.values(vars).includes(x))));
   return TASKS.filter(t => (pack === 'all' || t[0] === pack) && (!ps || t[5])).map(t => {
     const b = fill(t, pick, ps);
-    return {text: b.text, why: b.why, cmd: show(b.steps.map(st => st[0].raw).join(ps ? '; ' : ' && ')),
+    return {tpl: t[2], text: b.text, why: b.why, cmd: show(b.steps.map(st => st[0].raw).join(ps ? '; ' : ' && ')),
       forms: b.steps.length === 1 ? b.steps[0].map(a => [a.key]) : [b.steps.map(st => st[0].key)]};
   });
 }
 const rnd0 = a => a[Math.floor(Math.random() * a.length)];
 const overlap = (x, y) => x.forms.some(f => y.forms.some(g => f.length === g.length && f.every((k, i) => same(k, g[i]) || same(g[i], k))));
-const clash = (x, y) => x === y || x.text === y.text || x.cmd === y.cmd || overlap(x, y);
+// Uppgifter där det ena kommandot också löser den andra, fast svaren skiljer sig
+const NEAR = [
+  ['Lista filerna i mappen du står i', 'Lista alla filer, även dolda', 'Lista filerna med storlek och datum'],
+  ['Avsluta processen med id 4821', 'Tvinga processen 4821 att avsluta direkt', 'Avsluta processen 4821 från bash, med PowerShell'],
+  ['Sök efter {word} i {f}', 'Sök efter {word} i {f} oavsett stora och små bokstäver'],
+  ['Gå in i mappen {d}', 'Gå direkt till mappen {d} i din hemmapp'],
+  ['Skapa grenen {b}', 'Skapa grenen {b} och byt till den direkt', 'Skapa grenen {b}, byt till den och skicka den till GitHub'],
+  ['Skicka dina commits till GitHub', 'Skicka grenen {b} till GitHub första gången', 'Skicka grenen {b} första gången och koppla den till origin', 'Pusha repot i mappen {repo} utan att gå in i mappen'],
+  ['Logga in på GitHub från terminalen', 'Logga in på GitHub, i webbläsaren'],
+  ['Kasta ändringarna i {f} som inte är stagade', 'Ångra dina ändringar i {f} sedan senaste commit'],
+  ['Se vilka filer som ändrats sedan senaste commit', 'Se exakt vilka rader du har ändrat'],
+].map(g => new Set(g));
+const near = (x, y) => NEAR.some(g => g.has(x.tpl) && g.has(y.tpl));
+// En kedja krockar med en uppgift vars svar är ett av kedjans steg
+const step = (x, y) => x.forms.some(f => f.length > 1 && y.forms.some(g => g.length === 1 && f.some(k => same(k, g[0]) || same(g[0], k))));
+// I cmdlets räknas växlar (-Force, -Recurse) inte: Get-ChildItem och Get-ChildItem -Force gör nästan samma sak
+const loose = key => { let c = false; return key.filter((t, i) => { if (i === 0 || key[i - 1] === '|') c = isCmdlet(t); return !(c && /^-[a-z]+$/.test(t)); }); };
+const looseSame = (x, y) => x.forms.some(f => y.forms.some(g => f.length === g.length && f.every((k, i) => same(loose(k), loose(g[i])))));
+const clash = (x, y) => x === y || x.text === y.text || x.cmd === y.cmd || overlap(x, y) || step(x, y) || step(y, x) || near(x, y) || looseSame(x, y);
 function quizQuestion(items, it, kind) {
   const word = c => c.split(' ')[0], field = kind === 'vilket' ? 'cmd' : 'text';
   const ok = shuffle(items.filter(x => !clash(x, it)));
   const wrong = [];
-  for (const x of [...ok.filter(x => word(x.cmd) === word(it.cmd)), ...ok]) if (wrong.length < 3 && !wrong.some(w => w[field] === x[field] || clash(w, x))) wrong.push(x);
+  // Felsvaren som liknar rätt svar mest först: samma kommando, samma ifyllda ord, kedja mot kedja. Annars avslöjar ett namn svaret.
+  const toks = c => c.split(/[ |;"]+/), args = c => toks(c).slice(1).filter(t => t && !t.startsWith('-')), mine = args(it.cmd);
+  const chain = c => / && | [|] |; /.test(c);
+  const score = x => (word(x.cmd) === word(it.cmd)) + args(x.cmd).some(t => mine.includes(t)) + 2 * (chain(x.cmd) === chain(it.cmd));
+  for (const x of ok.map(x => [score(x), x]).sort((a, b) => b[0] - a[0]).map(a => a[1])) if (wrong.length < 3 && !wrong.some(w => w[field] === x[field] || clash(w, x))) wrong.push(x);
   const options = shuffle([it, ...wrong]);
   return {kind, it, ask: kind === 'vilket' ? it.text : it.cmd, options: options.map(x => x[field]), answer: options.indexOf(it), why: it.why};
 }
@@ -987,7 +1009,7 @@ function quizPairs(pool, n = 4) {
 }
 // Tio frågor: åtta flerval åt båda hållen och två omgångar para ihop. Små paket ger färre.
 function makeQuiz(pack, ps) {
-  const items = quizItems(pack, ps), pool = shuffle(items);
+  const items = quizItems(pack, ps), pool = shuffle(items).filter((x, i, a) => !a.slice(0, i).some(y => x.text === y.text || x.cmd === y.cmd || near(x, y))); // 'all' har några uppgifter i två paket
   return ['vilket', 'vad', 'vilket', 'vad', 'par', 'vilket', 'vad', 'vilket', 'vad', 'par']
     .map(kind => (kind === 'par' ? quizPairs(pool) : pool.length ? quizQuestion(items, pool.shift(), kind) : null)).filter(Boolean);
 }
