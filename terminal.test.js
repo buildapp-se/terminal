@@ -5,8 +5,8 @@ const fs = require('fs');
 
 const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -183,5 +183,22 @@ for (const ps of [false, true]) for (const t of TASKS) if (t[0] === 'fs' && (!ps
   for (const st of fill(t, pick, ps).steps) try { s(st[0].raw.replace('{any}', 'x')); }
   catch (e) { assert.ok(!/undefined|TypeError/.test(e.message + e.name), `${st[0].raw}: ${e.message}`); }
 }
+
+// Quizläget: tio frågor per paket, rätt svar finns med, inga dubbletter, inget felsvar som också godkänns
+const sizes = {};
+for (const ps of [false, true]) for (const pack of Object.keys(PACKS)) for (let r = 0; r < 60; r++) {
+  const qs = makeQuiz(pack, ps), tag = `${pack} ${ps ? 'ps' : 'bash'}`;
+  sizes[tag] = Math.min(sizes[tag] ?? 99, qs.length);
+  for (const q of qs) {
+    const txt = q.pairs ? q.pairs.flatMap(x => [x.text, x.cmd]) : q.options;
+    assert.ok(!txt.some(x => /\{\w+\}/.test(x)), `${tag}: omallat ord i ${txt}`);
+    if (q.pairs) { assert.ok(q.pairs.every((x, i) => q.pairs.every((y, j) => i === j || !clash(x, y))), `${tag}: par krockar`); continue; }
+    assert.strictEqual(new Set(q.options).size, q.options.length, `${tag}: dubbla alternativ ${q.options}`);
+    assert.ok(q.options.length >= 3, `${tag}: för få alternativ till ${q.ask}`);
+    assert.strictEqual(q.options[q.answer], q.kind === 'vilket' ? q.it.cmd : q.it.text);
+  }
+}
+const small = Object.entries(sizes).filter(([, n]) => n < 10);
+assert.ok(!small.length, `quiz med färre än tio frågor: ${small.map(x => x.join(' ')).join(', ')}`);
 
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);

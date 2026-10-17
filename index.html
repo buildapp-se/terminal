@@ -108,6 +108,8 @@ svg{display:block}
 .opt:hover{background:#2A2D2E}
 .opt[aria-pressed=true]:hover{background:#264F78}
 .opt .dim{margin-left:1ch}
+.qz .opt{white-space:pre-wrap;margin-bottom:2px}.opt.ok{background:#1E3A2A;color:#89D185}.opt.no{background:#4B1818;color:#F48771}.opt:disabled{cursor:default}
+.pairs{display:grid;gap:.6em 4ch}@media (min-width:900px){.pairs{grid-template-columns:auto 1fr}}
 .lvl{display:flex;align-items:center;gap:1ch}
 .lvl button{padding:0 6px;color:var(--blue)}
 .scores{border-collapse:collapse}
@@ -187,7 +189,6 @@ kbd{font:inherit;color:var(--yellow)}
   </footer>
 </div>
 
-<script src="/ai/quiz-data.js" defer></script>
 <script>
 /* pure:start  (ren logik utan DOM, testas av terminal.test.js) */
 const PACKS = {
@@ -921,6 +922,44 @@ function fake(fs, cwd, key, ps) {
   }
   return null;
 }
+
+// ---------- quizläget: uppgifterna som frågor ----------
+// 'vilket': uppgiften visas, välj kommandot. 'vad': kommandot visas, välj vad det gör. 'par': para ihop fyra.
+// Felsvaren tas helst från samma kommando (ls -a mot ls -l), aldrig från en uppgift vars svar också godkänns.
+const show = raw => raw.replace(ANY, '"meddelande"');
+const shuffle = a => a.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+function quizItems(pack, ps) {
+  const vars = {}; // samma mallord i hela quizet, så att "mkdir musik" inte avslöjas av att bara rätt svar säger musik
+  const pick = (list, k) => (vars[k] ??= rnd0(list.filter(x => !Object.values(vars).includes(x))));
+  return TASKS.filter(t => (pack === 'all' || t[0] === pack) && (!ps || t[5])).map(t => {
+    const b = fill(t, pick, ps);
+    return {text: b.text, why: b.why, cmd: show(b.steps.map(st => st[0].raw).join(ps ? '; ' : ' && ')),
+      forms: b.steps.length === 1 ? b.steps[0].map(a => [a.key]) : [b.steps.map(st => st[0].key)]};
+  });
+}
+const rnd0 = a => a[Math.floor(Math.random() * a.length)];
+const overlap = (x, y) => x.forms.some(f => y.forms.some(g => f.length === g.length && f.every((k, i) => same(k, g[i]) || same(g[i], k))));
+const clash = (x, y) => x === y || x.text === y.text || x.cmd === y.cmd || overlap(x, y);
+function quizQuestion(items, it, kind) {
+  const word = c => c.split(' ')[0], field = kind === 'vilket' ? 'cmd' : 'text';
+  const ok = shuffle(items.filter(x => !clash(x, it)));
+  const wrong = [];
+  for (const x of [...ok.filter(x => word(x.cmd) === word(it.cmd)), ...ok]) if (wrong.length < 3 && !wrong.some(w => w[field] === x[field] || clash(w, x))) wrong.push(x);
+  const options = shuffle([it, ...wrong]);
+  return {kind, it, ask: kind === 'vilket' ? it.text : it.cmd, options: options.map(x => x[field]), answer: options.indexOf(it), why: it.why};
+}
+function quizPairs(pool, n = 4) {
+  const set = [];
+  for (const x of pool) if (set.length < n && !set.some(y => clash(x, y))) set.push(x);
+  pool.splice(0, pool.length, ...pool.filter(x => !set.includes(x)));
+  return set.length < 2 ? null : {kind: 'par', pairs: set, order: shuffle(set.map((_, i) => i))};
+}
+// Tio frågor: åtta flerval åt båda hållen och två omgångar para ihop. Små paket ger färre.
+function makeQuiz(pack, ps) {
+  const items = quizItems(pack, ps), pool = shuffle(items);
+  return ['vilket', 'vad', 'vilket', 'vad', 'par', 'vilket', 'vad', 'vilket', 'vad', 'par']
+    .map(kind => (kind === 'par' ? quizPairs(pool) : pool.length ? quizQuestion(items, pool.shift(), kind) : null)).filter(Boolean);
+}
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
 for (const o of [PACKS, POOLS, VALS, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
@@ -931,7 +970,6 @@ const well = $('#well'), screen = $('#screen'), log = $('#log'), cmd = $('#cmd')
 const rnd = a => a[Math.floor(Math.random() * a.length)];
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const fmt = n => n.toLocaleString('sv-SE');
-const show = raw => raw.replace(ANY, '"meddelande"');
 const sig = () => (S?.ps ?? isPS()) ? 'PS> ' : '$ '; // promptens tecken i hjälpkort och missade block
 
 // Alla kommandon spelet känner till, för bash: X: command not found
@@ -1038,7 +1076,7 @@ function mp3Music(a) {
 }
 
 // ---------- tillstånd ----------
-const prefs = {pack: 'fs', level: 1, shell: load(SHELL, null)};
+const prefs = {pack: 'fs', level: 1, shell: load(SHELL, null), kind: 'game'};
 const isPS = () => prefs.shell === 'ps';
 const promptHTML = (ps, cwd = ['projekt']) => S?.agent ? '<span class="agent">&gt;</span> ' : ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
   `<span class="u">du@buildapp</span>:<span class="p">${esc(['~', ...cwd].join('/'))}</span>$ `;
@@ -1368,21 +1406,24 @@ function menu() {
   document.body.className = 'menu-on';
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = null;
-  const scores = scoresLoad();
+  const scores = scoresLoad(), quizKind = prefs.kind === 'quiz';
   screen.innerHTML = `<pre class="logo" aria-label="./terminal">${BANNER}</pre>
     <p>Uppgifter faller som block. Skriv rätt kommando innan de når botten.</p>
     <div class="cols"><div>
     <h2># skal <span class="dim">(s byter)</span></h2>
     <div class="opts">${shellOpts()}</div>
+    <h2># läge <span class="dim">(m byter)</span></h2>
+    <div class="opts">${KINDS.map(([k, name, hint]) => `<button class="opt" data-kind="${k}" aria-pressed="${k === prefs.kind}">${name.padEnd(12)}<span class="dim">${hint}</span></button>`).join('')}</div>
     <h2># paket <span class="dim">(↑ ↓ eller 1 till ${Object.keys(PACKS).length})</span></h2>
     <div class="opts">${Object.entries(PACKS).map(([k, p], i) =>
-      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
-    <h2># startnivå <span class="dim">(← →)</span></h2>
-    <div class="lvl"><button data-lv="-1" aria-label="Lägre nivå">&lsaquo;</button><b id="lv">${prefs.level}</b><span class="hot" id="bar">[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]</span><button data-lv="1" aria-label="Högre nivå">&rsaquo;</button></div>
-    <div class="actions"><button data-act="start"><kbd>Enter</kbd> starta</button></div>
+      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${quizKind ? (b => (b ? `bäst ${b.r} av ${b.t}` : 'inte gjort än'))(quizBest(k, isPS())) : isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
+    ${quizKind ? '' : `<h2># startnivå <span class="dim">(← →)</span></h2>
+    <div class="lvl"><button data-lv="-1" aria-label="Lägre nivå">&lsaquo;</button><b id="lv">${prefs.level}</b><span class="hot" id="bar">[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]</span><button data-lv="1" aria-label="Högre nivå">&rsaquo;</button></div>`}
+    <div class="actions"><button data-act="go"><kbd>Enter</kbd> ${quizKind ? 'starta quiz' : 'starta'}</button></div>
     </div><div>
     <h2># så funkar det</h2>
-    <p>Lös vilket block som helst. ${isPS() ? '<span class="hot">;</span> mellan kommandon' : '<span class="hot">&&</span> eller flera argument (<span class="hot">mkdir a b</span>)'} rensar flera på en gång och ger kombo. Klicka på ett block för hjälp. 10 rätt i rad ger en <span class="hot">clear</span> som tömmer brunnen. Missade block visar svaret och kan fortfarande rensas för halva poängen.</p>
+    ${quizKind ? '<p>Tio frågor om paketets kommandon: välj kommandot till en uppgift, välj vad ett kommando gör, och para ihop fyra åt gången. Ingen tid, ingen brunn. Efteråt ser du hur många rätt du fick och vilka du ska öva på.</p>' : ''}
+    <p${quizKind ? ' hidden' : ''}>Lös vilket block som helst. ${isPS() ? '<span class="hot">;</span> mellan kommandon' : '<span class="hot">&&</span> eller flera argument (<span class="hot">mkdir a b</span>)'} rensar flera på en gång och ger kombo. Klicka på ett block för hjälp. 10 rätt i rad ger en <span class="hot">clear</span> som tömmer brunnen. Missade block visar svaret och kan fortfarande rensas för halva poängen.</p>
     ${matchMedia('(pointer:coarse)').matches ? '<p class="hot">Spelas bäst med tangentbord.</p>' : ''}
     <h2># topplista</h2>
     ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${s.l}</td><td>${s.c} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
@@ -1427,7 +1468,7 @@ function askShell() {
 // Inställningar, som i VS Code: kugghjulet längst ner i sidofältet eller Ctrl+,
 let backTo = 'menu';
 function settings() {
-  if (mode === 'boss') return;
+  if (['boss', 'quiz', 'quizover'].includes(mode)) return;
   if (mode === 'settings') return closeSettings();
   if (mode === 'play') pause(true);
   backTo = mode === 'pause' ? 'pause' : 'menu';
@@ -1452,6 +1493,9 @@ function setLevel(d) {
   $('#bar').textContent = `[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]`;
   stats();
 }
+const KINDS = [['game', 'spel', 'block faller, skriv kommandot'], ['quiz', 'quiz', 'flerval och para ihop, i lugn takt']];
+function setKind(k) { prefs.kind = k; menu(); }
+const go = () => (prefs.kind === 'quiz' ? quiz() : start());
 function setPack(k) {
   prefs.pack = k;
   screen.querySelectorAll('[data-pack]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pack === k));
@@ -1535,10 +1579,111 @@ screen.addEventListener('click', e => {
   if (t.dataset.shell && !t.disabled) { setShell(t.dataset.shell); if (mode === 'shell') menu(); }
   if (t.dataset.snd) { setSound(t.dataset.snd === '1'); screen.querySelectorAll('[data-snd]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.snd === '1') === soundOn)); }
   if (t.dataset.lv) setLevel(+t.dataset.lv);
-  if (t.dataset.boss) bossAnswer(+t.dataset.boss);
-  ({start, share, menu, bossEnd, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
+  if (t.dataset.qa) mode === 'boss' ? bossAnswer(+t.dataset.qa) : quizAnswer(+t.dataset.qa);
+  if (t.dataset.qc) quizPick(+t.dataset.qc);
+  if (t.dataset.qd) quizMatch(+t.dataset.qd);
+  if (t.dataset.kind) setKind(t.dataset.kind);
+  ({start, share, menu, bossEnd, quiz, quizNext, go, resume: () => pause(false), quit: gameOver, back: closeSettings})[t.dataset.act]?.();
   cmd.focus();
 });
+
+// ---------- quizläget ----------
+// Samma uppgifter som spelet, i lugn takt: flerval åt båda hållen och para ihop. Bästa resultatet per paket och skal sparas.
+const QUIZ = 'term-quiz';
+let Q = null;
+const quizBest = (pack, ps) => load(QUIZ, {})[`${pack}-${ps ? 'ps' : 'bash'}`];
+function askHTML(q) {
+  return `<p>${q.kind === 'vilket' ? `Vilket kommando gör det här? <span class="hot">${esc(q.ask)}</span>` : `Vad gör <span class="hot">${esc(sig() + q.ask)}</span>?`}</p>
+    <div class="opts qz">${q.options.map((o, i) => `<button class="opt" data-qa="${i}">[${'abcd'[i]}] ${esc(o)}</button>`).join('')}</div>
+    <p class="dim">tryck ${q.options.map((_, i) => 'abcd'[i]).join(', ')}</p>`;
+}
+// Markerar rätt och fel alternativ och visar förklaringen
+function answerHTML(q, i, msg) {
+  screen.querySelectorAll('[data-qa]').forEach(b => { b.disabled = true; b.classList.toggle('ok', +b.dataset.qa === q.answer); b.classList.toggle('no', +b.dataset.qa === i && i !== q.answer); });
+  const right = i === q.answer;
+  return `<p class="${right ? 'hot' : 'err'}">${right ? msg || 'Rätt!' : `Fel. Rätt svar: ${esc(q.options[q.answer])}`}</p><p class="cmt"># ${esc(q.it.cmd)}: ${esc(q.why)}</p>`;
+}
+function quiz() {
+  mode = 'quiz';
+  document.body.className = 'menu-on';
+  Q = {pack: prefs.pack, ps: isPS(), qs: makeQuiz(prefs.pack, isPS()), i: 0, right: 0, missed: []};
+  Q.total = Q.qs.reduce((n, q) => n + (q.pairs ? q.pairs.length : 1), 0);
+  quizShow();
+}
+function quizShow() {
+  const q = Q.qs[Q.i];
+  let h = `<p class="cmt"># quiz: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'} · fråga ${Q.i + 1} av ${Q.qs.length} · ${Q.right} rätt hittills</p>`;
+  if (q.pairs) {
+    Object.assign(q, {sel: null, ok: new Set(), miss: new Set()});
+    h += `<p>Para ihop: välj ett kommando (${q.pairs.map((_, i) => i + 1).join(', ')}), sedan vad det gör (${q.pairs.map((_, i) => 'abcd'[i]).join(', ')}).</p>
+      <div class="pairs"><div class="opts qz">${q.pairs.map((x, i) => `<button class="opt" data-qc="${i}">[${i + 1}] ${esc(sig() + x.cmd)}</button>`).join('')}</div>
+      <div class="opts qz">${q.order.map((j, i) => `<button class="opt" data-qd="${i}">[${'abcd'[i]}] ${esc(q.pairs[j].text)}</button>`).join('')}</div></div><p id="qmsg" class="dim"></p>`;
+  } else h += askHTML(q);
+  screen.innerHTML = h;
+  screen.hidden = false;
+  screen.scrollTop = 0;
+}
+function quizNext() {
+  const q = Q.qs[Q.i];
+  if (!q.done) return;
+  if (++Q.i < Q.qs.length) return quizShow();
+  quizEnd();
+}
+function quizAnswer(i) {
+  const q = Q.qs[Q.i];
+  if (q.done || q.pairs || !q.options[i]) return;
+  q.done = true;
+  const right = i === q.answer;
+  if (right) Q.right++; else Q.missed.push(q.it);
+  sfx(right ? 'combo' : 'error', 2);
+  screen.insertAdjacentHTML('beforeend', answerHTML(q, i) + '<div class="actions"><button data-act="quizNext"><kbd>Enter</kbd> nästa</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>');
+}
+function quizPick(i) {
+  const q = Q.qs[Q.i];
+  if (q.done || !q.pairs?.[i] || q.ok.has(i)) return;
+  q.sel = i;
+  screen.querySelectorAll('[data-qc]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.qc === i));
+}
+function quizMatch(d) {
+  const q = Q.qs[Q.i], msg = $('#qmsg');
+  if (q.done || !q.pairs || q.order[d] === undefined) return;
+  if (q.sel === null) { msg.textContent = '# välj ett kommando först, med en siffra'; return; }
+  const btnC = screen.querySelector(`[data-qc="${q.sel}"]`), btnD = screen.querySelector(`[data-qd="${d}"]`);
+  if (q.order[d] !== q.sel) {
+    q.miss.add(q.sel);
+    sfx('error');
+    btnD.classList.add('no'); setTimeout(() => btnD.classList.remove('no'), 400);
+    msg.className = 'err'; msg.textContent = '# inte det, försök igen. Paret ger ingen poäng nu.';
+    return;
+  }
+  q.ok.add(q.sel);
+  for (const b of [btnC, btnD]) { b.disabled = true; b.classList.add('ok'); b.setAttribute('aria-pressed', 'false'); }
+  q.sel = null;
+  sfx('clear');
+  msg.className = 'dim'; msg.textContent = '';
+  if (q.ok.size < q.pairs.length) return;
+  q.done = true;
+  const first = q.pairs.length - q.miss.size;
+  Q.right += first;
+  Q.missed.push(...q.pairs.filter((_, i) => q.miss.has(i)));
+  screen.insertAdjacentHTML('beforeend', `<p class="hot">${first} av ${q.pairs.length} rätt på första försöket</p>
+    <dl class="parts">${q.pairs.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.why)}</dd>`).join('')}</dl>
+    <div class="actions"><button data-act="quizNext"><kbd>Enter</kbd> nästa</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`);
+}
+function quizEnd() {
+  mode = 'quizover';
+  const k = `${Q.pack}-${Q.ps ? 'ps' : 'bash'}`, all = load(QUIZ, {}), prev = all[k];
+  const better = !prev || Q.right / Q.total > prev.r / prev.t;
+  if (better && Q.right > 0) { all[k] = {r: Q.right, t: Q.total}; save(QUIZ, all); }
+  const w = 20, n = Math.round(w * Q.right / Q.total);
+  sfx(Q.right === Q.total ? 'newHighscore' : 'levelUp');
+  screen.innerHTML = `<p class="cmt"># quiz klart: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'}</p>
+    <p><span class="hot">${Q.right} av ${Q.total} rätt</span> <span class="hot">[${'#'.repeat(n)}${'-'.repeat(w - n)}]</span></p>
+    <p class="dim">${better && Q.right > 0 ? (prev ? `Nytt bästa, förra var ${prev.r} av ${prev.t}.` : 'Ditt första resultat i det här quizet.') : `Ditt bästa: ${prev ? `${prev.r} av ${prev.t}` : 'inget än'}.`}</p>
+    ${Q.missed.length ? `<h2># öva på de här</h2><dl class="parts">${Q.missed.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.text)}</dd>`).join('')}</dl>` : '<p class="hot">Allt rätt!</p>'}
+    <div class="actions"><button data-act="quiz"><kbd>Enter</kbd> nytt quiz</button><button data-act="start">spela i stället</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`;
+  screen.scrollTop = 0;
+}
 
 // ---------- påskägg: formatera om datorn ----------
 // rm -rf / med --no-preserve-root eller /*, dd, mkfs, format C:, Remove-Item C:\ ... låtsas krascha datorn.
@@ -1613,33 +1758,17 @@ function reboot(st) {
   };
 }
 
-// ---------- bossfrågan: quizet mellan nivåerna ----------
-// Frågorna kommer från quizet (/ai/quiz-data.js, en källa för båda sidorna). Flerval tas som de är,
-// para ihop blir "vilken beskrivning passar X" med två felsvar ur samma omgång. Rätt svar ger en clear-laddning.
-const shuffle = a => a.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).map(x => x[1]);
-function bossQuestion() {
-  if (typeof QUIZZES === 'undefined') return null;
-  const steps = QUIZZES.flatMap(z => z.steps || []).filter(st => st.q || st.pairs);
-  const all = steps.flatMap(st => st.q ? [{st}] : st.pairs.map((pr, i) => ({st, i})));
-  const fresh = all.filter(x => !S.asked.has(x.st.q || x.st.pairs[x.i][0]));
-  if (!fresh.length) return null;
-  const {st, i} = rnd(fresh);
-  if (st.q) return {key: st.q, q: st.q, options: st.options, answer: st.answer, why: st.why};
-  const [term, desc, name, more] = st.pairs[i];
-  const options = shuffle([desc, ...shuffle(st.pairs.filter((_, j) => j !== i)).slice(0, 2).map(x => x[1])]);
-  return {key: term, q: `Vilken beskrivning passar ${term}?`, options, answer: options.indexOf(desc), why: [name && `${term} = ${name}.`, more].filter(Boolean).join(' ')};
-}
+// ---------- bossfrågan mellan nivåerna ----------
+// Kommandot visas, välj vad det gör: andra hållet mot spelet, där du får uppgiften och skriver kommandot.
 function boss() {
   if (mode !== 'play' || S.agent?.busy) return;
-  const x = bossQuestion();
-  if (!x) return;
-  S.asked.add(x.key);
-  S.boss = x;
+  const items = quizItems(S.pack, S.ps), fresh = items.filter(x => !S.asked.has(x.text));
+  if (!fresh.length) return;
+  const x = S.boss = quizQuestion(items, rnd(fresh), 'vad');
+  S.asked.add(x.it.text);
   mode = 'boss';
   try { snd()?.stop(); } catch {}
-  screen.innerHTML = `<p class="hot"># bossfråga: rätt svar ger en clear-laddning</p><p>${esc(x.q)}</p>
-    <div class="opts">${x.options.map((o, i) => `<button class="opt" data-boss="${i}">[${'abcd'[i]}] ${esc(o)}</button>`).join('')}</div>
-    <p class="dim">tryck a, b, c${x.options.length > 3 ? ' eller d' : ''}</p>`;
+  screen.innerHTML = `<p class="hot"># bossfråga: rätt svar ger en clear-laddning</p>${askHTML(x)}`;
   screen.hidden = false;
 }
 function bossAnswer(i) {
@@ -1649,9 +1778,7 @@ function bossAnswer(i) {
   const right = i === x.answer;
   if (right && S.charges < 3) S.charges++;
   sfx(right ? 'combo' : 'error', 2);
-  screen.querySelectorAll('[data-boss]').forEach(b => { b.disabled = true; b.setAttribute('aria-pressed', +b.dataset.boss === x.answer); });
-  screen.insertAdjacentHTML('beforeend', `<p class="${right ? 'hot' : 'err'}">${right ? `Rätt! +1 clear${S.charges === 3 ? ' (max 3)' : ''}` : `Fel. Rätt svar: ${esc(x.options[x.answer])}`}</p>
-    ${x.why ? `<p class="cmt"># ${esc(x.why)}</p>` : ''}<div class="actions"><button data-act="bossEnd"><kbd>Enter</kbd> fortsätt</button></div>`);
+  screen.insertAdjacentHTML('beforeend', answerHTML(x, i, right ? `Rätt! +1 clear${S.charges === 3 ? ' (max 3)' : ''}` : '') + '<div class="actions"><button data-act="bossEnd"><kbd>Enter</kbd> fortsätt</button></div>');
   stats();
 }
 function bossEnd() {
@@ -1749,7 +1876,7 @@ function lit(name) {
 }
 // Ett blad i terminalen, som inställningarna: pausar rundan, Esc går tillbaka
 function sheet(name, html) {
-  if (mode === 'boss') return;
+  if (['boss', 'quiz', 'quizover'].includes(mode)) return;
   if (mode === 'play') pause(true);
   if (mode !== 'sheet' && mode !== 'settings') backTo = mode === 'pause' ? 'pause' : 'menu';
   mode = 'sheet';
@@ -1798,7 +1925,7 @@ Uppgifter faller som block. Skriv kommandot som blocket ber om och tryck Enter i
 - flera kommandon på en rad rensar flera block: && i bash, ; i PowerShell
 - klicka på ett block för hjälpkortet (blocket ger då 0 poäng)
 - ↑ hämtar förra kommandot, Esc pausar, exit avslutar
-- ny nivå ger en bossfråga ur quizet på buildapp.se/ai: rätt svar ger en clear-laddning
+- ny nivå ger en bossfråga: vad gör kommandot? Rätt svar ger en clear-laddning
 - clear (cls i PowerShell) tömmer brunnen när du har en laddning, en per 10 rätt i rad
 
 ## skal
@@ -1813,7 +1940,7 @@ const DO = {
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
   explorer: () => sheet('explorer', `<p class="cmt"># utforskaren: din hemmapp just nu</p>${pre(treeLines(S?.fs ?? WORLD).join('\n'))}<p class="dim"># Två mappar syns inte här. Dolda saker hittar du med ${(S?.ps ?? isPS()) ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`),
   search: () => {
-    if (mode === 'boss') return;
+    if (['boss', 'quiz', 'quizover'].includes(mode)) return;
     const round = backTo === 'pause' || mode === 'play' || mode === 'pause';
     sheet('search', `<p class="cmt"># sök: skriv vad du vill göra, som "radera mapp" eller "commit"</p>${round ? '<p class="dim">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : ''}<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon"><div id="hits"></div>`);
     if (round && S) S.blocks.forEach(b => { b.helped = true; });
@@ -1843,7 +1970,7 @@ Ctrl+,      inställningar
 s           byt skal i menyn`)),
   about: () => sheet('about', `${pre(`# om
 ./terminal: lär dig terminalen genom att spela.
-Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://github.com/buildapp-se/terminal" target="_blank" rel="noopener">källkoden på GitHub</a> · <a href="https://buildapp.se/ai/integritet.html" target="_blank" rel="noopener">integritet</a></p>`),
+Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://github.com/buildapp-se/terminal" target="_blank" rel="noopener">källkoden på GitHub</a> · <a href="integritet.html" target="_blank" rel="noopener">integritet</a></p>`),
   issue: () => window.open('https://github.com/buildapp-se/terminal/issues/new', '_blank', 'noopener'),
   zen: () => { document.documentElement.classList.add('zen'); say('# Zen-läge. Esc tar tillbaka ramen.'); },
   fullscreen: () => { try { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); } catch {} },
@@ -1932,8 +2059,9 @@ cmd.addEventListener('keydown', e => {
     return e.preventDefault();
   }
   if (mode === 'menu') {
-    if (k === 'Enter') start();
+    if (k === 'Enter') go();
     else if (k === 's') setShell(otherShell());
+    else if (k === 'm') setKind(prefs.kind === 'quiz' ? 'game' : 'quiz');
     else if (k >= '1' && k <= String(Object.keys(PACKS).length)) setPack(Object.keys(PACKS)[k - 1]);
     else if (k === 'ArrowUp' || k === 'ArrowDown') {
       const keys = Object.keys(PACKS), i = keys.indexOf(prefs.pack) + (k === 'ArrowUp' ? -1 : 1);
@@ -1944,6 +2072,16 @@ cmd.addEventListener('keydown', e => {
     else return;
     e.preventDefault();
     return music();
+  }
+  if (mode === 'quiz' || mode === 'quizover') {
+    const c = k.toLowerCase(), q = Q.qs[Q.i];
+    if (k === 'Escape') menu();
+    else if (mode === 'quizover') { if (k === 'Enter') quiz(); }
+    else if (k === 'Enter') quizNext();
+    else if (q.pairs && c >= '1' && c <= '4') quizPick(+c - 1);
+    else if ('abcd'.includes(c) && c.length === 1 && !e.ctrlKey) q.pairs ? quizMatch('abcd'.indexOf(c)) : quizAnswer('abcd'.indexOf(c));
+    if (typing(e) || k === 'Enter') e.preventDefault();
+    return;
   }
   if (mode === 'boss') {
     const i = 'abcd'.indexOf(k.toLowerCase());

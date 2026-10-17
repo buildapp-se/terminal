@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integritet | ./terminal</title>
+<meta name="description" content="Hur spelet ./terminal behandlar personuppgifter. Kort svar: inget skickas någonstans, topplistan och dina val sparas bara i din webbläsare.">
+<link rel="canonical" href="https://buildapp.se/terminal/integritet.html">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{--bg:#1F1F1F;--fg:#CCCCCC;--dim:#9D9D9D;--line:#2B2B2B;--green:#6A9955;--yellow:#DCDCAA;--blue:#4FC1FF;--key:#9CDCFE;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 var(--mono);padding:24px 16px 48px}
+main{max-width:72ch;margin:0 auto}
+a{color:var(--blue);text-underline-offset:.2em}
+.back{font-size:13px;color:var(--dim)}
+h1{font-size:22px;color:var(--yellow);margin-top:1.2em}
+h2{font-size:15px;color:var(--green);margin-top:2em}
+h2::before{content:'# '}
+.meta{color:var(--dim);font-size:13px}
+p,li{margin-top:.7em}
+ul{list-style:none}
+li{padding-left:2ch;text-indent:-2ch}
+li::before{content:'- ';color:var(--dim)}
+code{color:var(--key)}
+strong{color:#fff;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./">&lt; tillbaka till spelet</a>
+  <h1>Integritet</h1>
+  <p class="meta">Senast uppdaterad 17 oktober 2026 · Version 1.0</p>
+
+  <p>./terminal är ett spel som körs helt i din webbläsare. Ingen inloggning, inga formulär, ingen databas, inga annonser. Inget du skriver i spelet skickas någonstans.</p>
+
+  <h2>Vem ansvarar</h2>
+  <p>Personuppgiftsansvarig är <strong>Patrik Löfgren</strong>, Umeå. Kontakta <a href="mailto:kontakt@orgutveckling.se">kontakt@orgutveckling.se</a> för frågor eller för att använda dina rättigheter.</p>
+
+  <h2>Vilka uppgifter behandlas</h2>
+  <p>Bara det som uppstår när en webbsida levereras:</p>
+  <ul>
+    <li><strong>Cloudflare</strong> levererar och skyddar sidan. Där behandlas IP-adress, tidpunkt, efterfrågad adress och webbläsarinformation.</li>
+    <li><strong>Cloudflare Web Analytics</strong> ger aggregerad besöksstatistik (sida, land, webbläsare, hänvisande sida, laddningstid) via skriptet <code>beacon.min.js</code> från <code>static.cloudflareinsights.com</code>. Inga cookies, ingen enhetsprofil, IP-adressen sparas inte.</li>
+    <li><strong>GitHub Pages</strong> är webbhotellet och för motsvarande tekniska loggar.</li>
+    <li><strong>Google Fonts</strong> levererar typsnittet. När din webbläsare hämtar det går din IP-adress till Google.</li>
+  </ul>
+  <p>Ingen profilering och inget automatiserat beslutsfattande sker.</p>
+
+  <h2>Rättslig grund</h2>
+  <ul>
+    <li><strong>Leverans, säkerhet och statistik:</strong> berättigat intresse av att sidan fungerar, är skyddad och används.</li>
+    <li><strong>Det spelet sparar hos dig:</strong> för att tillhandahålla funktioner du själv använder.</li>
+  </ul>
+
+  <h2>Det spelet sparar i din webbläsare</h2>
+  <p>Inga cookies. Spelet använder <code>localStorage</code> till fem saker, och inget av det lämnar din webbläsare:</p>
+  <ul>
+    <li><code>term-highscores</code>: din topplista, med poäng, nivå, skrivhastighet, paket och datum.</li>
+    <li><code>term-quiz</code>: ditt bästa resultat i quizläget, per paket och skal.</li>
+    <li><code>term-shell</code>: om du spelar med PowerShell eller bash.</li>
+    <li><code>term-sound</code>: om ljudet är på eller av.</li>
+    <li><code>term-crash</code>: om du har låtsasraderat datorn i påskägget, och hur långt du kommit i ominstallationen. Tas bort när du installerat om eller laddar om med Ctrl+F5.</li>
+  </ul>
+  <p>Lagringen behövs för funktioner du själv använder och kräver därför inget samtycke. Den ligger kvar tills du rensar webbplatsdata för buildapp.se i webbläsaren. Det rensar också det som <a href="https://buildapp.se/ai/integritet.html">buildapp.se/ai</a> sparar, eftersom sidorna delar adress.</p>
+
+  <h2>Leverantörer utanför EU/EES</h2>
+  <p>Cloudflare, GitHub och Google är amerikanska bolag och kan behandla uppgifter utanför EU/EES. Då gäller deras dataskyddsvillkor och godkända överföringsmekanismer, som Data Privacy Framework och standardavtalsklausuler.</p>
+
+  <h2>Dina rättigheter</h2>
+  <p>Du kan begära tillgång, rättelse, radering, begränsning eller dataportabilitet, och invända mot behandling som grundas på berättigat intresse. Eftersom spelet inte sparar något om dig hos oss finns i praktiken inget att lämna ut. Du kan också klaga hos <a href="https://www.imy.se/" rel="external noopener" target="_blank">Integritetsskyddsmyndigheten (IMY)</a>.</p>
+
+  <h2>Ändringar</h2>
+  <p>Väsentliga ändringar publiceras här med nytt datum. Fram till version 1.0 redovisades spelets nycklar i integritetstexten för buildapp.se/ai.</p>
+</main>
+</body>
+</html>
