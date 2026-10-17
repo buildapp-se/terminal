@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -376,4 +376,34 @@ eqp('git push origin main', 'git push'); eqp('curl.exe -s https://example.com', 
 // Låtsasskalet (keep) ser fortfarande -Force
 assert.ok(canon(tokenize('Stop-Process -Id 4821 -Force', true), true, true).includes('-force'));
 
+// git-grenarna som riktig git: GitHubs grenar blir lokala när man byter till dem, omöjligheter ger gits egna fel
+{
+  const g = {branch: 'main', branches: new Set(['main'])}, git = s => gitRefs(tokenize(s), g), no = (s, re) => assert.throws(() => git(s), re, s);
+  no('git switch nope', /^Error: fatal: invalid reference: nope$/);
+  no('git merge nope', /^Error: merge: nope - not something we can merge$/);
+  no('git branch -d main', /cannot delete branch 'main' used by worktree at '\/home\/du\/projekt'/);
+  no('git branch -d dark-mode', /error: branch 'dark-mode' not found\./);
+  no('git merge dark-mode', /not something we can merge/); // finns bara på GitHub än
+  assert.strictEqual(git('git branch dark-mode'), '');
+  no('git branch dark-mode', /fatal: a branch named 'dark-mode' already exists/);
+  no('git switch -c dark-mode', /already exists/);
+  assert.strictEqual(git('git switch fix-login'), "branch 'fix-login' set up to track 'origin/fix-login'.\nSwitched to a new branch 'fix-login'");
+  assert.strictEqual(git('git switch fix-login'), "Already on 'fix-login'");
+  assert.strictEqual(git('git merge dark-mode'), undefined);
+  assert.strictEqual(git('git checkout main'), undefined);
+  assert.strictEqual(git('git checkout index.html'), undefined); // en fil, inte en gren
+  assert.strictEqual(git('git branch'), '  dark-mode\n  fix-login\n* main');
+  assert.ok(git('git branch -a').includes('  remotes/origin/ny-meny'));
+  assert.strictEqual(git('git branch -D dark-mode'), 'Deleted branch dark-mode (was 3f9c2a1).');
+  no('git push -C budget', /unknown switch `C'/);
+  assert.strictEqual(git('git -C budget push'), undefined);
+  assert.throws(() => gitRefs(tokenize('git status'), g, false), /not a git repository/);
+  assert.strictEqual(gitRefs(tokenize('git init'), g, false), undefined);
+  // reset: HEAD~n och origin/main räknas bakåt, längre än historiken ger gits fel
+  const h = {commits: [{id: 'aaaaaaa'}, {id: 'bbbbbbb'}, {id: '3f9c2a1'}], pushed: 1};
+  assert.deepStrictEqual(['HEAD', 'HEAD~', 'HEAD~1', 'HEAD^^', 'HEAD~2', 'origin/main', 'bbbbbbb'].map(r => back(r, h)), [0, 1, 1, 2, 2, 2, 1]);
+  assert.throws(() => back('HEAD~3', h), /fatal: ambiguous argument 'HEAD~3': unknown revision/);
+  assert.throws(() => gitRefs(tokenize('git reset --soft HEAD~5'), h), /ambiguous argument/);
+  assert.strictEqual(gitRefs(tokenize('git reset HEAD~1'), h), undefined);
+}
 console.log(`ok: ${TASKS.length} uppgifter, ${n} bash-svar och ${np} PowerShell-svar kontrollerade, låtsasskalet i båda skalen`);

@@ -1642,6 +1642,50 @@ function makeQuiz(pack, ps) {
   return ['vilket', 'vad', 'vilket', 'vad', 'par', 'vilket', 'vad', 'vilket', 'vad', 'par']
     .map(kind => (kind === 'par' ? quizPairs(pool) : pool.length ? quizQuestion(items, pool.shift(), kind) : null)).filter(Boolean);
 }
+// Grenarna som riktig git: lokala i g.branches, GitHubs (POOLS.b) under remotes/origin/ tills man byter till dem.
+// Ändrar g, ger utskriften (undefined: OUT svarar) eller kastar gits riktiga fel. inRepo false: mappen är inte ett repo.
+const REMOTE = ['main', ...POOLS.b], NEEDREPO = new Set(['status', 'add', 'commit', 'log', 'branch', 'switch', 'checkout', 'merge', 'diff', 'restore', 'stash', 'reset', 'push', 'pull', 'remote', 'blame']);
+const REFRE = /^(HEAD[~^\d]*|origin\/main|[0-9a-f]{7})$/;
+// Hur många commits bakåt ref pekar: HEAD~2, HEAD^, origin/main (det senast pushade) eller en hash. Kastar gits fel för det som inte finns.
+function back(ref, g) {
+  const c = g.commits ?? [], n = ref.startsWith('HEAD') ? [...ref.slice(4).matchAll(/~(\d*)|\^/g)].reduce((s, m) => s + (m[1] ? +m[1] : 1), 0)
+    : ref === 'origin/main' ? Math.max(0, c.length - (g.pushed ?? c.length)) : c.findIndex(x => x.id === ref);
+  if (n < 0 || n >= c.length) throw new Error(`fatal: ambiguous argument '${ref}': unknown revision or path not in the working tree.`);
+  return n;
+}
+function gitRefs(u, g, inRepo = true) {
+  if (u[0] !== 'git') return;
+  if (u[1] === '-C') u = ['git', ...u.slice(3)];
+  else if (u.includes('-C') && !['commit', 'branch', 'rebase'].includes(u[1])) throw new Error("error: unknown switch `C'"); // -C gäller git bara före underkommandot
+  const sub = u[1], args = u.slice(2).filter(t => !t.startsWith('-')), n = args[0], br = g.branches;
+  if (!inRepo && NEEDREPO.has(sub)) throw new Error('fatal: not a git repository (or any of the parent directories): .git');
+  const fresh = x => { if (br.has(x)) throw new Error(`fatal: a branch named '${x}' already exists`); br.add(x); };
+  const sw = (sub === 'switch' && u.includes('-c')) || (sub === 'checkout' && u.includes('-b'));
+  if (sw && n) { fresh(n); g.branch = n; return; }
+  if (n && (sub === 'switch' || (sub === 'checkout' && !u.includes('--') && (br.has(n) || REMOTE.includes(n))))) {
+    if (n === g.branch) return `Already on '${n}'`;
+    if (br.has(n)) { g.branch = n; return; }
+    if (!REMOTE.includes(n)) throw new Error(`fatal: invalid reference: ${n}`);
+    br.add(n); g.branch = n; // en gren som bara finns på GitHub blir lokal när man byter till den
+    return `branch '${n}' set up to track 'origin/${n}'.\nSwitched to a new branch '${n}'`;
+  }
+  if (sub === 'merge' && n) {
+    if (n === g.branch) return 'Already up to date.';
+    if (!br.has(n) && !(n.startsWith('origin/') && REMOTE.includes(n.slice(7)))) throw new Error(`merge: ${n} - not something we can merge`);
+    return;
+  }
+  if (sub === 'reset') { const ref = args.find(t => REFRE.test(t)); if (ref) back(ref, g); return; }
+  if (sub !== 'branch') return;
+  if (u.some(t => /^-[dD]$|^--delete$/.test(t))) {
+    const lines = args.map(x => (x === g.branch ? `error: cannot delete branch '${x}' used by worktree at '${g.ps ? 'C:/Users/du' : '/home/du'}/projekt'`
+      : !br.has(x) ? `error: branch '${x}' not found.` : (br.delete(x), `Deleted branch ${x} (was ${g.commits?.[0]?.id ?? '3f9c2a1'}).`)));
+    if (lines.some(l => l.startsWith('error'))) throw new Error(lines.join('\n'));
+    return lines.join('\n');
+  }
+  if (n) { fresh(n); return ''; }
+  const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...[...REMOTE].sort().map(x => '  remotes/origin/' + x)];
+  return (u.includes('-a') ? [...local, ...remote] : u.includes('-r') ? remote.map(l => l.replace('remotes/', '')) : local).join('\n');
+}
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
 for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
@@ -1804,7 +1848,7 @@ function start() {
 function fresh() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main', ...POOLS.b]), commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main']), base: structuredClone(WORLD), index: structuredClone(WORLD), stash: [], pushed: SEEDLOG.length, commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
 }
@@ -1822,7 +1866,7 @@ function draw(pool, dup = false) {
   };
   for (let i = 0; i < 40; i++) {
     const t = rnd(weighted), b = fill(t, t[0] === 'fs' ? (list, k) => rnd(names(list, k)) : rnd, S.ps);
-    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] !== 'fs' || doable(b))) return b;
+    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b))) return b;
   }
   return null;
 }
@@ -2261,11 +2305,15 @@ const OUT = {
   // git och gh
   // git status, log och branch läser världen, så att terminalen och källkontrollen säger samma sak
   'git status': () => {
-    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], rel = p => p.join('/'), mod = ch.filter(c => c[1] !== 'U'), neu = ch.filter(c => c[1] === 'U');
-    return [`On branch ${S?.branch ?? 'main'}`,
-      ...(mod.length ? ['Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)', ...mod.map(([p, st]) => `        ${st === 'D' ? 'deleted: ' : 'modified:'}   ${rel(p)}`), ''] : []),
+    if (!S) return 'On branch main\nnothing to commit, working tree clean';
+    const {root, staged, work} = repoChanges(), mod = work.filter(c => c[1] !== 'U'), neu = work.filter(c => c[1] === 'U');
+    const rel = p => relTo(S.cwd, [...root, ...p]) + (typeof look(S.fs, [...root, ...p], S.ps).node === 'object' ? '/' : ''); // otrackad mapp: budget/
+    const kind = {U: 'new file:', M: 'modified:', D: 'deleted: '};
+    return [`On branch ${S.branch}`,
+      ...(staged.length ? ['Changes to be committed:', '  (use "git restore --staged <file>..." to unstage)', ...staged.map(([p, st]) => `        ${kind[st]}   ${rel(p)}`), ''] : []),
+      ...(mod.length ? ['Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)', '  (use "git restore <file>..." to discard changes in working directory)', ...mod.map(([p, st]) => `        ${kind[st]}   ${rel(p)}`), ''] : []),
       ...(neu.length ? ['Untracked files:', '  (use "git add <file>..." to include in what will be committed)', ...neu.map(([p]) => `        ${rel(p)}`), ''] : []),
-      ch.length ? 'no changes added to commit (use "git add" and/or "git commit -a")' : 'nothing to commit, working tree clean'].join('\n');
+      staged.length ? '' : mod.length ? 'no changes added to commit (use "git add" and/or "git commit -a")' : neu.length ? 'nothing added to commit but untracked files present (use "git add" to track)' : 'nothing to commit, working tree clean'].join('\n').trimEnd();
   },
   'git add': '', 'git restore': '', 'git init': (a, ps) => `Initialized empty Git repository in ${ps ? 'C:/Users/du' : '/home/du'}/projekt/.git/`,
   'git commit': a => `[${S?.branch ?? 'main'} ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${a[a.findIndex(t => /^-[a-z]*m$/.test(t)) + 1] ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
@@ -2549,13 +2597,15 @@ function run(raw) {
       let r = null;
       try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps, S.env); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
       if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
-      gitWorld(u); // före utskriften, som visar commitens hash
+      // git före utskriften, som visar commitens hash. Gits fel (okänd gren, grenen finns redan) är fel, även för ett block.
+      let g;
+      try { g = gitWorld(u); } catch (e) { errs++; msgs.push(e.message); continue; }
       // Det världen svarade vinner över den påhittade utskriften i OUT; tom utskrift med note (inga träffar) visar noten
-      const said = r && (r.out.length ? r.out : r.note ? [r.note] : null);
+      const said = g !== undefined ? (g ? g.split('\n') : [QUIET]) : r && (r.out.length ? r.out : r.note ? [r.note] : null);
       if (!b) {
         if (r) { notes.push(...(said ?? (mode === 'play' ? [] : [QUIET]))); continue; }
         if (toy(u, notes) || editorCmd(u, notes)) continue;
-        const guess = sample(u, S.ps);
+        const guess = said ?? sample(u, S.ps);
         if (mode !== 'play' && guess.length) { notes.push(...guess); continue; } // i quizet får man prova fritt
         // Ett riktigt kommando som inget block bad om: visa vad det hade gjort, men det kostar ändå (låst beslut, mellanläge Patrik 2026-10-17)
         if (guess.length) { notes.push(...guess, '# rätt kommando, men inget block bad om det. Läs blocken först.'); errs++; continue; }
@@ -2582,7 +2632,7 @@ function run(raw) {
   render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
-  notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : ''));
+  notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : /^(error|fatal): /.test(l) ? 'err' : ''));
   S.typed += typed;
 
   const n = hits.length;
@@ -2993,37 +3043,143 @@ function changes(a, b, path = []) {
   });
 }
 
-// Commits i rundan: källkontrollens historik, och Changes räknas från senaste commit
-// ponytail: en commit tar med allt, som VS Codes smart commit; staging syns inte i vyn
-function commit(u) {
+// Commits i rundan: källkontrollens historik. En commit tar bara det stagade (index), -a stagar först det git redan känner till.
+// Varje commit sparar sitt träd, så att reset kan gå tillbaka. ponytail: de tre från början har WORLD som träd.
+function commit(u, R) {
   const i = u.findIndex(t => /^-[a-z]*m$/.test(t) || t === '--message'), msg = (i < 0 ? undefined : u[i + 1]) ?? 'ändringar';
-  if (u.includes('--amend') && S.commits.length) S.commits[0].msg = msg;
-  else S.commits.unshift({msg, id: Math.random().toString(16).slice(2, 9).padEnd(7, '0')});
-  S.base = structuredClone(S.fs);
+  if (u.some(t => /^-[a-z]*a[a-z]*$/.test(t) || t === '--all')) for (const [p, st] of changes(treeAt(S.index, R), treeAt(S.fs, R))) if (st !== 'U') place(S.index, [...R, ...p], look(S.fs, [...R, ...p], S.ps).node);
+  const {staged} = repoChanges(R), amend = u.includes('--amend') && S.commits.length;
+  if (!staged.length && !amend) return OUT['git status']() + '\n# Inget var stagat, så git sparade ingenting. git add först, sedan commit.';
+  const lines = v => (typeof v === 'string' && v ? v.split('\n') : []), file = p => look(S.index, [...R, ...p], S.ps).node, was = p => look(S.base, [...R, ...p], S.ps).node;
+  const ins = staged.reduce((s, [p]) => s + lines(file(p)).filter(l => !lines(was(p)).includes(l)).length, 0), del = staged.reduce((s, [p]) => s + lines(was(p)).filter(l => !lines(file(p)).includes(l)).length, 0);
+  S.base = structuredClone(S.index);
+  if (amend) Object.assign(S.commits[0], {msg, tree: structuredClone(S.base)});
+  else S.commits.unshift({msg, tree: structuredClone(S.base), id: Math.random().toString(16).slice(2, 9).padEnd(7, '0')});
+  const n = staged.length, pl = (k, w) => `${k} ${w}${k === 1 ? '' : 's'}`;
+  return [`[${S.branch} ${S.commits[0].id}] ${msg}`, ` ${pl(n, 'file')} changed` + (ins || !del ? `, ${pl(ins, 'insertion')}(+)` : '') + (del || !ins ? `, ${pl(del, 'deletion')}(-)` : ''),
+    ...staged.filter(c => c[1] !== 'M').map(([p, st]) => ` ${st === 'U' ? 'create' : 'delete'} mode 100644 ${p.join('/')}`)].join('\n');
 }
-// git ändrar också världen: clone ger en mapp, init ett repo, commit en rad i källkontrollen
+// Filerna i repot R som i HEAD, men otrackade filer får vara kvar (som git stash och reset --hard). Ger det som försvann.
+function clean(R) {
+  const {staged, work} = repoChanges(R), fresh = structuredClone(treeAt(S.base, R)), dotgit = treeAt(S.fs, R)['.git'];
+  for (const [p] of changes(treeAt(S.index, R), treeAt(S.fs, R)).filter(c => c[1] === 'U')) place(fresh, p, look(S.fs, [...R, ...p], S.ps).node); // även tomma mappar
+  if (dotgit) own(fresh, '.git', dotgit);
+  place(S.fs, R, fresh); place(S.index, R, treeAt(S.base, R));
+  if (typeof look(S.fs, S.cwd, S.ps).node !== 'object') S.cwd = [...R];
+  return [...new Set([...staged, ...work.filter(c => c[1] !== 'U')].map(([p]) => p.join('/')))];
+}
+// Repot i mappen: närmaste mapp uppåt med .git, null utanför alla repon
+function repoOf(cwd) {
+  for (let i = cwd.length; i >= 0; i--) { const n = look(S.fs, cwd.slice(0, i), S.ps).node; if (n && typeof n === 'object' && Object.hasOwn(n, '.git')) return cwd.slice(0, i); }
+  return null;
+}
+// Trädet t vid sökvägen p, {} om det saknas
+const treeAt = (t, p) => { const n = look(t, p, S.ps).node; return n && typeof n === 'object' ? n : {}; };
+// Lägger en kopia av v på sökvägen p i trädet t (filsystemet, index eller HEAD), eller tar bort den när v saknas
+function place(t, p, v) {
+  let n = t;
+  for (const k of p.slice(0, -1)) { if (!n[k] || typeof n[k] !== 'object') own(n, k, {}); n = n[k]; }
+  if (v === undefined) delete n[p.at(-1)]; else own(n, p.at(-1), structuredClone(v));
+}
+const hasFile = n => typeof n === 'string' || (!!n && Object.values(n).some(hasFile));
+// Vad git status visar för repot, från repots rot: staged (HEAD mot index) och work (index mot filerna, U = otrackad).
+// Tomma mappar syns inte, git sparar bara filer. Källkontrollen visar projekt när du står utanför alla repon.
+function repoChanges(root = repoOf(S.cwd) ?? ['projekt']) {
+  const files = t => ([p, st]) => st !== 'U' || hasFile(look(t, [...root, ...p], S.ps).node);
+  return {root, staged: changes(treeAt(S.base, root), treeAt(S.index, root)).filter(files(S.index)), work: changes(treeAt(S.index, root), treeAt(S.fs, root)).filter(files(S.fs))};
+}
+// Sökvägen to sedd från mappen from, som git status skriver den: ../notes.txt från en undermapp
+const relTo = (from, to) => { let i = 0; while (i < from.length && from[i] === to[i]) i++; return [...Array(from.length - i).fill('..'), ...to.slice(i)].join('/'); };
+// git -C mapp kör i mappen. ponytail: saknas mappen körs det här, blocken med -C räknar med att repot finns
+function gitCwd(u) {
+  if (u[1] !== '-C') return S.cwd;
+  const at = resolve(S.cwd, u[2] ?? '.');
+  return typeof look(S.fs, at, S.ps).node === 'object' ? at : S.cwd;
+}
+const cloneName = args => args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
+// git ändrar också världen: clone ger en mapp, init ett repo, commit en rad i källkontrollen, grenarna i gitRefs.
+// Ger utskriften när den beror på hur världen såg ut före kommandot (undefined: OUT svarar) och kastar gits riktiga fel.
 function gitWorld(u) {
   if (u[0] !== 'git') return;
+  const cwd = gitCwd(u), said = gitRefs(u, S, !!repoOf(cwd));
+  if (said !== undefined) return said;
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
-  const here = look(S.fs, S.cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), br = S.branches;
-  if (u[1] === 'commit') return commit(u);
-  // grenar: skapa, byta, ta bort (aldrig den du står på)
-  const creates = (u[1] === 'switch' && u.includes('-c')) || (u[1] === 'checkout' && u.includes('-b'));
-  if (creates && args[0]) { br.add(args[0]); S.branch = args[0]; }
-  else if ((u[1] === 'switch' || u[1] === 'checkout') && br.has(args[0])) S.branch = args[0];
-  if (u[1] === 'branch' && u.some(t => /^-[dD]$|^--delete$/.test(t))) args.forEach(b => b !== S.branch && br.delete(b));
-  else if (u[1] === 'branch' && args[0]) br.add(args[0]);
+  const here = look(S.fs, cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), R = repoOf(cwd) ?? cwd, top = S.commits[0];
+  if (u[1] === 'commit') return commit(u, R);
+  if (u[1] === 'push') S.pushed = S.commits.length;
   if (typeof here !== 'object') return;
-  // restore och checkout -- f: filen som den var vid senaste commit
-  if (u[1] === 'restore' || (u[1] === 'checkout' && !creates && !br.has(args[0]))) for (const f of args) {
-    const p = resolve(S.cwd, f), was = look(S.base ?? WORLD, p, S.ps).node, dir = look(S.fs, p.slice(0, -1), S.ps).node;
-    if (typeof was === 'string' && typeof dir === 'object') own(dir, p.at(-1), was);
+  // add: filerna som de är nu läggs i index. -A utan namn tar hela repot.
+  if (u[1] === 'add') {
+    const paths = args.length ? args.map(f => resolve(cwd, f)) : u.includes('-A') || u.includes('--all') ? [R] : [];
+    if (!paths.length) return "Nothing specified, nothing added.\nhint: Maybe you wanted to say 'git add .'?";
+    for (const p of paths) place(S.index, p, look(S.fs, p, S.ps).node);
+    return '';
+  }
+  // restore och checkout -- f: filen som den står i index. restore --staged: tillbaka i index som i HEAD, filen rörs inte.
+  if (u[1] === 'restore' || (u[1] === 'checkout' && (u.includes('--') || !REMOTE.includes(args[0]) && !S.branches.has(args[0])))) for (const f of args) {
+    const p = resolve(cwd, f), dir = look(S.fs, p.slice(0, -1), S.ps).node;
+    if (u.includes('--staged') || u.includes('-S')) place(S.index, p, look(S.base, p, S.ps).node);
+    else { const was = look(S.index, p, S.ps).node; if (typeof was === 'string' && typeof dir === 'object') own(dir, p.at(-1), was); }
+  }
+  // stash: lägg undan det stagade och det ändrade (inte otrackat), filerna blir som i HEAD. pop lägger tillbaka det, ostagat.
+  if (u[1] === 'stash') {
+    const sub = args[0] ?? 'push';
+    if (sub === 'push' || sub === 'save') {
+      const {staged, work} = repoChanges(R), ch = [...staged, ...work.filter(c => c[1] !== 'U')];
+      if (!ch.length) return 'No local changes to save';
+      const on = `WIP on ${S.branch}: ${top?.id} ${top?.msg}`;
+      S.stash.unshift({on, files: [...new Set(ch.map(([p]) => p.join('/')))].map(k => { const p = [...R, ...k.split('/')]; return [p, look(S.fs, p, S.ps).node]; })});
+      clean(R);
+      return `Saved working directory and index state ${on}`;
+    }
+    if (sub === 'list') return S.stash.map((e, i) => `stash@{${i}}: ${e.on}`).join('\n');
+    if (sub === 'pop' || sub === 'apply') {
+      if (!S.stash.length) return 'error: No stash entries found.';
+      for (const [p, v] of S.stash[0].files) place(S.fs, p, v); // ponytail: skriver över, riktiga git slår ihop och kan ge konflikt
+      if (sub === 'pop') S.stash.shift();
+      return OUT['git status']() + (sub === 'pop' ? `\nDropped refs/stash@{0} (${Math.random().toString(16).slice(2, 12)})` : '');
+    }
+  }
+  // reset: HEAD~1 tar bort senaste commiten. --soft behåller index, vanlig reset tömmer index, --hard gör också filerna som i commiten.
+  if (u[1] === 'reset') {
+    const ref = args.find(t => REFRE.test(t)), files = args.filter(t => t !== ref && t !== '--');
+    if (files.length) for (const f of files) { const p = resolve(cwd, f); place(S.index, p, look(S.base, p, S.ps).node); }
+    else {
+      S.commits.splice(0, ref ? back(ref, S) : 0);
+      place(S.base, R, treeAt(S.commits[0].tree ?? WORLD, R));
+      if (u.includes('--hard')) {
+        const gone = clean(R);
+        return `HEAD is now at ${S.commits[0].id} ${S.commits[0].msg}` + (gone.length ? `\n# Borta för gott: ${gone.join(', ')}. Det som aldrig committades kan git inte ta tillbaka.` : '');
+      }
+      if (!u.includes('--soft')) place(S.index, R, treeAt(S.base, R));
+    }
+    const mod = repoChanges(R).work.filter(c => c[1] !== 'U');
+    return mod.length ? ['Unstaged changes after reset:', ...mod.map(([p, st]) => `${st}       ${p.join('/')}`)].join('\n') : '';
   }
   if (u[1] === 'clone' && args[0]) {
-    const name = args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
-    if (!Object.hasOwn(here, name)) own(here, name, {'.git': {}, 'README.md': `# ${name}\n`});
+    const name = cloneName(args), repo = {'.git': {}, 'README.md': `# ${name}\n`}, base = look(S.base, cwd, S.ps).node; // ponytail: HEAD för alla repon i ett träd
+    if (Object.hasOwn(here, name)) throw new Error(`fatal: destination path '${name}' already exists and is not an empty directory.`);
+    own(here, name, repo);
+    if (base && typeof base === 'object') for (const t of [S.base, S.index]) place(t, [...cwd, name], repo); // klonen är redan committad: git status där inne är ren
+    return `Cloning into '${name}'...\nremote: Enumerating objects: 42, done.\nReceiving objects: 100% (42/42), 18.20 KiB | 1.82 MiB/s, done.`;
   }
-  if (u[1] === 'init' && !Object.hasOwn(here, '.git')) own(here, '.git', {});
+  if (u[1] === 'init') {
+    const again = Object.hasOwn(here, '.git');
+    if (!again) { own(here, '.git', {}); for (const t of [S.base, S.index]) place(t, [...cwd, '.git'], {}); }
+    return `${again ? 'Reinitialized existing' : 'Initialized empty'} Git repository in ${[S.ps ? 'C:/Users/du' : '/home/du', ...cwd].join('/')}/.git/`;
+  }
+}
+// Går blockets git att köra i världen som den är nu? Grenarna provkörs på en kopia, clone vill ha en ledig mapp.
+function gitOk(b) {
+  const g = {branch: S.branch, branches: new Set(S.branches), commits: S.commits, pushed: S.pushed, ps: S.ps}, here = look(S.fs, S.cwd, S.ps).node;
+  try {
+    for (const st of b.steps) {
+      const u = tokenize(st[0].raw, S.ps), args = u.slice(2).filter(t => !t.startsWith('-'));
+      gitRefs(u, g, !!repoOf(gitCwd(u)));
+      if (u[0] === 'git' && u[1] === 'clone' && args[0] && here && Object.hasOwn(here, cloneName(args))) return false;
+    }
+    return true;
+  } catch { return false; }
 }
 // Commit-knappen och Enter i rutan kör git commit -m med meddelandet, genom samma rättning som terminalen
 function sideCommit() {
@@ -3049,12 +3205,16 @@ const VIEWS = {
   search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon">
     ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
   scm: () => {
-    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], log = S?.commits ?? [];
+    const {staged, work: ch} = S ? repoChanges() : {staged: [], work: []}, log = S?.commits ?? [];
+    // VS Code visar en ny stagad fil som A (added), en otrackad som U
+    const rows = (list, add) => list.map(([pth, st]) => `<button type="button" class="row" style="padding-left:20px">${fileIcon(pth.at(-1))}<span>${esc(pth.at(-1))}</span><span class="d">${esc(pth.slice(0, -1).join('/'))}</span><span class="st st-${st}">${add && st === 'U' ? 'A' : st}</span></button>`).join('');
     return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Enter för commit på '${esc(S?.branch ?? 'main')}')" aria-label="Commit-meddelande"></textarea>
       <button type="button" class="btn" data-side="commit">&#10003; Commit</button>
+      ${staged.length ? `<div class="sec open"><span class="tw">${CHEV}</span>Staged Changes<span class="badge" data-n="${staged.length}">${staged.length}</span></div>${rows(staged, true)}
+      <p class="note">Stagat med git add: det här och bara det här kommer med i nästa commit.</p>` : ''}
       <div class="sec open"><span class="tw">${CHEV}</span>Changes<span class="badge" data-n="${ch.length}">${ch.length}</span></div>
-      ${ch.map(([pth, st]) => `<button type="button" class="row" style="padding-left:20px">${fileIcon(pth.at(-1))}<span>${esc(pth.at(-1))}</span><span class="d">${esc(pth.slice(0, -1).join('/'))}</span><span class="st st-${st}">${st}</span></button>`).join('')}
-      <p class="note">${ch.length ? 'U = ny, M = ändrad, D = borttagen. Det är vad git status visar.' : 'Inga ändringar än.'}${log.length ? '' : ' Allt du gjort den här rundan är ocommittat. Som vanligt.'}</p>
+      ${rows(ch)}
+      <p class="note">${ch.length ? `U = ny, M = ändrad, D = borttagen. ${staged.length ? 'Inte stagat, så det kommer inte med i commiten.' : 'git add lägger det i Staged Changes.'}` : 'Inga ändringar än.'}${log.length ? '' : ' Allt du gjort den här rundan är ocommittat. Som vanligt.'}</p>
       <div class="sec open"><span class="tw">${CHEV}</span>Graph<span class="badge" data-n="${log.length}">${log.length}</span></div>
       ${log.map((c, i) => `<div class="row" style="padding-left:20px"><span class="gdot" aria-hidden="true">&#9679;</span><span>${esc(c.msg)}</span><span class="d">${c.id}${i ? '' : ' · ' + esc(S.branch)}</span></div>`).join('')}
       ${log.length ? '<p class="note">Det här är git log --oneline. Senaste överst.</p>' : '<p class="note">Inga commits än. Committa i terminalen, eller skriv ett meddelande här ovanför och tryck Enter.</p>'}`];

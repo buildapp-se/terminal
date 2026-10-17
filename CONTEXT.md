@@ -61,8 +61,14 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   första kommandot mot filsystemet, sedan head/tail/sort/wc eller Select-Object/Measure-Object på raderna.
 - **Världen (`S`) ändras av allt man skriver**, block eller inte, i spelet och i quizet (2026-10-17, Patriks krav):
   `fake` kör filsystemet för varje kommando (fel räknas bara för fria kommandon och Filer & mappar),
-  `gitWorld` gör clone (ny mapp), init, commit, grenar (`S.branch`, `S.branches`, startar med `POOLS.b`)
-  och restore. `S.commits` börjar med `SEEDLOG`. `git status`, `log` och `branch` i `OUT` läser `S`.
+  `gitWorld` gör clone (ny mapp), init, commit, grenar och restore, som riktig git (agent B 2026-10-17):
+  bara `main` finns lokalt från start, `POOLS.b` ligger under `remotes/origin/` tills man byter till dem;
+  omöjligheter ger gits egna fel (`gitRefs`, ren och testad) och räknas som fel även när blocket matchar.
+  `S.index` är staging: commit tar bara det stagade (`-a` stagar kända filer), `git stash`/`pop`/`list`,
+  `git reset` (`--soft`, `--hard`, `HEAD~n` via `back`, `origin/main`). Varje commit sparar sitt träd.
+  `gitOk(b)` provkör ett blocks git-kommandon innan det dras. Commit utan något stagat löser ändå blocket
+  (rundan börjar rent) men skriver gits text och tipset om `git add`. `S.commits` börjar med `SEEDLOG`.
+  `git status`, `log` och `branch` i `OUT` läser `S`; källkontrollen visar Staged Changes.
   `render()` ritar om prompten, statusradens gren (`#branch`), utforskaren (fälls ut till mappen du står i),
   källkontrollen och öppen fil efter varje kommando. Fria kommandon som inte löser block är fortfarande fel i spelet,
   men händer ändå. Quizet (`fresh()` + `quiz()`) har en levande terminal: bokstav (eller siffra + bokstav vid

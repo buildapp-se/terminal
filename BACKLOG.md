@@ -27,7 +27,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
   - Hur: en ren tabell `DANGER` (mönster, dcg-regelns namn, svensk förklaring, säkrare alternativ) som ersätter `PET_FEAR`. Bubblan: "Här hade dcg stoppat Claude: … Säkrare: …". Rätt svar räknas som vanligt, Bit avbryter aldrig. Block vars svar är farligt får en röd ⚠ redan innan man skriver. Ett lokalt kontrollskript kör alla svar i `TASKS` genom `dcg test` och larmar när tabellen och dcg inte är överens (dcg körs inte i webbläsaren, och testet ska inte kräva dcg).
   - Fördelar: lär ut varför agenten stannar (passar Vibe-kodaren och När agenten stannar), vanan att läsa raden före Enter, och det säkrare alternativet (`--force-with-lease`, `git stash`).
   - Nackdelar: `rm -r` och `git restore .` är rätt svar i Filer & mappar, så Bit kan tjata (tips en gång per kommando och runda). Tabellen kan glida isär från dcg när dcg uppdateras (därav kontrollskriptet). Risk för falsk trygghet: dcg släpper igenom `chmod 777` och `DROP TABLE`, så Bit ska säga "dcg släpper igenom det här, men…" även för dem.
-- [ ] Mer git i världen, i den ordning de lär ut mest (analysagentens lista 2026-10-17): `git add` med en riktig "Staged Changes"-lista och commit som bara tar det stagade; `git stash`/`stash pop`; `git reset` (`--hard` tar tillbaka filerna, `HEAD~1` tar bort senaste commiten); `git -C mapp` mot rätt mapp.
+- [x] Mer git i världen (agent B): staging (`S.index`, Staged Changes), stash, reset. Förenklat: `stash pop` skriver över i stället för att slå ihop.
 - [ ] Patrik spelar och lyssnar: välj ljudmotor i inställningarna (# ljudmotor: standard, gemini, mp3 bara lokalt; sätter `?ljud=` och laddar om, byggt 2026-10-17), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
 - [x] Egen integritetstext för spelet, `integritet.html`, 2026-10-17.
@@ -43,7 +43,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 ## Speltestarens fynd (2026-10-17, efter `5616bec` kvar)
 
 - [x] Fel som lär ut fel: versionsfrågor, Hello world med > i PowerShell, `npx firebase-tools`, Confirm-frågan för icke-tom mapp (`4caaf67`).
-- [ ] git-världen säger ja till omöjligheter: `switch nope`, `merge nope`, `branch -d main` på main. Alla grenar i `POOLS.b` finns lokalt från start (`fresh`), så `git branch dark-mode` borde svara "already exists"; låt dem ligga under `remotes/origin/` tills man byter till dem. `git push -C budget` godkänns som `git -C budget push` (`-C` gäller bara före underkommandot). Clone: `cd budget` + `git status` visar "Untracked projekt/budget", `git init` där ska ge "Reinitialized", `git clone url mapp` ska säga 'mapp'.
+- [x] git-världen säger nej som riktig git (agent B 2026-10-17): switch/merge/branch -d med gits fel, grenar under remotes/origin/, init Reinitialized, clone 'mapp', status i klonen. Texterna `used by worktree at` och `not found.` är inte avlästa mot riktig git (dcg stoppade provet). Kvar: `git checkout nope` och `git add` på saknad fil ger inget fel.
 - [ ] PS-uttryck: `"hej"`, `"hej" > f`, `$PSVersionTable`, `$env:USERPROFILE`, `(Get-Content f).Count`, `(Get-Command node).Source`.
 - [ ] Windows-program i PS: netstat, findstr, tasklist, taskkill, where.exe, py, tnc (alias för Test-NetConnection).
 - [x] Godkänn likvärdiga former (agent A 2026-10-17, normalisering i `canonStage`/`canonPSStage`: `LONGFLAG`, `NOOP`, `SIGS`, `PSDROP`). Kvar: `-Force` inuti `powershell -Command "..."` (citatet är en token), `git push origin HEAD`, `tnc`-aliaset.
