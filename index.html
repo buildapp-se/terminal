@@ -102,7 +102,7 @@ body:not(.play) .mob .pz{display:none} /* smal skärm saknar Esc och aktivitetsf
 @keyframes sl{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
 html.crt{filter:sepia(1) hue-rotate(65deg) saturate(4) brightness(.95)}
 html.crt::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.28) 2px 3px)}
-html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
+html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:var(--green)}.hunk{color:#29B8DB}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
 .line.bad{animation:shake .25s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .cmdbox{position:relative;flex:1 1 12ch;min-width:0}
@@ -205,6 +205,7 @@ kbd{font:inherit;color:var(--yellow)}
 .reg .sum{margin-top:8px;font:12px var(--mono);color:var(--dim)}
 .reg .meter{height:4px;margin:10px 0 4px;border-radius:2px;background:#262626;overflow:hidden}.reg .meter i{display:block;height:100%;background:linear-gradient(90deg,#8FE3C8,#B8C4FF)}
 .reg .left{font-size:11px;color:var(--faint)}
+.play{padding-top:10px}.play .lamp{padding:0}.play .lamp:hover b{outline:1px solid #555}.play .lamp:focus-visible b{outline:1px solid var(--accent)}.play .left{font-family:var(--mono);margin-top:2px}
 .chat-log{flex:1;overflow:auto;min-height:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .chat-log .empty{color:var(--faint);font-size:12px;line-height:1.5}
 .msg{padding:7px 10px;border-radius:6px;background:#202020;border-left:3px solid var(--k);font-size:12.5px;line-height:1.5;color:var(--fg)}
@@ -270,6 +271,7 @@ kbd{font:inherit;color:var(--yellow)}
       <div class="side-h"><span>Bit</span><span class="dim" aria-hidden="true">&#8943;</span></div>
       <div class="chat-pet" id="chatpet"></div>
       <div class="reg" id="reg"></div>
+      <div class="reg play" id="play"><div class="nm">Lek med bitarna</div><div class="lamps"><button type="button" class="lamp" aria-pressed="false" aria-label="biten 8" data-v="8"><b>0</b><small>8</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 4" data-v="4"><b>0</b><small>4</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 2" data-v="2"><b>0</b><small>2</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 1" data-v="1"><b>0</b><small>1</small></button></div><div class="sum" id="playsum"></div><div class="left" id="playmode"></div></div>
       <div class="chat-log" id="chatlog" aria-live="polite"><p class="empty">Bit lyssnar på terminalen. Tips, varningar, kul fakta och det som händer i rundan hamnar här.</p></div>
     </aside>
   </div>
@@ -746,6 +748,45 @@ const petStage = bits => PET_STAGES.findLastIndex(([n]) => bits >= n);
 // Binärt i hela nibbles med inledande nollor, som lampor i ett register: 5 = 0101, 18 = 0001 0010 (Patrik 2026-10-17)
 const binStr = n => { const b = n.toString(2); return b.padStart(Math.ceil(b.length / 4) * 4, '0').replace(/(.{4})(?=.)/g, '$1 '); };
 const binParts = n => n.toString(2).split('').map((d, i, a) => (d === '1' ? 2 ** (a.length - 1 - i) : 0)).filter(Boolean).map(v => v.toLocaleString('sv-SE')).join(' + ') || '0';
+// Lekytans fyra lampor 8 4 2 1: summan, och de tre lägsta bitarna som en chmod-siffra (4 = r, 2 = w, 1 = x)
+const lampSum = n => { const d = n.toString(2).padStart(4, '0').split('').join(' '), p = binParts(n); return p.includes('+') ? `${d} = ${p} = ${n}` : `${d} = ${n}`; };
+// git diff för en fil: a och b är texten före och efter (undefined: filen finns inte). Raderna paras ihop med längsta
+// gemensamma delföljd, borttaget före tillagt, tre rader sammanhang runt varje ändring, som git. ponytail: O(n·m), filerna är små.
+// Gits "\ No newline at end of file" skippas, spelets filer har ingen avslutande radbrytning.
+function udiff(path, a, b) {
+  const A = a === undefined || a === '' ? [] : a.split('\n'), B = b === undefined || b === '' ? [] : b.split('\n');
+  const L = Array.from({length: A.length + 1}, () => new Array(B.length + 1).fill(0));
+  for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--) L[i][j] = A[i] === B[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const ops = []; // [tecken, rad, rader före i a, rader före i b]
+  for (let i = 0, j = 0; i < A.length || j < B.length;) {
+    if (i < A.length && j < B.length && A[i] === B[j]) ops.push([' ', A[i], i++, j++]);
+    else if (i < A.length && (j === B.length || L[i + 1][j] >= L[i][j + 1])) ops.push(['-', A[i], i++, j]);
+    else ops.push(['+', B[j], i, j++]);
+  }
+  const hash = s => (s === undefined ? '0000000' : ([...s].reduce((h, c) => Math.imul(h ^ c.codePointAt(0), 16777619) >>> 0, 2166136261) >>> 0).toString(16).padStart(8, '0').slice(0, 7));
+  const out = [`diff --git a/${path} b/${path}`, ...(a === undefined ? ['new file mode 100644'] : b === undefined ? ['deleted file mode 100644'] : []),
+    `index ${hash(a)}..${hash(b)}${a !== undefined && b !== undefined ? ' 100644' : ''}`, a === undefined ? '--- /dev/null' : `--- a/${path}`, b === undefined ? '+++ /dev/null' : `+++ b/${path}`];
+  const ch = ops.flatMap((o, k) => (o[0] === ' ' ? [] : [k]));
+  for (let g = 0; g < ch.length;) {
+    let e = g;
+    while (e + 1 < ch.length && ch[e + 1] - ch[e] <= 7) e++; // högst sex oförändrade rader emellan: samma stycke
+    const hunk = ops.slice(Math.max(0, ch[g] - 3), Math.min(ops.length, ch[e] + 4)), n = t => hunk.filter(o => o[0] !== t).length;
+    const at = (k, c) => (c ? hunk[0][k] + 1 : hunk[0][k]) + (c === 1 ? '' : ',' + c); // git skriver -1 för en rad och -0,0 för ingen
+    out.push(`@@ -${at(2, n('+'))} +${at(3, n('-'))} @@`, ...hunk.map(o => o[0] + o[1]));
+    g = e + 1;
+  }
+  return out;
+}
+// Färgen per rad i en utskrift: diffens - rött, + grönt, @@ blått. Bara inne i en diff, annars är "- [ ] punkt" i cat också rött.
+function diffCls(lines) {
+  let on = false;
+  return lines.map(l => {
+    if (l.startsWith('diff --git ')) on = true;
+    else if (on && !/^([-+ @\\]|index |new file|deleted file)/.test(l)) on = false;
+    return !on || /^(---|\+\+\+) /.test(l) ? '' : l[0] === '-' ? 'err' : l[0] === '+' ? 'add' : l.startsWith('@@') ? 'hunk' : '';
+  });
+}
+const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
 
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
@@ -1101,20 +1142,32 @@ function findstrArgs(a) {
   const re = pat === undefined ? null : new RegExp((phrase === undefined ? pat.split(' ').filter(Boolean) : [pat]).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), opt('/i') ? 'i' : '');
   return {re, files, hit: l => re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
 }
-function winExe(fs, cwd, c, a) {
-  const val = s => { const i = a.findIndex(t => t.toLowerCase() === s); return i < 0 ? undefined : a[i + 1] ?? ''; };
+// Avslutar kommandot (rättningens form) node med PID 4821, den som håller port 3000? Ger då skalets fel för när processen
+// redan är borta, annars ''. kill -0 frågar bara om processen lever. Världen minns det i env['?killed'], en runda i taget.
+function kills(k, ps) {
+  const [c, ...a] = k[0] === 'npx' || k[0] === 'sudo' ? k.slice(1) : k, low = a.map(t => t.toLowerCase()), cl = c?.toLowerCase(), after = f => low[low.indexOf(f) + 1];
+  if (cl === 'kill-port') return low.includes('3000') ? 'Could not kill process on port 3000. No process running on port.' : '';
+  if (/^powershell(\.exe)?$/.test(cl)) { const i = low.findIndex(t => /^-c(ommand)?$/.test(t)); return i < 0 || !a[i + 1] ? '' : kills(canon(tokenize(a[i + 1], true), true), true); }
+  if (cl === 'stop-process' && ps) return low.includes('4821') ? 'Stop-Process : Cannot find a process with the process identifier 4821.'
+    : low.includes('-name=node') ? 'Stop-Process : Cannot find a process with the name "node". Verify the process name and call the cmdlet again.' : '';
+  if (cl === 'taskkill' && ps) return !low.includes('/f') ? '' : after('/pid') === '4821' ? 'ERROR: The process "4821" not found.' : after('/im') === 'node.exe' ? 'ERROR: The process "node.exe" not found.' : '';
+  return !ps && c === 'kill' && low.includes('4821') && !low.includes('-s=0') ? 'bash: kill: (4821) - No such process' : '';
+}
+function winExe(fs, cwd, c, a, gone = false) {
+  const live = rows => rows.filter(r => !gone || (r[1] !== 4821 && r.at(-1) !== 4821)); // PID:en står i TASKLIST:s andra kolumn, i NETSTAT:s sista
+  const val = s =>{ const i = a.findIndex(t => t.toLowerCase() === s); return i < 0 ? undefined : a[i + 1] ?? ''; };
   if (c === 'netstat') { // -a: även de som väntar (LISTENING), -n: siffror i stället för namn, -o: processens PID
     const f = a.filter(t => /^[-/][a-z]+$/i.test(t)).join('').toLowerCase(), num = f.includes('n'), pid = f.includes('o');
     const name = x => (num ? x : x.replace(/^(0\.0\.0\.0|\[::\]):0$/, 'BUILDAPP:0').replace(/^192\.168\.1\.42:/, 'BUILDAPP:').replace('140.82.112.25:443', 'lb-140-82-112-25-iad:https'));
     return ['', 'Active Connections', '', '  Proto  Local Address          Foreign Address        State' + (pid ? '           PID' : ''),
-      ...NETSTAT.filter(r => f.includes('a') || r[3] === 'ESTABLISHED').map(([p, l, r, s, id]) => '  ' + p.padEnd(7) + name(l).padEnd(22) + ' ' + name(r).padEnd(22) + ' ' + (pid ? s.padEnd(16) + id : s))];
+      ...live(NETSTAT).filter(r => f.includes('a') || r[3] === 'ESTABLISHED').map(([p, l, r, s, id]) => '  ' + p.padEnd(7) + name(l).padEnd(22) + ' ' + name(r).padEnd(22) + ' ' + (pid ? s.padEnd(16) + id : s))];
   }
   if (c === 'tasklist') {
     const bad = a.find((t, i) => !/^\/fi$/i.test(t) && !/^\/fi$/i.test(a[i - 1] ?? ''));
     if (bad) throw new Error(`ERROR: Invalid argument/option - '${bad}'.\nType "TASKLIST /?" for usage.`);
     const fi = val('/fi'), m = fi?.match(/^(imagename|pid)\s+eq\s+(.+)$/i);
     if (fi !== undefined && !m) throw new Error('ERROR: The search filter cannot be recognized.');
-    const rows = TASKLIST.filter(r => !m || (/pid/i.test(m[1]) ? String(r[1]) === m[2] : r[0].toLowerCase() === m[2].toLowerCase()));
+    const rows = live(TASKLIST).filter(r => !m || (/pid/i.test(m[1]) ? String(r[1]) === m[2] : r[0].toLowerCase() === m[2].toLowerCase()));
     if (!rows.length) return ['INFO: No tasks are running which match the specified criteria.'];
     return ['', 'Image Name                     PID Session Name        Session#    Mem Usage', '========================= ======== ================ =========== ============',
       ...rows.map(([n, p, s, k, mem]) => `${n.padEnd(25)} ${String(p).padStart(8)} ${s.padEnd(16)} ${String(k).padStart(11)} ${mem.padStart(12)}`)];
@@ -1123,7 +1176,7 @@ function winExe(fs, cwd, c, a) {
     // Utan /F ber taskkill processen att stänga sig, och det kan bara program med fönster. node har inget fönster och måste tvingas.
     const id = val('/pid'), im = val('/im');
     if (id === undefined && im === undefined) throw new Error('ERROR: Invalid syntax. Neither /FI nor /PID nor /IM were specified.\nType "TASKKILL /?" for usage.');
-    const r = TASKLIST.find(x => (id !== undefined ? String(x[1]) === id : x[0].toLowerCase() === im.toLowerCase()));
+    const r = live(TASKLIST).find(x => (id !== undefined ? String(x[1]) === id : x[0].toLowerCase() === im.toLowerCase()));
     if (!r) throw new Error(`ERROR: The process "${id ?? im}" not found.`);
     const who = id !== undefined ? `with PID ${r[1]}` : `"${r[0]}" with PID ${r[1]}`, why = `ERROR: The process ${who} could not be terminated.\nReason: `;
     if (r[2] === 'Services') throw new Error(why + 'Access is denied.');
@@ -1164,7 +1217,7 @@ function winExe(fs, cwd, c, a) {
   return null;
 }
 const envAll = (ps, env, cwd) => Object.entries({...ENV0[ps ? 'ps' : 'bash'], ...(ps ? {} : {PWD: where(cwd, false)}), ...env})
-  .filter(([k, v]) => k !== '?' && v != null).sort(([a], [b]) => a.localeCompare(b));
+  .filter(([k, v]) => !k.startsWith('?') && v != null).sort(([a], [b]) => a.localeCompare(b));
 // $HOME, $PATH, $? och det du själv satt. bash: skiftläget räknas, okänd variabel blir tom, ~ först i ordet är hemmappen.
 // PowerShell: $HOME, $PWD, $? och $env:X. ponytail: citattecken syns inte här, så '$HOME' byts också.
 function expand(t, cwd, ps, env) {
@@ -1260,7 +1313,7 @@ function fake(fs, cwd, key, ps, env = {}) {
     const n = v.startsWith('/') && HOMEPATH.test(v) ? look(fs, resolve(cwd, v), ps).node : undefined; // $HOME är en mapp, inget program
     throw new Error(`bash: ${v}: ${!v.startsWith('/') ? 'command not found' : typeof n === 'object' ? 'Is a directory' : n !== undefined ? 'Permission denied' : 'No such file or directory'}`);
   }
-  const win = ps && winExe(fs, cwd, c, rest);
+  const win = ps && winExe(fs, cwd, c, rest, !!env['?killed']);
   if (win) return ok(win, {note: NONE});
   if (ps && c === 'where-object') return ok([], {note: '# where är Where-Object i PowerShell, ett filter i en pipe, och utan något att filtrera blir det tyst. Programmet som letar i PATH heter where.exe.'});
   const script = ps && /^\.[\\/]/.test(c);
@@ -2015,7 +2068,7 @@ function draw(pool, dup = false) {
   };
   for (let i = 0; i < 40; i++) {
     const t = rnd(weighted), b = fill(t, t[0] === 'fs' ? (list, k) => rnd(names(list, k)) : rnd, S.ps);
-    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b))) return b;
+    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] === 'fs' ? doable(b) : gitOk(b)) && !(S.env['?killed'] && b.steps.some(st => kills(st[0].key, S.ps)))) return b; // död process dödas inte två gånger
   }
   return null;
 }
@@ -2215,6 +2268,7 @@ function editorCmd(u, notes) {
   if (typeof dir !== 'object') return false;
   if (node === undefined) own(dir, p.at(-1), '');
   edFile = look(S.fs, p, S.ps).real.join('/');
+  if (/(^|\/)\.hemligt\/skatt\.txt$/.test(edFile)) treasure();
   render();
   if (!showEditor('file')) return notes.push('# Redigeraren syns inte på en så här smal skärm. Prova på en dator.'), true;
   code.click(); // börja skriva direkt
@@ -2260,15 +2314,17 @@ function placePet() {
 }
 let petMood = '', petT = 0, bubbleT = 0, petSaid = 0, tabHinted = false;
 const PET_COLORS = ['#FFF1DC', '#C9F2E0', '#A8E6CF', '#8FE3C8', '#9AD0F5', '#B8C4FF', '#D3B8FF', '#F2B8FF', '#FFB3D9', '#FFC4A8', '#FFE08A', '#FFF0A0']; // pastell, från mint till guld
-function petSVG(st, mood) {
+function petSVG(st, mood, pirate = false) {
   const ink = '#3A2E39', blush = '<ellipse cx="11" cy="25.5" rx="2.8" ry="1.6" fill="#FF7AA2" opacity=".6"/><ellipse cx="29" cy="25.5" rx="2.8" ry="1.6" fill="#FF7AA2" opacity=".6"/>';
   const shade = c => `style="fill:color-mix(in srgb, ${c} 72%, #3A2E39)"`;
+  // Piratlappen över högra ögat, med bandet över pannan: skatten i .hemligt är hittad (S.pirate)
+  const patch = (x, y, s) => (pirate ? `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-3 -2.6Q-6 -7.5-11 -7.5M3.2 -2.2Q6.5 -3.6 9.4 -1.6" fill="none" stroke="${ink}" stroke-width="1.1" stroke-linecap="round"/><ellipse rx="3.9" ry="3.5" fill="${ink}"/><path d="M-1.6 -1.6q1.4-.9 2.6-.2" fill="none" stroke="#fff" stroke-width=".7" stroke-linecap="round" opacity=".5"/></g>` : '');
   if (!st) // ägget sover och väntar på första steget
     return `<ellipse cx="20" cy="38" rx="9" ry="1.8" fill="#000" opacity=".35"/><g class="egg"><path d="M20 6c7 0 11.5 11 11.5 19S26.5 38 20 38 8.5 33 8.5 25 13 6 20 6z" fill="#FFF1DC"/>`
       + `<path d="M12 20l3 2.5 3-2.5 4 2.5 3-2.5 3.5 2" fill="none" stroke="#E8CFA8" stroke-width="1.2" stroke-linejoin="round"/>`
       + `<circle cx="15" cy="13" r="1.6" fill="#A8E6CF"/><circle cx="26" cy="31" r="2" fill="#A8E6CF"/><circle cx="12" cy="30" r="1.2" fill="#FFB3D9"/>`
       + `<path d="M15 26.5q1.5 1.3 3 0M22 26.5q1.5 1.3 3 0" fill="none" stroke="${ink}" stroke-width="1.2" stroke-linecap="round"/>${blush.replace(/25\.5/g, '29')}`
-      + `<ellipse cx="15" cy="11" rx="2" ry="3" fill="#fff" opacity=".7" transform="rotate(25 15 11)"/></g>`;
+      + `<ellipse cx="15" cy="11" rx="2" ry="3" fill="#fff" opacity=".7" transform="rotate(25 15 11)"/>${patch(23.5, 26.4, .8)}</g>`;
   const c = PET_COLORS[st], round = `fill="none" stroke="${ink}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"`;
   const shine = (x, y) => `<circle cx="${x + 1}" cy="${y - 1.3}" r="1.1" fill="#fff"/><circle cx="${x - .9}" cy="${y + 1.2}" r=".5" fill="#fff"/>`;
   const eyes = {
@@ -2301,7 +2357,7 @@ function petSVG(st, mood) {
     + blush + eyes + mouth
     + (st >= 7 ? `<g fill="none" stroke="${ink}" stroke-width=".9" opacity=".8"><circle cx="15" cy="21" r="4.4"/><circle cx="25" cy="21" r="4.4"/><path d="M19.4 20.5q.6-.8 1.2 0"/></g>` : '')
     + (st >= 10 ? `<path d="M13.5 10.5l1.2-5 3 3 2.3-4.5 2.3 4.5 3-3 1.2 5z" fill="#FFD84D" stroke="#E0A800" stroke-width=".6" stroke-linejoin="round" transform="rotate(-8 20 8)"/>` : '')
-    + `</g>` + (mood === 'sleep' ? `<g class="zz" font-family="var(--mono)" fill="#B8B5FF"><text x="31" y="12" font-size="6">z</text><text x="35" y="6" font-size="4.5">z</text></g>` : '');
+    + patch(25, 21, 1) + `</g>` + (mood === 'sleep' ? `<g class="zz" font-family="var(--mono)" fill="#B8B5FF"><text x="31" y="12" font-size="6">z</text><text x="35" y="6" font-size="4.5">z</text></g>` : '');
 }
 function petBase() {
   if (mode === 'menu' || mode === 'over') return 'sleep';
@@ -2314,7 +2370,7 @@ function petDraw(mood) {
   petMood = mood;
   petEl.className = 'pet ' + mood + (chat.hidden ? '' : ' big');
   petEl.style.setProperty('--s', .78 + st * .02);
-  petEl.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${petSVG(st, mood)}</svg><span class="bin" aria-hidden="true">${[...binStr(pet.bits)].map(d => (d === '1' ? '<b>1</b>' : d)).join('')}</span>`;
+  petEl.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${petSVG(st, mood, !!S?.pirate)}</svg><span class="bin" aria-hidden="true">${[...binStr(pet.bits)].map(d => (d === '1' ? '<b>1</b>' : d)).join('')}</span>`;
   petEl.setAttribute('aria-label', `Bit, ${PET_STAGES[st][1]}, ${bitar(pet.bits)} uppätna. Klicka för att klappa.`);
   petPanel();
 }
@@ -2327,6 +2383,22 @@ function petPanel() {
   const lamps = [...d].map((x, i) => (i && i % 4 === 0 ? '<span class="gap"></span>' : '') + `<span class="lamp${x === '1' ? ' on' : ''}"><b>${x}</b><small title="${2 ** (n - 1 - i)}">${n > 8 ? '2' + [...String(n - 1 - i)].map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join('') : 2 ** (n - 1 - i)}</small></span>`).join('');
   reg.innerHTML = `<div class="nm">${esc(name)}</div><div class="lamps${n > 8 ? " many" : ""}" aria-label="${binStr(pet.bits)} binärt">${lamps}</div><div class="sum">${fmt(pet.bits)} = ${binParts(pet.bits)}</div>`
     + (next ? `<div class="meter"><i style="width:${Math.round(100 * (pet.bits - cur) / (next[0] - cur))}%"></i></div><div class="left">${bitar(next[0] - pet.bits)} kvar till ${esc(next[1])}</div>` : '<div class="left">fullvuxen</div>');
+}
+// Lekytan under registret: fyra lampor att tända själv. Fristående från pet.bits och sparas inte.
+const play = $('#play');
+function playDraw() {
+  let n = 0;
+  for (const l of play.querySelectorAll('.lamp')) { const on = l.getAttribute('aria-pressed') === 'true'; l.classList.toggle('on', on); l.querySelector('b').textContent = +on; if (on) n += +l.dataset.v; }
+  $('#playsum').textContent = lampSum(n);
+  $('#playmode').textContent = `chmod: ${lampMode(n)}`;
+}
+play.addEventListener('click', e => { const l = e.target.closest('.lamp'); if (l) { l.setAttribute('aria-pressed', l.getAttribute('aria-pressed') !== 'true'); playDraw(); } });
+playDraw();
+// Skatten i .hemligt: Bit får en piratlapp resten av rundan (S.pirate, sparas inte) och lär ut hur dolda filer syns
+function treasure() {
+  if (!S || S.pirate) return;
+  S.pirate = true; petMood = ''; petDraw(petBase());
+  petSay(`Arr, skatten! Allt som börjar med punkt är dolt, som .hemligt. ${S.ps ? 'Get-ChildItem -Force' : 'ls -a'} visar dolda filer och mappar. Lappen bär jag resten av rundan.`, 'nytt', 12000);
 }
 function petFeel(mood, ms = 1500) {
   clearTimeout(petT);
@@ -2451,6 +2523,7 @@ function grepOut(a, ps) {
   if (ps || a.includes('-r') || a.includes('-rn')) return lines.map((l, i) => `${ps ? file : 'src/' + file}:${12 + i * 9}:${l}`).join('\n');
   return lines.join('\n');
 }
+const nodeGone = () => !!S?.env['?killed']; // node 4821 avslutad i rundan (kills), port 3000 ledig
 const OUT = {
   // git och gh
   // git status, log och branch läser världen, så att terminalen och källkontrollen säger samma sak
@@ -2492,7 +2565,6 @@ const OUT = {
   },
   'git status -s': () => OUT['git status --short'](),
   'git log --oneline': a => { const n = +(a.find(t => /^-\d+$/.test(t))?.slice(1) ?? (a.includes('-n') ? a[a.indexOf('-n') + 1] : NaN)); return OUT['git log'](a).split('\n').slice(0, n || undefined).join('\n'); },
-  'git diff': 'diff --git a/index.html b/index.html\n--- a/index.html\n+++ b/index.html\n@@ -12,7 +12,7 @@\n-  <h1>Välkommen</h1>\n+  <h1>Välkommen hem</h1>',
   'git merge': a => `Updating 3f9c2a1..9e8f7a6\nFast-forward\n style.css | 12 ++++++++++--\n 1 file changed, 10 insertions(+), 2 deletions(-)`,
   'git stash': a => a[2] === 'pop' ? 'On branch main\nChanges not staged for commit:\n        modified:   index.html\nDropped refs/stash@{0} (5b6c7d8e9f0a)' : 'Saved working directory and index state WIP on main: 3f9c2a1 lägg till sök',
   'git reset': a => a.includes('--hard') ? 'HEAD is now at 3f9c2a1 lägg till sök' : a.includes('--soft') ? '' : `Unstaged changes after reset:\nM       ${/^HEAD/.test(a.at(-1)) ? 'index.html' : a.at(-1)}`,
@@ -2544,17 +2616,22 @@ const OUT = {
   'find': a => (a.find(t => t.includes('*')) ?? '').includes('.js') ? './app.js\n./src/main.js' : `./${a.at(-1)}`,
   'get-childitem': a => `\n    Directory: C:\\Users\\du\\projekt\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\n-a----        2026-10-17     14:02           1256 app.js\n`,
   // processer och portar
-  'ps': a => a.includes('grep') ? 'du    4821  1.2  0.8 node server/server.js\ndu    5230  0.0  0.0 grep node' : 'USER   PID %CPU %MEM COMMAND\ndu    4821  1.2  0.8 node server.js\ndu    5102  0.0  0.1 bash',
-  'get-ciminstance': '\nProcessId Name     CommandLine\n--------- ----     -----------\n     4821 node.exe "C:\\Program Files\\nodejs\\node.exe" server\\server.js\n',
-  'netstat': '  TCP    0.0.0.0:3000           0.0.0.0:0              LISTENING       4821\n  TCP    [::]:3000              [::]:0                 LISTENING       4821',
-  'get-process': '\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n    312      28    41236      52108       1,22   4821   1 node\n',
-  'lsof': 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)',
-  'get-nettcpconnection': '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n',
+  // Har du avslutat node (PID 4821) i rundan är port 3000 ledig: listorna saknar den, och den som letar efter porten hittar inget
+  'ps': a => (a.includes('grep') ? (nodeGone() ? '' : 'du    4821  1.2  0.8 node server/server.js\n') + 'du    5230  0.0  0.0 grep node'
+    : 'USER   PID %CPU %MEM COMMAND\n' + (nodeGone() ? '' : 'du    4821  1.2  0.8 node server.js\n') + 'du    5102  0.0  0.1 bash'),
+  'get-ciminstance': () => (nodeGone() ? '' : '\nProcessId Name     CommandLine\n--------- ----     -----------\n     4821 node.exe "C:\\Program Files\\nodejs\\node.exe" server\\server.js\n'),
+  'netstat': () => (nodeGone() ? '' : '  TCP    0.0.0.0:3000           0.0.0.0:0              LISTENING       4821\n  TCP    [::]:3000              [::]:0                 LISTENING       4821'),
+  'get-process': () => '\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n'
+    + (nodeGone() ? '    598      34    61208      78344       2,05   5102   1 powershell\n' : '    312      28    41236      52108       1,22   4821   1 node\n'),
+  'lsof': () => (nodeGone() ? '# (inget svar: ingen lyssnar på port 3000 längre, du avslutade node 4821)' : 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)'),
+  'get-nettcpconnection': () => (nodeGone() ? "Get-NetTCPConnection : No MSFT_NetTCPConnection objects found with property 'LocalPort' equal to '3000'.  Verify the value of the property and retry."
+    : '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n'),
+  'kill-port': 'Process on port 3000 killed',
   'kill': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'sed': a => a.includes('-n') ? LOGRADER(30).split('\n').slice(9, 20).join('\n') : '', 'tsc': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
   'cd': '', 'set-location': '', 'ii': '', 'rg': (a, ps) => grepOut(a, ps), 'curl.exe': a => OUT.curl(a),
   'wget': a => `--2026-10-17 14:20:01--  ${a.find(t => t.startsWith('http'))}\nResolving example.com... 93.184.215.14\nHTTP request sent, awaiting response... 200 OK\nLength: 1256 (1.2K) [application/json]\nSaving to: '${a.find(t => t.startsWith('http')).split('/').at(-1) || 'index.html'}'\n\n100%[===================>]   1.23K  --.-KB/s    in 0s`,
-  'top': 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n 4821 du         1.2  0.8 node\n 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
-  'htop': a => OUT.top,
+  'top': () => 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n' + (nodeGone() ? '' : ' 4821 du         1.2  0.8 node\n') + ' 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
+  'htop': a => OUT.top(),
   'open': '', 'xdg-open': '', 'start': '', 'invoke-item': '', 'explorer': '', 'explorer.exe': '',
   'ssh': 'Welcome to Ubuntu 24.04.3 LTS\nLast login: Fri Oct 16 21:14:03 2026 from 192.0.2.10\ndeploy@server:~$',
   'scp': a => `${a[1]}                                     100%   43     1.2KB/s   00:00`,
@@ -2758,7 +2835,8 @@ function run(raw) {
     if (c0 === 'exit') { echo(raw, bad); return mode === 'play' ? gameOver() : menu(); }
     if (c0 === 'help') { msgs.push(`# Skriv kommandot som blocket beskriver. ${S.ps ? '; mellan kommandon' : '&& eller flera argument'} rensar flera block.\n# man visar hjälpkortet för blocket närmast botten (0 poäng för det blocket). ↑ hämtar förra kommandot, Esc pausar, exit avslutar, ${S.ps ? 'cls' : 'clear'} tömmer brunnen om du har en laddning.`); continue; }
     for (const u of units(seg, S.ps)) { const e0 = errs; try { // finally: $? säger om kommandot gick bra, för nästa echo $?
-      const key = canon(u, S.ps), b = target(key);
+      const key = canon(u, S.ps), b = target(key), killing = kills(key, S.ps);
+      if (killing && S.env['?killed'] && !b) { errs++; msgs.push(killing); continue; } // node 4821 är redan borta i den här rundan
       // --help är aldrig fel: program visar sin hjälp i båda skalen. PowerShells cmdlets har ingen --help, där pekar vi på Get-Help.
       const c0l = u[0].toLowerCase(), prog = KNOWN.has(c0l) && (!S.ps || (!Object.hasOwn(PSALIAS, c0l) && !c0l.includes('-')));
       const asks = u.includes('--help') || (c0l === 'git' && (u.includes('-h') || u[1] === 'help'));
@@ -2769,9 +2847,11 @@ function run(raw) {
       let r = null;
       try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps, S.env); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
       if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
+      if (r?.out.some(l => l.includes('skatten!')) && key.some(t => /skatt\.txt$/i.test(t))) treasure(); // cat, Get-Content, less
       // git före utskriften, som visar commitens hash. Gits fel (okänd gren, grenen finns redan) är fel, även för ett block.
       let g;
       try { g = gitWorld(u); } catch (e) { errs++; msgs.push(e.message); continue; }
+      if (killing) S.env['?killed'] = true; // port 3000 är ledig resten av rundan: lsof, netstat och PORTS visar det
       // Det världen svarade vinner över den påhittade utskriften i OUT; tom utskrift med note (inga träffar) visar noten
       const said = g !== undefined ? (g ? g.split('\n') : [QUIET]) : r && (r.out.length ? r.out : r.note ? [r.note] : null);
       if (!b) {
@@ -2804,7 +2884,8 @@ function run(raw) {
   render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
-  notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : /^(error|fatal): /.test(l) ? 'err' : ''));
+  const shown = notes.join('\n').split('\n'), dc = diffCls(shown);
+  shown.forEach((l, i) => out(l, dc[i] || (l.startsWith('#') ? 'cmt' : /^(error|fatal): /.test(l) ? 'err' : '')));
   S.typed += typed;
 
   const n = hits.length;
@@ -3278,6 +3359,14 @@ function gitWorld(u) {
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
   const here = look(S.fs, cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), R = repoOf(cwd) ?? cwd, top = S.commits[0];
   if (u[1] === 'commit') return commit(u, R);
+  // diff: ostagat (index mot filerna), --staged/--cached det stagade (HEAD mot index). Filnamn begränsar, grenar och HEAD~1 jämförs inte.
+  if (u[1] === 'diff') {
+    const {staged, work} = repoChanges(R), cached = u.includes('--staged') || u.includes('--cached'), [from, to] = cached ? [S.base, S.index] : [S.index, S.fs];
+    const only = args.filter(t => !REFRE.test(t) && !REMOTE.includes(t) && !S.branches.has(t)).map(f => resolve(cwd, f)), txt = n => (typeof n === 'string' ? n : undefined);
+    const lines = (cached ? staged : work.filter(c => c[1] !== 'U')).map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
+      .flatMap(p => { const a = txt(look(from, p, S.ps).node), b = txt(look(to, p, S.ps).node); return a === b ? [] : udiff(p.slice(R.length).join('/'), a, b); });
+    return lines.length ? lines.join('\n') : !cached && staged.length ? '# (inget svar: allt du ändrat är stagat. git diff --staged visar det.)' : '';
+  }
   if (u[1] === 'push') S.pushed = S.commits.length;
   if (typeof here !== 'object') return;
   // add: filerna som de är nu läggs i index. -A utan namn tar hela repot.
@@ -3981,9 +4070,12 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
       else say(`Uncaught ReferenceError: ${v.split(/\W/)[0] || v} is not defined. Prova S.score, S.best eller S`, 'err');
     });
   },
-  ports: () => sheet('ports', pre(`PORT   PROCESS
-3000   node server.js   används redan
-# Porten är alltid upptagen. Den som håller den stänger du med
+  ports: () => sheet('ports', pre(nodeGone() ? `PORT   PROCESS
+3000   ledig
+# Du avslutade node (PID 4821) i den här rundan, så porten är fri för en ny server.
+# Nästa runda startar node igen och tar porten.` : `PORT   PROCESS
+3000   node server.js   används redan (PID 4821)
+# Porten är upptagen. Den som håller den stänger du med
 # ${(S?.ps ?? isPS()) ? 'Stop-Process -Id <id> (PID:en står i Get-NetTCPConnection -LocalPort 3000)' : 'kill <pid> (PID:en står i lsof -i :3000)'}`)),
   terminal: () => mode === 'sheet' && closeSettings(),
   min: () => (mode === 'play' ? pause(true) : say('# Minimerat. Fast inte, det här är en webbsida.')),

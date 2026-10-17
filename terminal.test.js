@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, gitRefs, back};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -318,6 +318,22 @@ assert.deepStrictEqual([0, 1, 3, 4, 7, 8, 9, 1024, 5000].map(petStage), [0, 1, 2
 assert.deepStrictEqual([0, 1, 2, 3, 4].map(binStr), ['0000', '0001', '0010', '0011', '0100']);
 assert.strictEqual(binStr(18), '0001 0010'); assert.strictEqual(binStr(255), '1111 1111');
 assert.strictEqual(binParts(13), '8 + 4 + 1'); assert.strictEqual(binParts(0), '0'); assert.strictEqual(binParts(16), '16'); assert.strictEqual(binParts(1028), '1 024 + 4', 'svenska mellanslag i tusental');
+assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(lampSum(4), '0 1 0 0 = 4'); assert.strictEqual(lampSum(0), '0 0 0 0 = 0');
+// git diff: unified diff med tre rader sammanhang, borttaget före tillagt
+{
+  const d = udiff('notes.txt', 'a\nb\nc\nd\ne\nf\ng\nh', 'a\nb\nc\nd\nE\nf\ng\nh\ni').join('\n');
+  assert.match(d, /^diff --git a\/notes\.txt b\/notes\.txt\nindex [0-9a-f]{7}\.\.[0-9a-f]{7} 100644\n--- a\/notes\.txt\n\+\+\+ b\/notes\.txt\n/);
+  assert.ok(d.endsWith('@@ -2,7 +2,8 @@\n b\n c\n d\n-e\n+E\n f\n g\n h\n+i'), d);
+  const far = udiff('x', [...'abcdefghijklmnop'].join('\n'), [...'Abcdefghijklmnop'].join('\n').replace('p', 'P'));
+  assert.deepStrictEqual(far.filter(l => l.startsWith('@@')), ['@@ -1,4 +1,4 @@', '@@ -13,4 +13,4 @@'], 'långt isär: två stycken');
+  assert.deepStrictEqual(udiff('ny.txt', undefined, 'hej').slice(1), ['new file mode 100644', 'index 0000000..' + udiff('ny.txt', undefined, 'hej')[2].slice(-7), '--- /dev/null', '+++ b/ny.txt', '@@ -0,0 +1 @@', '+hej']);
+  assert.deepStrictEqual(udiff('x', 'a\nb', 'a').slice(-3), ['@@ -1,2 +1 @@', ' a', '-b']);
+  assert.ok(udiff('gone', 'a', undefined).includes('+++ /dev/null'));
+  assert.deepStrictEqual(diffCls(['diff --git a/x b/x', 'index 1..2', '--- a/x', '+++ b/x', '@@ -1 +1 @@', '-a', '+b', ' c', '- [ ] punkt']), ['', '', '', '', 'hunk', 'err', 'add', '', 'err']);
+  assert.deepStrictEqual(diffCls(['- [ ] punkt', '+ inte diff']), ['', ''], 'utanför en diff färgas inget');
+  assert.deepStrictEqual(diffCls(['diff --git a/x b/x', '+a', '# kommentar', '-b']), ['', 'add', '', ''], 'diffen slutar vid första raden som inte hör dit');
+}
+assert.strictEqual(lampMode(5),'101 = r-x = 5'); assert.strictEqual(lampMode(15), '111 = rwx = 7', 'chmod tar de tre lägsta bitarna'); assert.strictEqual(lampMode(8), '000 = --- = 0');
 for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(text), 'svensk text: inga tankstreck, decimalkomma: ' + text);
 // PowerShell frågar om mappen inte är tom
 sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');
@@ -437,6 +453,17 @@ assert.strictEqual(sh.out('taskkill /f /im node.exe'), 'SUCCESS: The process "no
 assert.strictEqual(sh.out('taskkill /PID 6120'), 'SUCCESS: Sent termination signal to the process with PID 6120.', 'Code har ett fönster och kan be att få stänga');
 sh.bad('taskkill /PID 999', /^Error: ERROR: The process "999" not found\.$/); sh.bad('taskkill', /Neither \/FI nor \/PID nor \/IM were specified/);
 sh.bad('taskkill /F /PID 1204', /Access is denied/);
+// Port 3000: kommandona som avslutar node 4821, och världen efteråt (env['?killed'] sätts av run)
+const kk = (s, ps) => kills(canon(tokenize(s, ps), ps), ps);
+for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"']) assert.ok(kk(s, false), `${s} avslutar node`);
+for (const s of ['Stop-Process -Id 4821', 'kill 4821', 'spps 4821', 'Stop-Process -Name node', 'taskkill /PID 4821 /F', 'taskkill /f /im node.exe', 'npx kill-port 3000']) assert.ok(kk(s, true), `${s} avslutar node`);
+for (const [s, ps] of [['kill 5102', false], ['kill -0 4821', false], ['taskkill /PID 4821', true], ['Stop-Process -Id 5102', true], ['lsof -i :3000', false]]) assert.strictEqual(kk(s, ps), '', `${s} avslutar inte node`);
+assert.strictEqual(kk('kill -9 4821', false), 'bash: kill: (4821) - No such process'); assert.strictEqual(kk('Stop-Process -Id 4821', true), 'Stop-Process : Cannot find a process with the process identifier 4821.');
+sh.env['?killed'] = true;
+assert.strictEqual(sh.out('netstat -ano | findstr :3000'), '', 'porten är ledig'); assert.ok(!/4821/.test(sh.out('tasklist')), 'node syns inte i tasklist');
+sh.bad('taskkill /PID 4821 /F', /ERROR: The process "4821" not found\./);
+assert.ok(!sh.out('Get-ChildItem env:').includes('?killed'), 'världens minne är ingen miljövariabel');
+delete sh.env['?killed'];
 assert.strictEqual(sh.out('findstr mjölk notes.txt'), 'köp mjölk'); assert.strictEqual(sh.out('findstr /n /i MJÖLK notes.txt'), '1:köp mjölk');
 assert.strictEqual(sh.out('findstr "mjölk mormor" notes.txt'), 'köp mjölk\nring mormor', 'orden är alternativ'); assert.strictEqual(sh.out('findstr /c:"köp mjölk" notes.txt'), 'köp mjölk');
 assert.strictEqual(sh.out('findstr /s import *.py'), 'spel\\spel.py:import random'); assert.ok(/inga träffar/.test(sh('findstr zzz notes.txt').note));

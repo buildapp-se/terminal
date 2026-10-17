@@ -4,9 +4,9 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 ## Prioritet (2026-10-17)
 
-1. **Straffar rätt svar:** likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i `explain` (Brain).
-2. **Låtsasskalet och småfel:** PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
-3. **Större bygg:** mer git i världen (agent B efter steg 1), Bit och dcg, Vad Claude gör ur loggarna, idéerna ur granskningen.
+1. **Klart:**  likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i `explain` (Brain).
+2. **Klart:**  PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
+3. **Större bygg:** klart utom Bit och dcg (agent E pågår).
 4. **Underhåll:** PS-tabellerna samlade, mer logik in i `pure` och testad. Efter agenterna, eftersom det rör samma kod.
 5. **Sist:** programspråk, delad topplista, mp3 (Lyrias villkor).
 
@@ -21,7 +21,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Allt klickbart till vänster (aktivitetsfältet, sidofältets vyer) ser ut ungefär som i VS Code (Patrik 2026-10-17).
 - [x] VS Code-ramen klickbar 2026-10-17: menyer, README-flik, utforskaren, sök med påskägg, källkontroll, PROBLEMS, OUTPUT, DEBUG CONSOLE, PORTS, fönsterknappar, zen-läge.
 - [x] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
-- [ ] Bygg om paketet Vad Claude gör (förr Som Claude Code) från loggdatan (2026-10-17: grep, head, git, curl, uv, ls, tail, node i topp; PowerShell mest för att döda dev-servrar). Ta också med kommandon Patrik kör själv med `!` (bash-input i transkripten), t.ex. `powershell -Command "Stop-Process -Id N"`: det han gör på riktigt ska han kunna öva på.
+- [x] Vad Claude gör ombyggt ur 2 520 Claude Code-loggar (agent F 2026-10-17): 23 uppgifter ur det Claude kör oftast (head, grep -n, uv run, sed -n, tail, git status --short, git log --oneline, curl -s, tsc), förklaringen säger varför Claude kör det. Patriks egna !-kommandon fanns redan i Vibe-kodaren. Kvar: `git push origin --delete` och `git fetch --prune` i git-paketet; `Select-Object -Skip` i `piped`.
 - [x] Världen följer allt man skriver (2026-10-17): `render()`, grenar, clone/init/commit/restore, `git status`/`log`/`branch` ur världen, quizets terminal, redigerbara filer med Ctrl+S.
 - [ ] Bit reagerar på allt som dcg (Destructive Command Guard, hooken som stoppar Claude Code) blockerar, och förklarar varför (Patriks idé 2026-10-17). I dag reagerar `PET_FEAR` bara på fem mönster. dcg 0.12.0 har fem paket på: `core.filesystem`, `core.git`, `system.disk`, `windows.filesystem`, `windows.system`. Provat med `dcg test`: blockerar `rm -r`/`rm -rf`, `push --force` (men inte `--force-with-lease`), `reset --hard`, `clean -fd`, `checkout -- .`, `restore .`, `branch -D`, `stash clear`, `Remove-Item -Recurse -Force`, `curl … | bash`, dd mot disk. Släpper igenom `chmod -R 777`, `DROP TABLE` via wrangler, `docker system prune`, `gh repo delete`, `npm unpublish`.
   - Hur: en ren tabell `DANGER` (mönster, dcg-regelns namn, svensk förklaring, säkrare alternativ) som ersätter `PET_FEAR`. Bubblan: "Här hade dcg stoppat Claude: … Säkrare: …". Rätt svar räknas som vanligt, Bit avbryter aldrig. Block vars svar är farligt får en röd ⚠ redan innan man skriver. Ett lokalt kontrollskript kör alla svar i `TASKS` genom `dcg test` och larmar när tabellen och dcg inte är överens (dcg körs inte i webbläsaren, och testet ska inte kräva dcg).
@@ -66,4 +66,4 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [x] Antalet filer följer fönstret och Bits panel (`relane`, agent D), men byts först när inget block ligger landat (staplar slås aldrig ihop).
 - [ ] Underhåll: PowerShell-cmdlets står i åtta tabeller (`PSALIAS`, `PSPARAMS`, `PSPOS`, `PSOP`, `PSCMD`, `PSNAME`, `KNOWNPS`...) som har glidit isär; samla i en. `node()` vid källkontrollen dubblerar `look()`.
 - [ ] Tester: `OUT`, `sample`, `gitWorld`, `changes`, `petTip` ligger utanför `pure` och testas inte; svaren i andra paket än Filer & mappar körs inte genom `fake()` i testet.
-- [ ] Idéer ur granskningen: klickbara lampor i Bits panel (tänd 8 4 2 1 och se summan, plus chmod-siffran för tre bitar), PORTS-fliken som släpper 4821 när man dödat processen, piratlapp på Bit när man hittat `.hemligt/skatt.txt`, `git diff` som visar spelarens egen ändring.
+- [x] Idéer ur granskningen (agent G): klickbara lampor 8 4 2 1 med chmod-tolkning i Bits panel, port 3000 ledig när node 4821 är dödad (ps, netstat, lsof, Get-NetTCPConnection, PORTS), piratlapp på Bit vid skatten, riktig `git diff`/`--staged` (udiff). Kvar: `git diff HEAD`/`--stat` mot en gren, pkill/killall.
