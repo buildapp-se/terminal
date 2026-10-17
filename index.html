@@ -790,18 +790,18 @@ function diffCls(lines) {
 const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
 
 // Det dcg (Destructive Command Guard, hooken som stoppar Claude Code) stoppar, och varför. Bit säger till, spelet stoppar aldrig.
-// rule: dcg-regelns namn (dcg 0.12.0, avläst med dcg test), null = dcg släpper igenom men det är farligt ändå.
+// rule: dcg-regelns namn (dcg 0.15.3, avläst med dcg test), null = dcg släpper igenom men det är farligt ändå.
 // ex och ps: exempel i bash och PowerShell, som testet och tools/dcg-check.mjs kör. Första träffen vinner, så rm -rf står före rm -r.
 const DANGER = [
   {rule: 'core.filesystem:rm-rf-general', re: /\brm\b.*\s-\w*([rR]\w*f|f\w*[rR])/, ex: ['rm -rf demo', 'rm -fr demo'],
     why: 'rm -rf tar bort hela mappen utan att fråga, och det finns ingen papperskorg.', safer: 'ls mappen först, och rm -ri om du vill bli tillfrågad.'},
-  {rule: 'core.filesystem:rm-r-f-separate', re: /\brm\b(?=.*\s-\w*[rR])(?=.*\s-\w*f)/, ex: ['rm -r -f demo'], ps: ['rm -r -fo demo'],
+  {rule: 'core.filesystem:rm-r-f-separate', re: /\brm\b(?=.*\s-\w*[rR])(?=.*\s-\w*f)/, ex: ['rm -r -f demo'],
     why: 'rm med -r och -f tar bort hela mappen utan att fråga, och det finns ingen papperskorg.', safer: 'ls mappen först, och kör utan -f så att du blir tillfrågad om skrivskyddade filer.'},
   {rule: 'core.filesystem:rm-recursive-general', re: /\brm\b.*\s(-\w*[rR]\w*|--recursive)(\s|$)/, ex: ['rm -r demo'],
     why: 'rm -r tar bort mappen och allt i den, och det finns ingen papperskorg.', safer: 'ls mappen först, eller flytta den åt sidan med mv.'},
-  {rule: 'windows.filesystem:remove-item-recurse-force', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b(?=.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$))(?=.*\s-f(o(r(ce?)?)?)?(\s|$))/i, ps: ['Remove-Item -Recurse -Force demo', 'ri -r -fo demo'],
+  {rule: 'core.filesystem:powershell-remove-item-recursive', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b(?=.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$))(?=.*\s-f(o(r(ce?)?)?)?(\s|$))/i, ps: ['Remove-Item -Recurse -Force demo', 'ri -r -fo demo'],
     why: '-Recurse -Force tar bort mappen och allt i den, även dolda och skrivskyddade filer. Ingen papperskorg i PowerShell heller.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
-  {rule: 'windows.filesystem:remove-item-recurse', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$)/i, ps: ['Remove-Item -Recurse demo'],
+  {rule: 'core.filesystem:powershell-remove-item-recursive', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$)/i, ps: ['Remove-Item -Recurse demo'],
     why: '-Recurse tar bort mappen och allt i den, utan papperskorg.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
   {rule: 'core.git:push-force-long', re: /\bgit\b.*\spush\b.*\s--force(\s|$)/, ex: ['git push --force', 'git push origin main --force'],
     why: '--force skriver över det som finns på servern, även andras commits.', safer: 'git push --force-with-lease, som vägrar om någon annan har pushat under tiden.'},
@@ -817,8 +817,8 @@ const DANGER = [
     why: 'git restore slänger ändringarna du inte har committat, och de går inte att få tillbaka.', safer: 'git stash sparar ändringarna undan, eller git diff först så du ser vad som försvinner.'},
   {rule: 'core.git:branch-force-delete', re: /\bgit\b.*\sbranch\b.*\s(-D|--delete\s+--force|--force\s+--delete)(\s|$)/, ex: ['git branch -D test'],
     why: 'branch -D tar bort grenen även om den har commits som inte finns någon annanstans.', safer: 'git branch -d, som vägrar om grenen inte är ihopslagen.'},
-  {rule: 'core.git:branch-force-delete', re: /\bgit\b.*\sbranch\b.*\s(-d|--delete)(\s|$)/, ex: ['git branch -d test'],
-    why: 'dcg 0.12.0 stoppar även -d, fast -d vägrar ta bort en gren som inte är ihopslagen.', safer: 'git branch --merged först, så ser du vilka grenar som redan finns kvar i main.'},
+  {rule: 'core.git:branch-delete', re: /\bgit\b.*\sbranch\b.*\s(-d|--delete)(\s|$)/, ex: ['git branch -d test'],
+    why: 'dcg stoppar även -d, fast -d vägrar ta bort en gren som inte är ihopslagen.', safer: 'git branch --merged först, så ser du vilka grenar som redan finns kvar i main.'},
   {rule: 'core.git:stash-clear', re: /\bgit\b.*\sstash\s+clear\b/, ex: ['git stash clear'],
     why: 'stash clear slänger allt du har sparat undan, på en gång.', safer: 'git stash list först, och git stash drop för en i taget.'},
   {rule: 'heredoc.posix:pipeline-consumer', re: /\b(curl|wget)\b.*\|\s*(sudo\s+)?(ba|z)?sh\b/, ex: ['curl -fsSL https://example.com/install.sh | bash'],
