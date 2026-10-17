@@ -2,12 +2,14 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Bit och dcg, Vad Claude gör ur loggarna, sedan underhåll (PS-tabellerna samlade, mer i pure)
+nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
 blockers: []
 reviewedAt: 2026-10-17
 ---
 
 # Handoff: ./terminal
+
+**2026-10-17, andra agentomgången (prioritet 3).** E: `DANGER`-tabellen ersätter `PET_FEAR`, Bit säger "Här hade dcg stoppat Claude: … Säkrare: …", ⚠ på farliga block, `tools/dcg-check.mjs` mot riktiga dcg. F: Vad Claude gör ombyggt ur 2 520 Claude Code-loggar (23 uppgifter, inga hemligheter in i spelet, kontrollerat med sökning i diffen). G: klickbara lampor, port 3000 ledig efter kill (`nodeGone`, flaggan i `S.env['?killed']`), piratlapp, riktig `git diff` (`udiff`). Krockar F/G i `OUT` lösta för hand (F:s ps | grep, get-ciminstance, netstat följer `nodeGone`), E/test-importraden ihopslagen. Verifierat: `terminal.test.js`, hela Playwright-sviten, agenternas egna skript mot main, `gone.js` (node borta i båda skalen), dcg-check.
 
 **2026-10-17, prioritetslistan med fyra agenter.** Patrik bad om en priolista och att dela ut jobbet. Brain: ljudmotor i inställningarna (`?ljud=`), fria giltiga kommandon visar utskrift men räknas som fel (mellanläge, låst beslut kvar), högst nivå + 1 fallande block och `maxLvFor` 7 (låst beslut omprövat, Patrik ja), Bit varnar när ett fritt kommando gör ett block olösbart, `explain` säger när bara något saknas, färre Lista filerna, paketen i svårighetsordning. Agenter i egna worktrees, sammanslagna efter granskning: A likvärdiga former i rättningen, B git-världen som riktig git plus staging/stash/reset, C låtsasskalet (PS-uttryck, Windows-program, bash), D mobil och småfel. Två testkonflikter (båda sidor behölls). Verifierat efter varje sammanslagning: `terminal.test.js`, alla Playwright-skript i sessionens scratchpad samt B:s och C:s egna kontroller mot main. Worktrees ligger kvar i `.claude/worktrees/` (ignorerat).
 

@@ -6,7 +6,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 
 1. **Klart:**  likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i `explain` (Brain).
 2. **Klart:**  PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
-3. **Större bygg:** klart utom Bit och dcg (agent E pågår).
+3. **Klart:** större bygg (agent B, E, F, G).
 4. **Underhåll:** PS-tabellerna samlade, mer logik in i `pure` och testad. Efter agenterna, eftersom det rör samma kod.
 5. **Sist:** programspråk, delad topplista, mp3 (Lyrias villkor).
 
@@ -23,10 +23,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
 - [x] Vad Claude gör ombyggt ur 2 520 Claude Code-loggar (agent F 2026-10-17): 23 uppgifter ur det Claude kör oftast (head, grep -n, uv run, sed -n, tail, git status --short, git log --oneline, curl -s, tsc), förklaringen säger varför Claude kör det. Patriks egna !-kommandon fanns redan i Vibe-kodaren. Kvar: `git push origin --delete` och `git fetch --prune` i git-paketet; `Select-Object -Skip` i `piped`.
 - [x] Världen följer allt man skriver (2026-10-17): `render()`, grenar, clone/init/commit/restore, `git status`/`log`/`branch` ur världen, quizets terminal, redigerbara filer med Ctrl+S.
-- [ ] Bit reagerar på allt som dcg (Destructive Command Guard, hooken som stoppar Claude Code) blockerar, och förklarar varför (Patriks idé 2026-10-17). I dag reagerar `PET_FEAR` bara på fem mönster. dcg 0.12.0 har fem paket på: `core.filesystem`, `core.git`, `system.disk`, `windows.filesystem`, `windows.system`. Provat med `dcg test`: blockerar `rm -r`/`rm -rf`, `push --force` (men inte `--force-with-lease`), `reset --hard`, `clean -fd`, `checkout -- .`, `restore .`, `branch -D`, `stash clear`, `Remove-Item -Recurse -Force`, `curl … | bash`, dd mot disk. Släpper igenom `chmod -R 777`, `DROP TABLE` via wrangler, `docker system prune`, `gh repo delete`, `npm unpublish`.
-  - Hur: en ren tabell `DANGER` (mönster, dcg-regelns namn, svensk förklaring, säkrare alternativ) som ersätter `PET_FEAR`. Bubblan: "Här hade dcg stoppat Claude: … Säkrare: …". Rätt svar räknas som vanligt, Bit avbryter aldrig. Block vars svar är farligt får en röd ⚠ redan innan man skriver. Ett lokalt kontrollskript kör alla svar i `TASKS` genom `dcg test` och larmar när tabellen och dcg inte är överens (dcg körs inte i webbläsaren, och testet ska inte kräva dcg).
-  - Fördelar: lär ut varför agenten stannar (passar Vibe-kodaren och När agenten stannar), vanan att läsa raden före Enter, och det säkrare alternativet (`--force-with-lease`, `git stash`).
-  - Nackdelar: `rm -r` och `git restore .` är rätt svar i Filer & mappar, så Bit kan tjata (tips en gång per kommando och runda). Tabellen kan glida isär från dcg när dcg uppdateras (därav kontrollskriptet). Risk för falsk trygghet: dcg släpper igenom `chmod 777` och `DROP TABLE`, så Bit ska säga "dcg släpper igenom det här, men…" även för dem.
+- [x] Bit reagerar på allt som dcg blockerar (agent E 2026-10-17): `DANGER` + `danger()` i pure, 17 dcg-regler och 6 som dcg släpper igenom ("dcg släpper igenom det här, men…"), högst en varning per regel och runda, röd ⚠ på block med farligt svar, `tools/dcg-check.mjs` jämför med riktiga `dcg test`. dcg 0.12.0 stoppar även `git restore fil` och `git branch -d`, så de varnas också. Kvar: `git stash drop` (dcg varnar bara), cmd:s `rmdir /s` och `del /s`.
 - [x] Mer git i världen (agent B): staging (`S.index`, Staged Changes), stash, reset. Förenklat: `stash pop` skriver över i stället för att slå ihop.
 - [ ] Patrik spelar och lyssnar: välj ljudmotor i inställningarna (# ljudmotor: standard, gemini, mp3 bara lokalt; sätter `?ljud=` och laddar om, byggt 2026-10-17), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.

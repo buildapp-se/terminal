@@ -126,6 +126,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:
 .blk.done{opacity:0;border-color:var(--green);box-shadow:0 0 18px var(--green)}
 .blk.miss{animation:shake .25s}
 .blk{cursor:help}.blk:hover{box-shadow:0 0 0 1px var(--c)}
+.blk .risk{position:absolute;top:-.75em;right:2.6em;padding:0 .25em;background:var(--bg);color:#F14C4C;font-size:12px}
 .blk .hlp{position:absolute;top:-.75em;right:.7em;padding:0 .35em;background:var(--bg);color:var(--c);font-size:12px}
 .parts{display:grid;grid-template-columns:max-content 1fr;gap:.2em 2ch;margin:.6em 0;text-align:left}
 .parts dt{color:var(--yellow);white-space:nowrap}.parts dd{margin:0}
@@ -787,6 +788,60 @@ function diffCls(lines) {
   });
 }
 const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
+
+// Det dcg (Destructive Command Guard, hooken som stoppar Claude Code) stoppar, och varför. Bit säger till, spelet stoppar aldrig.
+// rule: dcg-regelns namn (dcg 0.12.0, avläst med dcg test), null = dcg släpper igenom men det är farligt ändå.
+// ex och ps: exempel i bash och PowerShell, som testet och tools/dcg-check.mjs kör. Första träffen vinner, så rm -rf står före rm -r.
+const DANGER = [
+  {rule: 'core.filesystem:rm-rf-general', re: /\brm\b.*\s-\w*([rR]\w*f|f\w*[rR])/, ex: ['rm -rf demo', 'rm -fr demo'],
+    why: 'rm -rf tar bort hela mappen utan att fråga, och det finns ingen papperskorg.', safer: 'ls mappen först, och rm -ri om du vill bli tillfrågad.'},
+  {rule: 'core.filesystem:rm-r-f-separate', re: /\brm\b(?=.*\s-\w*[rR])(?=.*\s-\w*f)/, ex: ['rm -r -f demo'], ps: ['rm -r -fo demo'],
+    why: 'rm med -r och -f tar bort hela mappen utan att fråga, och det finns ingen papperskorg.', safer: 'ls mappen först, och kör utan -f så att du blir tillfrågad om skrivskyddade filer.'},
+  {rule: 'core.filesystem:rm-recursive-general', re: /\brm\b.*\s(-\w*[rR]\w*|--recursive)(\s|$)/, ex: ['rm -r demo'],
+    why: 'rm -r tar bort mappen och allt i den, och det finns ingen papperskorg.', safer: 'ls mappen först, eller flytta den åt sidan med mv.'},
+  {rule: 'windows.filesystem:remove-item-recurse-force', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b(?=.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$))(?=.*\s-f(o(r(ce?)?)?)?(\s|$))/i, ps: ['Remove-Item -Recurse -Force demo', 'ri -r -fo demo'],
+    why: '-Recurse -Force tar bort mappen och allt i den, även dolda och skrivskyddade filer. Ingen papperskorg i PowerShell heller.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
+  {rule: 'windows.filesystem:remove-item-recurse', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$)/i, ps: ['Remove-Item -Recurse demo'],
+    why: '-Recurse tar bort mappen och allt i den, utan papperskorg.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
+  {rule: 'core.git:push-force-long', re: /\bgit\b.*\spush\b.*\s--force(\s|$)/, ex: ['git push --force', 'git push origin main --force'],
+    why: '--force skriver över det som finns på servern, även andras commits.', safer: 'git push --force-with-lease, som vägrar om någon annan har pushat under tiden.'},
+  {rule: 'core.git:push-force-short', re: /\bgit\b.*\spush\b.*\s-f(\s|$)/, ex: ['git push -f'],
+    why: '-f är --force: det skriver över det som finns på servern, även andras commits.', safer: 'git push --force-with-lease, som vägrar om någon annan har pushat under tiden.'},
+  {rule: 'core.git:reset-hard', re: /\bgit\b.*\sreset\b.*\s--hard\b/, ex: ['git reset --hard', 'git reset --hard HEAD~1'],
+    why: 'reset --hard slänger allt du inte har committat, och det går inte att ångra med git.', safer: 'git stash sparar ändringarna undan, eller git reset --soft som behåller filerna.'},
+  {rule: 'core.git:clean-force', re: /\bgit\b.*\sclean\b.*\s(-\w*f|--force)/, ex: ['git clean -fd'],
+    why: 'git clean -f tar bort filerna git inte följer, och git har ingen kopia av dem.', safer: 'git clean -n först: den visar bara vad som skulle försvinna.'},
+  {rule: 'core.git:checkout-discard', re: /\bgit\b.*\scheckout\b.*\s--\s+\S/, ex: ['git checkout -- .', 'git checkout -- app.js'],
+    why: 'checkout -- slänger dina ändringar i filerna, och de går inte att få tillbaka.', safer: 'git stash sparar ändringarna undan, så kan du ta fram dem igen.'},
+  {rule: 'core.git:restore-worktree', re: /\bgit\b.*\srestore\b(?!.*\s(--staged|-S)(\s|$))\s+\S/, ex: ['git restore .', 'git restore app.js'],
+    why: 'git restore slänger ändringarna du inte har committat, och de går inte att få tillbaka.', safer: 'git stash sparar ändringarna undan, eller git diff först så du ser vad som försvinner.'},
+  {rule: 'core.git:branch-force-delete', re: /\bgit\b.*\sbranch\b.*\s(-D|--delete\s+--force|--force\s+--delete)(\s|$)/, ex: ['git branch -D test'],
+    why: 'branch -D tar bort grenen även om den har commits som inte finns någon annanstans.', safer: 'git branch -d, som vägrar om grenen inte är ihopslagen.'},
+  {rule: 'core.git:branch-force-delete', re: /\bgit\b.*\sbranch\b.*\s(-d|--delete)(\s|$)/, ex: ['git branch -d test'],
+    why: 'dcg 0.12.0 stoppar även -d, fast -d vägrar ta bort en gren som inte är ihopslagen.', safer: 'git branch --merged först, så ser du vilka grenar som redan finns kvar i main.'},
+  {rule: 'core.git:stash-clear', re: /\bgit\b.*\sstash\s+clear\b/, ex: ['git stash clear'],
+    why: 'stash clear slänger allt du har sparat undan, på en gång.', safer: 'git stash list först, och git stash drop för en i taget.'},
+  {rule: 'heredoc.posix:pipeline-consumer', re: /\b(curl|wget)\b.*\|\s*(sudo\s+)?(ba|z)?sh\b/, ex: ['curl -fsSL https://example.com/install.sh | bash'],
+    why: 'curl | bash kör ett skript från nätet innan du har sett vad det gör.', safer: 'ladda ner med curl -o install.sh, läs filen, kör den sen.'},
+  {rule: 'heredoc.powershell:invoke-expression-dynamic', re: /\|\s*(iex|invoke-expression)\b/i, ps: ['irm https://example.com/install.ps1 | iex'],
+    why: '| iex kör ett skript från nätet innan du har sett vad det gör.', safer: 'ladda ner med Invoke-WebRequest -OutFile, läs filen, kör den sen.'},
+  {rule: 'system.disk:dd-device', re: /\bdd\b.*\bof=\/dev\//, ex: ['dd if=bild.img of=/dev/sda'],
+    why: 'dd mot en disk skriver över hela disken, och fel bokstav tar fel disk.', safer: 'lsblk först, så du ser exakt vilken disk som är vilken.'},
+  {rule: null, re: /\bchmod\b.*\b777\b/, ex: ['chmod -R 777 .'],
+    why: '777 låter alla läsa, ändra och köra filerna.', safer: 'chmod 755 för program och mappar, 644 för vanliga filer.'},
+  {rule: null, re: /\bdrop\s+table\b/i, ex: ['npx wrangler d1 execute db --command "DROP TABLE users"'],
+    why: 'DROP TABLE tar bort tabellen med all data i den.', safer: 'exportera databasen först, och kör mot --local innan --remote.'},
+  {rule: null, re: /\bdocker\s+system\s+prune\b/, ex: ['docker system prune -a'],
+    why: 'docker system prune tar bort stoppade containrar, nätverk och avbilder på en gång.', safer: 'docker system df först, så ser du vad som tar plats.'},
+  {rule: null, re: /\bgh\s+repo\s+delete\b/, ex: ['gh repo delete test --yes'],
+    why: 'gh repo delete tar bort repot på GitHub, med issues och pull requests.', safer: 'gh repo archive gör repot skrivskyddat i stället.'},
+  {rule: null, re: /\bnpm\s+unpublish\b/, ex: ['npm unpublish paket'],
+    why: 'npm unpublish tar bort paketet för alla som använder det.', safer: 'npm deprecate varnar användarna utan att ta bort något.'},
+  {rule: null, re: /^sudo\b/, ex: ['sudo apt update'],
+    why: 'sudo kör kommandot som administratör, med rätt att förstöra allt.', safer: 'läs raden en gång till, och kör utan sudo om det går.'},
+];
+// Första regeln som träffar raden, eller null. Samma tabell för båda skalen, som dcg: det vet inte heller vilket skal raden är skriven för.
+const danger = raw => DANGER.find(d => d.re.test(raw)) || null;
 
 // Fyller i {d}, {f2} osv. {x2} blir alltid något annat än {x}.
 function fill(task, pick, ps = false) {
@@ -2124,7 +2179,8 @@ function spawn() {
   el.className = 'blk';
   el.style.setProperty('--c', PACKS[b.pack].c);
   toLane(el, lane, S.lanes);
-  el.innerHTML = `<span class="tag">${PACKS[b.pack].tag}</span><button class="hlp" tabindex="-1" aria-label="hjälp för blocket">?</button><p>${esc(b.text)}</p>` +
+  const risk = b.steps.map(s => danger(s[0].raw)).find(Boolean); // dcg hade stoppat svaret: syns innan man skriver
+  el.innerHTML = `<span class="tag">${PACKS[b.pack].tag}</span>${risk ? `<span class="risk" title="${esc(risk.rule ? 'dcg hade stoppat Claude här' : 'farligt, fast dcg släpper igenom det')}">⚠</span>` : ''}<button class="hlp" tabindex="-1" aria-label="hjälp för blocket">?</button><p>${esc(b.text)}</p>` +
     (b.steps.length > 1 ? `<p class="prog">steg 1 av ${b.steps.length}</p>` : '') + '<code class="ans"></code>';
   el.addEventListener('click', () => help(b));
   well.append(el);
@@ -2486,17 +2542,16 @@ function petFeed(n, u) {
   const b = binStr(pet.bits), tip = u && Math.random() < .6 && petTip(u);
   petSay(tip || `Nu har jag ätit ${bitar(pet.bits)}. Binärt ${b}, alltså ${binParts(pet.bits)}.`, tip ? 'tips' : 'fakta');
 }
-// Farliga kommandon: Bit blir rädd och säger varför. Bara lärdomar, inget stopp.
-const PET_FEAR = [
-  [/\brm\b.*\s-(\w*r\w*f|\w*f\w*r)\b/, 'rm -rf frågar aldrig och har ingen papperskorg. Jag gömmer mig!'],
-  [/remove-item\b.*-r(ecurse)?\b.*-fo(rce)?\b|remove-item\b.*-fo(rce)?\b.*-r(ecurse)?\b/i, '-Recurse -Force: ingen papperskorg i PowerShell heller. Jag gömmer mig!'],
-  [/^sudo\b/, 'sudo kör kommandot som administratör, med rätt att förstöra allt. Läs raden en gång till först.'],
-  [/\bpush\b.*\s(--force|-f)(\s|$)/, '--force skriver över andras commits. --force-with-lease vägrar om någon annan har pushat under tiden.'],
-  [/\breset\s+--hard\b/, 'reset --hard slänger allt du inte har committat. Det går inte att ångra med git.'],
-];
+// Farliga kommandon (DANGER): Bit blir rädd och säger varför. Bara lärdomar, inget stopp.
+// rm -r och git restore . är rätt svar i vissa paket, så samma regel ger varning högst en gång per runda.
 function petWatch(raw) {
-  const hit = PET_FEAR.find(([re]) => re.test(raw));
-  if (hit) { petFeel('scared', 2500); petSay(hit[1], 'varning'); }
+  const d = danger(raw);
+  if (!d) return;
+  petFeel('scared', 2500);
+  const said = S.dangerSaid ||= new Set(), key = d.rule ?? d.why;
+  if (said.has(key)) return;
+  said.add(key);
+  petSay(`${d.rule ? 'Här hade dcg stoppat Claude:' : 'dcg släpper igenom det här, men'} ${d.why} Säkrare: ${d.safer}`, 'varning', 14000);
 }
 function petPat() {
   const st = petStage(pet.bits), [, name, fact] = PET_STAGES[st], next = PET_STAGES[st + 1];

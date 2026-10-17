@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -334,6 +334,17 @@ assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(
   assert.deepStrictEqual(diffCls(['diff --git a/x b/x', '+a', '# kommentar', '-b']), ['', 'add', '', ''], 'diffen slutar vid första raden som inte hör dit');
 }
 assert.strictEqual(lampMode(5),'101 = r-x = 5'); assert.strictEqual(lampMode(15), '111 = rwx = 7', 'chmod tar de tre lägsta bitarna'); assert.strictEqual(lampMode(8), '000 = --- = 0');
+// DANGER: varje regel träffar sina exempel i båda skalen, de säkra varianterna träffar inget
+for (const d of DANGER) {
+  const exs = [...(d.ex || []), ...(d.ps || [])];
+  assert.ok(exs.length && d.why && d.safer && (d.rule === null || /^[\w.]+:[\w-]+$/.test(d.rule)), 'regel utan exempel eller text: ' + d.re);
+  for (const x of exs) assert.strictEqual(danger(x), d, `${x} borde träffa ${d.rule ?? d.re}`);
+  for (const t of [d.why, d.safer]) assert.ok(!t.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(t), 'svensk text: ' + t);
+}
+for (const s of ['git push --force-with-lease', 'git push origin main', 'rm fil.txt', 'rm -i notes.txt', 'git restore --staged fil.txt', 'git restore -S .', 'git clean -n', 'git reset --soft HEAD~1',
+  'git stash', 'git stash list', 'Remove-Item fil.txt', 'curl -o install.sh https://example.com/install.sh', 'chmod 755 run.sh', 'git checkout main', 'git branch test', 'ls -r', 'grep -rf mönster .'])
+  assert.strictEqual(danger(s), null, `${s} är inte farligt`);
+assert.ok(TASKS.some(t => [].concat(t[3]).flat().some(a => danger(a))), 'minst ett svar i TASKS får varning');
 for (const [, , text] of PET_STAGES) assert.ok(!text.includes('—') && !/(^|[^.\d])\d+\.\d+(?![.\d])/.test(text), 'svensk text: inga tankstreck, decimalkomma: ' + text);
 // PowerShell frågar om mappen inte är tom
 sh = shell(true); sh('New-Item -ItemType Directory tom'); sh('New-Item tom/a.txt');

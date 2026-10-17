@@ -88,7 +88,7 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 - **Bit, terminaldjuret** (Patriks idé 2026-10-17): nere till höger i terminalen. Äter en bit per löst steg (hjälp ger ingen mat, som inga poäng),
   quizet matar också. Växer vid tvåpotenserna 1, 2, 4 ... 1 024 (`PET_STAGES`, `petStage`); varje stadium lär ut något om bitar.
   Räknaren syns binärt i hela nibbles med inledande nollor (`binStr`, Patrik: 0000, 0001, 0010), klick förklarar platsvärdena (`binParts`).
-  Humör i `petSVG`: sover i menyn, rädd när högen når övre tredjedelen och vid `PET_FEAR` (rm -rf, sudo, push --force, reset --hard),
+  Humör i `petSVG`: sover i menyn, rädd när högen når övre tredjedelen och vid allt i `DANGER` (ren tabell, agent E 2026-10-17: dcg 0.12.0:s regler med regelnamn, varför och säkrare väg, plus sådant dcg släpper igenom som chmod 777 och DROP TABLE; högst en varning per regel och runda; block med farligt svar får en röd ⚠; `node tools/dcg-check.mjs` jämför tabellen med riktiga `dcg test` och kräver dcg lokalt),
   ledsen vid fel, knuff mot hjälpkortet efter tre fel i rad. Blicken följer lägsta fallande block. Pratar sparsamt (minst 30 s mellan tips).
   Från 1 000 px bor Bit i ett sidofält till höger (`#chat`, som Copilot Chat och Claude Code i VS Code, Patrik 2026-10-17): stor figur, binärregistret som lampor med
   platsvärdena under, mätare till nästa stadium och en logg med etiketterna Tips, Varning, Kul att veta (`FACTS`, högst varannan minut) och Nytt
