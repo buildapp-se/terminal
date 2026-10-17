@@ -16,7 +16,7 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   GitHub Pages project site under `buildapp.se/terminal/`.
 - Uppgifterna ligger som data i `TASKS`
   (`[paket, svårighet 1–5, uppgift, svar, förklaring, PowerShell-svar, PowerShell-förklaring]`,
-  paketen `fs`, `git`, `cc` och `stop` (När agenten stannar: kommandon som agenter ber dig köra själv, förklaringen börjar med varför agenten stannade); PowerShell-svaret `'='` betyder samma som bash, saknas det
+  paketen `fs`, `git`, `cc` (Vibe-kodaren: det Claude kör) och `stop` (Din tur: kommandon som agenter ber dig köra själv, förklaringen börjar med varför agenten stannade); PowerShell-svaret `'='` betyder samma som bash, saknas det
   visas uppgiften bara i bash), med mallord som `{d}` och `{f2}` ur `POOLS`. Ett svar kan
   vara en lista med varianter, en kedja (lista av listor, ett steg per kommando) och
   innehålla jokern `{any}`.

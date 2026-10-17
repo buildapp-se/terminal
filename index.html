@@ -142,6 +142,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:
 .opt:hover{background:#2A2D2E}
 .opt[aria-pressed=true]:hover{background:#264F78}
 .opt .dim{margin-left:1ch}
+@media (max-width:700px){.opt{white-space:normal}.opt .dim{display:block;margin-left:0}} /* smal skärm: undertexten på egen rad */
 .qz .opt{white-space:pre-wrap;margin-bottom:2px}.opt.ok{background:#1E3A2A;color:#89D185}.opt.no{background:#4B1818;color:#F48771}.opt:disabled{cursor:default}
 .pairs{display:grid;gap:.6em 4ch}@media (min-width:900px){.pairs{grid-template-columns:auto 1fr}}
 .lvl{display:flex;align-items:center;gap:1ch}
@@ -232,8 +233,8 @@ kbd{font:inherit;color:var(--yellow)}
 const PACKS = {
   fs: {name: 'Filer & mappar', tag: 'fil', c: '#4FC1FF', hint: 'mkdir, cd, ls, rm, mv, cp', psHint: 'New-Item, Set-Location, Get-ChildItem'},
   git: {name: 'Git & GitHub', tag: 'git', c: '#DCDCAA', hint: 'git, gh'},
-  cc: {name: 'Som Claude Code', tag: 'claude', c: '#C586C0', hint: 'grep, curl, find, jq, npm', psHint: 'Select-String, Invoke-WebRequest, npm'},
-  stop: {name: 'När agenten stannar', tag: 'du', c: '#D97757', hint: 'gh auth, git push, wrangler, winget'},
+  cc: {name: 'Vibe-kodaren', tag: 'claude', c: '#C586C0', hint: 'det du kör utan att veta vad det är: grep, curl, jq, npm', psHint: 'det du kör utan att veta vad det är: Select-String, npm'},
+  stop: {name: 'Din tur', tag: 'du', c: '#D97757', hint: 'det Claude lämnar åt dig: gh auth, git push, wrangler'},
   vett: {name: 'Terminalvett', tag: 'vett', c: '#4EC9B0', hint: 'ping, PATH, uv, ssh-keygen, winget', psHint: 'ipconfig, Resolve-DnsName, $env:PATH'},
   moln: {name: 'Cloudflare & Firebase', tag: 'moln', c: '#F38020', hint: 'wrangler, firebase'},
   all: {name: 'Allt', hint: 'alla paketen blandat'},
@@ -390,7 +391,7 @@ const TASKS = [
   ['moln', 4, 'Visa workerns senaste versioner', ['npx wrangler deployments list', 'wrangler deployments list'], 'Varje deploy blir en version med id, tid och vem som gjorde den.', '='],
   ['moln', 4, 'Gå tillbaka till workerns förra version', ['npx wrangler rollback', 'wrangler rollback'], 'rollback tar fram förra versionen på sekunder. Snabbare än att laga och publicera igen.', '='],
   ['moln', 5, 'Publicera bara databasreglerna för Firestore', ['firebase deploy --only firestore:rules', 'npx firebase deploy --only firestore:rules'], 'Reglerna bestämmer vem som får läsa och skriva. Testa dem i emulatorn först.', '='],
-  // När agenten stannar: kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
+  // Din tur (förr När agenten stannar): kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
   ['stop', 1, 'Logga in på GitHub, i webbläsaren', ['gh auth login', 'gh auth login -w', 'gh auth login -h github.com -w', 'gh auth login --web'], 'Agenten stannar: inloggningen sker i webbläsaren, och där kan den inte klicka. -w = web.', '='],
   ['stop', 1, 'Logga in på Cloudflare med wrangler', ['npx wrangler login', 'wrangler login'], 'Agenten stannar: wrangler öppnar webbläsaren och vill att du godkänner.', '='],
   ['stop', 1, 'Skicka dina commits till GitHub', 'git push', 'Agenten stannar: push publicerar koden, och det vill den ha ditt ja till.', '='],
@@ -594,7 +595,7 @@ function fill(task, pick, ps = false) {
 // Hjälpkortet: vad varje del av ett svar betyder. Nyckeln är "kommando del" (eller "git branch -d"),
 // längsta matchningen vinner, och sist prövas delen ensam för det som betyder samma överallt.
 const GLOSS = {
-  // När agenten stannar
+  // Din tur
   'gh auth login -w': 'öppna inloggningen i webbläsaren, -w = web',
   'gh auth login --web': 'öppna inloggningen i webbläsaren',
   'gh auth login -h': '-h = host, vilken GitHub-server',
