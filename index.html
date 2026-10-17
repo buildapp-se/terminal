@@ -58,7 +58,7 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .row .d{color:var(--faint);font-size:12px;overflow:hidden;text-overflow:ellipsis}
 .st{margin-left:auto;font-weight:700;font-size:12px}.gdot{color:var(--accent);font-size:10px;margin-right:6px}.st-U{color:#73C991}.st-M{color:#E2C08D}.st-D{color:#C74E39}
 .side .q{display:block;width:calc(100% - 24px);margin:4px 12px 8px}
-.side textarea.q{resize:none;font:inherit}
+.side textarea.q{resize:none;font:inherit;field-sizing:content} /* växer med texten som i VS Code, så platshållaren inte klipps */
 .hit{display:block;width:100%;text-align:left;padding:3px 12px 3px 22px}.hit:hover{background:#2A2D2E}
 .hit code{display:block;font:12px/1.5 var(--mono);color:var(--yellow);white-space:pre-wrap}.hit small{display:block;color:var(--faint);font-size:12px}
 #hits pre{padding:4px 22px;font:12px/1.5 var(--mono);white-space:pre-wrap}
@@ -88,6 +88,8 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .ptabs>button.on{color:#E7E7E7;box-shadow:inset 0 -1px #E7E7E7}
 .badge{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:#616161;color:#fff;text-align:center;line-height:18px;letter-spacing:0}
 .badge[data-n="0"]{display:none}
+.mob{display:none;margin-left:auto;gap:2px}.mob button{display:grid;place-items:center;width:30px;height:26px;border-radius:4px;color:var(--dim)}.mob button:hover{background:#2A2D2E;color:var(--fg)}
+body:not(.play) .mob .pz{display:none} /* smal skärm saknar Esc och aktivitetsfältet: paus och kugghjul i panelens flikrad */
 .pright{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--dim);letter-spacing:0;font-size:12px}
 
 .term{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 20px 6px;font:14px/1.4 var(--mono);cursor:text}
@@ -127,6 +129,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:
 .blk .hlp{position:absolute;top:-.75em;right:.7em;padding:0 .35em;background:var(--bg);color:var(--c);font-size:12px}
 .parts{display:grid;grid-template-columns:max-content 1fr;gap:.2em 2ch;margin:.6em 0;text-align:left}
 .parts dt{color:var(--yellow);white-space:nowrap}.parts dd{margin:0}
+@media (max-width:600px){.parts{grid-template-columns:minmax(0,1fr)}.parts dt{white-space:normal;overflow-wrap:anywhere}.parts dd{margin-bottom:.4em}} /* smal skärm: kommandot över förklaringen */
 
 .screen{position:absolute;inset:0;overflow:auto;padding:12px 0 8px;z-index:5;background:var(--bg)}
 .screen[hidden]{display:none}
@@ -134,7 +137,7 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:
 .logo.over{color:var(--red)}
 .screen h2{font:inherit;color:var(--comment);margin-top:1.1em}
 .cols{display:grid;gap:0 6ch}
-@media (min-width:1000px){.cols{grid-template-columns:auto minmax(0,64ch)}}
+.screen{container-type:inline-size}@container (min-width:1000px){.cols{grid-template-columns:auto minmax(0,64ch)}} /* terminalens bredd, inte fönstrets: Bits panel tar 270 px */
 .screen p{max-width:76ch}
 .opts{display:flex;flex-direction:column;align-items:flex-start}
 .opt{padding:1px 6px;margin-left:-6px;text-align:left;white-space:pre}
@@ -151,7 +154,9 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:
 .scores{border-collapse:collapse}
 .scores td{padding:0 2ch 0 0;white-space:nowrap}
 .scores td:nth-child(2){text-align:right}
+@media (max-width:600px){.cols{grid-template-columns:minmax(0,1fr)}.scores td{padding-right:1ch;white-space:normal}.scores td:nth-child(-n+4){white-space:nowrap}} /* topplistan får plats på 390 px */
 .actions{display:flex;flex-wrap:wrap;gap:1ch 3ch;margin-top:1.1em}
+.screen .actions{position:sticky;bottom:-8px;padding:6px 0 8px;background:var(--bg)} /* Enter starta syns även när bladet är längre än terminalen */
 .actions button{color:var(--blue)}
 .actions button:hover,.lvl button:hover{text-decoration:underline}
 kbd{font:inherit;color:var(--yellow)}
@@ -209,7 +214,7 @@ kbd{font:inherit;color:var(--yellow)}
 .bitbtn{display:grid;place-items:center;width:30px;height:26px;border-radius:4px;color:var(--dim)}.bitbtn:hover{background:#2A2D2E}.bitbtn[aria-pressed="true"]{color:var(--fg)}
 @media (max-width:999px){.bitbtn{display:none}}
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
-@media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
+@media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.mob{display:flex}.cmdcenter{flex-basis:auto;padding:0 12px}}
 @media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
@@ -250,6 +255,7 @@ kbd{font:inherit;color:var(--yellow)}
       <section class="panel">
         <div class="ptabs">
           <button type="button" data-do="problems">PROBLEMS<span class="badge" id="problems" data-n="0">0</span></button><button type="button" data-do="output">OUTPUT</button><button type="button" data-do="debug">DEBUG CONSOLE</button><button type="button" class="on" data-do="terminal">TERMINAL</button><button type="button" data-do="ports">PORTS</button>
+          <div class="mob"><button type="button" class="pz" data-do="pause" title="Pausa eller fortsätt (Esc)" aria-label="Pausa eller fortsätt"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><button type="button" data-do="settings" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></button></div>
           <div class="pright" aria-hidden="true"><span id="shname">bash</span><span>+</span><span>&#8943;</span></div>
         </div>
         <div class="term" id="term">
@@ -1669,6 +1675,7 @@ const OVER = [
 const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
 // Topplistan ligger i webbläsaren och kan vara trasig: en dålig post får inte krascha menyn
 const scoresLoad = () => [].concat(load(HS, [])).filter(s => Number.isFinite(s?.s) && PACKS[s.p]);
+const shName = sh => ({ps: 'PowerShell', bash: 'bash'})[sh] ?? ''; // poster från före 2026-10-17 saknar skalet
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const HS = 'term-highscores', SOUND = 'term-sound', SHELL = 'term-shell';
 
@@ -1734,10 +1741,28 @@ const promptHTML = (ps, cwd = ['projekt']) => S?.vim ? '<span class="dim">~</spa
 let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, draft = '', shared = '', menuTyped = 0;
 
 function laneCount() { const w = well.clientWidth; return w < 560 ? 1 : w < 980 ? 2 : 3; }
+const toLane = (el, lane, n) => { el.style.left = `calc(${lane * 100 / n}% + 4px)`; el.style.width = `calc(${100 / n}% - 8px)`; };
+// Antalet filer följer brunnens bredd (fönstret, Bits panel) mitt i rundan. Landade block flyttas inte: två staplar
+// slagna i en kunde nå toppen och avsluta rundan utan att spelaren gjort fel. Bytet väntar därför tills inget block
+// har landat (resized och spawn försöker igen), och fallande block får en fil där de inte rör något annat block.
+function relane() {
+  const n = laneCount(), old = S.lanes;
+  if (n === old || S.blocks.some(b => b.landed)) return;
+  const fall = [...S.blocks].sort((a, c) => c.y - a.y), taken = [...Array(n)].map(() => []), plan = [];
+  for (const b of fall) { toLane(b.el, 0, n); b.h = b.el.offsetHeight; } // ny bredd kan ge nya radbrytningar
+  for (const b of fall) {
+    const near = Math.min(n - 1, Math.floor((b.lane + .5) * n / old)), free = l => taken[l].every(o => b.y + b.h + 8 < o.y || o.y + o.h + 8 < b.y);
+    const lane = [near, ...[...Array(n).keys()].filter(l => l !== near)].find(free);
+    if (lane === undefined) { for (const x of fall) { toLane(x.el, x.lane, old); x.h = x.el.offsetHeight; } return; }
+    taken[lane].push(b); plan.push([b, lane]);
+  }
+  S.lanes = n;
+  for (const [b, lane] of plan) { b.lane = lane; toLane(b.el, lane, n); }
+}
 
 function start() {
   fresh();
-  out(`# ${PACKS[S.pack].name}, nivå ${S.level}. Lös vilket block som helst. Esc pausar.`, 'cmt');
+  out(`# ${PACKS[S.pack].name}, nivå ${S.level}. Lös vilket block som helst. ${matchMedia('(max-width:700px)').matches ? 'Pausknappen uppe till höger' : 'Esc'} pausar.`, 'cmt');
   mode = 'play';
   screen.hidden = true;
   document.body.className = 'play';
@@ -1789,6 +1814,7 @@ function blocker(b) {
 const doable = b => !blocker(b);
 
 function spawn() {
+  relane();
   const floors = [...Array(S.lanes)].map((_, lane) => {
     const inLane = S.blocks.filter(b => b.lane === lane);
     const top = Math.min(Infinity, ...inLane.filter(b => !b.landed).map(b => b.y));
@@ -1823,8 +1849,7 @@ function spawn() {
   const el = document.createElement('div');
   el.className = 'blk';
   el.style.setProperty('--c', PACKS[b.pack].c);
-  el.style.left = `calc(${lane * 100 / S.lanes}% + 4px)`;
-  el.style.width = `calc(${100 / S.lanes}% - 8px)`;
+  toLane(el, lane, S.lanes);
   el.innerHTML = `<span class="tag">${PACKS[b.pack].tag}</span><button class="hlp" tabindex="-1" aria-label="hjälp för blocket">?</button><p>${esc(b.text)}</p>` +
     (b.steps.length > 1 ? `<p class="prog">steg 1 av ${b.steps.length}</p>` : '') + '<code class="ans"></code>';
   el.addEventListener('click', () => help(b));
@@ -2613,7 +2638,7 @@ function menu() {
     <p${quizKind ? ' hidden' : ''}>Lös vilket block som helst. ${isPS() ? '<span class="hot">;</span> mellan kommandon' : '<span class="hot">&&</span> eller flera argument (<span class="hot">mkdir a b</span>)'} rensar flera på en gång och ger kombo. Klicka på ett block för hjälp. 10 rätt i rad ger en <span class="hot">clear</span> som tömmer brunnen. Missade block visar svaret och kan fortfarande rensas för halva poängen.</p>
     ${matchMedia('(pointer:coarse)').matches ? '<p class="hot">Spelas bäst med tangentbord.</p>' : ''}
     <h2># topplista</h2>
-    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${s.l}</td><td>${s.c} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
+    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${s.l}</td><td>${s.c} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${shName(s.sh)}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
     </div></div>`;
   screen.hidden = false;
   stats();
@@ -2695,7 +2720,7 @@ function setPack(k) {
 function gameOver() {
   mode = 'over';
   document.body.className = '';
-  const entry = {s: S.score, l: S.level, c: cpm(), p: S.pack, d: new Date().toISOString().slice(0, 10)};
+  const entry = {s: S.score, l: S.level, c: cpm(), p: S.pack, sh: S.ps ? 'ps' : 'bash', d: new Date().toISOString().slice(0, 10)};
   const scores = scoresLoad();
   if (S.score > 0) { scores.push(entry); scores.sort((a, b) => b.s - a.s); save(HS, scores.slice(0, 10)); }
   const place = !S.score ? 0 : scores.indexOf(entry) + 1;
@@ -2703,7 +2728,7 @@ function gameOver() {
   try { snd()?.stop(); } catch {}
   sfx(place === 1 && S.score > 0 ? 'newHighscore' : 'gameOver');
   petSay(`Rundan slut: ${fmt(S.score)} p på nivå ${S.level}, ${S.cleared} block.${S.fed ? ` Jag åt ${bitar(S.fed)}. Tack!` : ''}${place === 1 && S.score > 0 ? ' Nytt rekord!' : ''}`, 'nytt');
-  shared = `./terminal · ${PACKS[S.pack].name} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/terminal/`;
+  shared = `./terminal · ${PACKS[S.pack].name} · ${shName(entry.sh)} · nivå ${S.level} · ${fmt(S.score)} p · ${cpm()} CPM\nhttps://buildapp.se/terminal/`;
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
     <p><span class="hot">${fmt(S.score)} p</span> · nivå ${S.level} · ${cpm()} CPM · ${S.cleared} block · ${S.errors} fel</p>
@@ -2728,6 +2753,7 @@ function help(b) {
     <p class="cmt"># ${esc(b.why)}</p>
     <p class="dim"># blocket ger 0 poäng nu, resten av rundan räknas som vanligt</p>
     <div class="actions"><button data-act="resume"><kbd>Esc</kbd> fortsätt</button></div>`;
+  screen.scrollTop = 0;
 }
 
 function share() {
@@ -2828,7 +2854,8 @@ function quiz() {
 }
 function quizShow() {
   const q = Q.qs[Q.i];
-  let h = `<p class="cmt"># quiz: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'} · fråga ${Q.i + 1} av ${Q.qs.length} · ${Q.right} rätt hittills</p>`;
+  const done = Q.qs.slice(0, Q.i).reduce((n, x) => n + (x.pairs ? x.pairs.length : 1), 0); // para ihop ger en poäng per par, som i slutresultatet
+  let h = `<p class="cmt"># quiz: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'} · fråga ${Q.i + 1} av ${Q.qs.length}${done ? ` · ${Q.right} av ${done} rätt hittills` : ''}</p>`;
   if (q.pairs) {
     Object.assign(q, {sel: null, ok: new Set(), miss: new Set()});
     h += `<p>Para ihop: skriv kommandots siffra och beskrivningens bokstav, som 1a, och Enter. Eller klicka.</p>
@@ -2887,8 +2914,16 @@ function quizMatch(d) {
     <dl class="parts">${q.pairs.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.why)}</dd>`).join('')}</dl>
     <div class="actions"><button data-act="quizNext"><kbd>Enter</kbd> nästa</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`);
 }
+// Resultatskärmen och bossfrågan svarar på tangenterna, inte vim eller agenten: prompten går tillbaka till skalet
+function plainPrompt() {
+  if (!S?.vim && !S?.agent) return;
+  agentStop(true);
+  S.vim = S.agent = null;
+  applyShell();
+}
 function quizEnd() {
   mode = 'quizover';
+  plainPrompt();
   const k = `${Q.pack}-${Q.ps ? 'ps' : 'bash'}`, all = load(QUIZ, {}), prev = all[k];
   const better = !prev || Q.right / Q.total > prev.r / prev.t;
   if (better && Q.right > 0) { all[k] = {r: Q.right, t: Q.total}; save(QUIZ, all); }
@@ -2896,6 +2931,7 @@ function quizEnd() {
   sfx(Q.right === Q.total ? 'newHighscore' : 'levelUp');
   screen.innerHTML = `<p class="cmt"># quiz klart: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'}</p>
     <p><span class="hot">${Q.right} av ${Q.total} rätt</span> <span class="hot">[${'#'.repeat(n)}${'-'.repeat(w - n)}]</span></p>
+    <p class="dim">${Q.qs.length} frågor, varje par i para ihop räknas för sig.</p>
     <p class="dim">${better && Q.right > 0 ? (prev ? `Nytt bästa, förra var ${prev.r} av ${prev.t}.` : 'Ditt första resultat i det här quizet.') : `Ditt bästa: ${prev ? `${prev.r} av ${prev.t}` : 'inget än'}.`}</p>
     ${Q.missed.length ? `<h2># öva på de här</h2><dl class="parts">${Q.missed.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.text)}</dd>`).join('')}</dl>` : '<p class="hot">Allt rätt!</p>'}
     <div class="actions"><button data-act="quiz"><kbd>Enter</kbd> nytt quiz</button><button data-act="start">spela i stället</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`;
@@ -3160,6 +3196,7 @@ function resized() {
   if (!S) return;
   S.H = well.clientHeight;
   for (const b of S.blocks) b.h = b.el.offsetHeight;
+  relane();
 }
 
 // ---------- påskägg: vim, sl, sudo ----------
@@ -3327,6 +3364,7 @@ function boss() {
   if (!x) return;
   S.asked.add(x.key ?? x.it.text);
   mode = 'boss';
+  plainPrompt();
   try { snd()?.stop(); } catch {}
   screen.innerHTML = `<p class="hot"># bossfråga: rätt svar ger en clear-laddning</p>${askHTML(x)}`;
   screen.hidden = false;
@@ -3505,6 +3543,8 @@ const DO = {
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
   explorer: icon => openSide('explorer', icon),
   bitbar: () => { bitClosed = !bitClosed; placePet(); },
+  pause: () => pause(mode === 'play'),
+  settings: () => settings(),
   search: icon => {
     if (['boss', 'quiz', 'quizover'].includes(mode)) return;
     if (sideView === 'search' && !icon) return $('#q')?.focus();
@@ -3557,7 +3597,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
   },
   output: () => {
     const sc = scoresLoad();
-    sheet('output', sc.length ? pre(['# utdata: din topplista', ...sc.map((x, i) => `${String(i + 1).padStart(2)}. ${fmt(x.s)} p · nivå ${x.l} · ${x.c} CPM · ${PACKS[x.p].name} · ${x.d}`)].join('\n')) : pre('Ingen utdata än. Spela en runda.'));
+    sheet('output', sc.length ? pre(['# utdata: din topplista', ...sc.map((x, i) => `${String(i + 1).padStart(2)}. ${fmt(x.s)} p · nivå ${x.l} · ${x.c} CPM · ${[PACKS[x.p].name, shName(x.sh), x.d].filter(Boolean).join(' · ')}`)].join('\n')) : pre(`Ingen utdata än. ${['play', 'pause'].includes(mode) || ['sheet', 'settings'].includes(mode) && backTo === 'pause' ? 'Rundan hamnar här när den är slut.' : 'Spela en runda.'}`));
   },
   // Debug Console på riktigt: läs värden som S.score, men den som själv skriver S.score = ... eller best = ... sätter igång fusklarmet
   debug: () => {
