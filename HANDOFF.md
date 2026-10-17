@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Gå igenom den nya testagentens rapport, sedan Som Claude Code ombyggt med Patriks !-kommandon
+nextAction: Speltestarens fynd i BACKLOG.md (fel som lär ut fel först), sedan Som Claude Code ombyggt med Patriks !-kommandon
 blockers: []
 reviewedAt: 2026-10-17
 ---
