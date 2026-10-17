@@ -29,6 +29,7 @@ svg{display:block}
 .pop{position:fixed;z-index:50;min-width:250px;padding:4px;background:#1F1F1F;border:1px solid #454545;border-radius:6px;box-shadow:0 2px 8px #000a;font-size:13px}
 .pop button{display:flex;width:100%;gap:2em;justify-content:space-between;padding:3px 10px;border-radius:4px;color:var(--fg);text-align:left}.pop button:hover,.pop button:focus{background:var(--accent);color:#fff;outline:0}.pop kbd{color:var(--dim);font:inherit}.pop button:hover kbd,.pop button:focus kbd{color:#fff}.pop hr{border:0;border-top:1px solid #454545;margin:4px 0}
 .q{width:min(100%,60ch);font:inherit;color:var(--fg);background:#313131;border:1px solid var(--accent);border-radius:4px;padding:3px 8px;margin:.6em 0}
+html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;background:#f00;opacity:0;animation:alarm .4s steps(1) 5}@keyframes alarm{50%{opacity:.28}}@media (prefers-reduced-motion:reduce){html.alarm::after{animation:none;opacity:.15}}
 .crash{position:fixed;inset:0;z-index:100;padding:24px;overflow:auto;font:15px/1.5 var(--mono);white-space:pre-wrap;background:#000;color:#ccc}.crash.bsod{background:#0078D7;color:#fff;font-family:var(--ui);font-size:20px;padding:10vh 10vw}.crash.bsod big{font-size:120px;line-height:1;display:block;margin-bottom:.3em}.crash input{font:inherit;color:inherit;background:none;border:0;outline:0;width:60ch;max-width:100%}
 .zen .titlebar,.zen .activity,.zen .side,.zen .editor,.zen .sash,.zen .status{display:none}
 .cmdcenter{flex:0 1 380px;margin:0 auto;height:24px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #3C3C3C;border-radius:6px;background:#222;color:var(--dim)}
@@ -1216,7 +1217,7 @@ function start() {
 // ---------- block ----------
 // Lättare och vanligare uppgifter oftare, svåra då och då. Uppgifter i Filer & mappar får mallorden ur
 // filsystemet och provkörs på en kopia, så att blocket bara ber om det som går att göra där du står.
-function draw(pool) {
+function draw(pool, dup = false) {
   const weighted = pool.flatMap(t => Array(6 - t[1]).fill(t));
   const near = [S.cwd, []].flatMap(at => Object.entries(look(S.fs, at, S.ps).node || {})).filter(([n]) => !n.startsWith('.')); // dolt hittar man själv
   const names = (list, k) => {
@@ -1226,7 +1227,7 @@ function draw(pool) {
   };
   for (let i = 0; i < 40; i++) {
     const t = rnd(weighted), b = fill(t, t[0] === 'fs' ? (list, k) => rnd(names(list, k)) : rnd, S.ps);
-    if (!S.blocks.some(x => x.text === b.text) && (t[0] !== 'fs' || doable(b))) return b;
+    if ((dup || !S.blocks.some(x => x.text === b.text)) && (t[0] !== 'fs' || doable(b))) return b;
   }
   return null;
 }
@@ -1266,6 +1267,8 @@ function spawn() {
   const phases = story ? [!S.seen.has(here) && TASKS.filter(lists), !S.ran.has(here) && TASKS.filter(t => runs(t) && fits(t)), !S.went.has(here) && TASKS.filter(enters), pool, TASKS.filter(fits)] : [pool, TASKS.filter(fits)]; // sist: även nyss använda, om inget annat går att göra här
   let b = null;
   for (const ph of phases) if (ph && (b = draw(ph))) break;
+  // Små paket: när alla uppgifter redan ligger i brunnen kommer en dubblett, annars fryser rundan
+  if (!b && !story) b = draw(TASKS.filter(fits), true);
   if (!b) return false;
   if (story && runs(b.task)) S.ran.add(here);
   if (story && enters(b.task)) S.went.add(here);
@@ -1374,6 +1377,159 @@ function toy([c], notes) {
   if (!Object.hasOwn(T, k) ||(!S.ps && !['whoami', 'hostname', 'date', 'history'].includes(c))) return false;
   notes.push(...[].concat(t));
   return true;
+}
+
+// ---------- utskrifter: det ett rätt kommando hade visat ----------
+// Filer & mappar har låtsasfilsystemet. De andra paketen får en kort, typisk utskrift när blocket löses,
+// så att rätt svar ser ut som på riktigt. Nyckeln är kommandots början (PowerShell: cmdlet-namnet), den längsta vinner.
+// '' betyder att kommandot är tyst på riktigt. Utskrifterna är påhittade men har verktygens riktiga form.
+const LOGLINES = ['2026-10-17 14:02:11 INFO  server started on port 3000', '2026-10-17 14:05:42 ERROR database timeout after 5000 ms', '2026-10-17 14:06:03 INFO  GET /api/items 200', '2026-10-17 14:09:17 ERROR database timeout after 5000 ms'];
+const NAMES = {octocat: 'The Octocat', torvalds: 'Linus Torvalds', sindresorhus: 'Sindre Sorhus'};
+const arg = (a, f) => a.includes(f) ? a[a.indexOf(f) + 1] : undefined;
+function grepOut(a, ps) {
+  const files = a.filter(t => POOLOF[t] === 'f' || POOLOF[t] === 'log' || /\.\w+$/.test(t) && !t.startsWith('*')), file = files[0] ?? 'app.js';
+  const word = a.find(t => POOLOF[t] === 'word') ?? (a.includes('ERROR') ? 'ERROR' : 'TODO');
+  const lines = word === 'ERROR' ? LOGLINES.filter(l => l.includes('ERROR')) : [`  // ${word}: kolla det här innan release`, `  const svar = await fetch(url) // ${word}`];
+  const counted = ps ? a.some(t => psCmd(t) === 'measure-object') : a.includes('-c') || a.includes('wc');
+  if (counted) return ps ? `\nCount    : ${lines.length}\nAverage  :\nSum      :\nMaximum  :\nMinimum  :\nProperty :\n` : String(lines.length);
+  if (ps || a.includes('-r') || a.includes('-rn')) return lines.map((l, i) => `${ps ? file : 'src/' + file}:${12 + i * 9}:${l}`).join('\n');
+  return lines.join('\n');
+}
+const OUT = {
+  // git och gh
+  'git status': 'On branch main\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n        modified:   index.html\n\nno changes added to commit (use "git add" and/or "git commit -a")',
+  'git add': '', 'git restore': '', 'git init': (a, ps) => `Initialized empty Git repository in ${ps ? 'C:/Users/du' : '/home/du'}/projekt/.git/`,
+  'git commit': a => `[main 3f9c2a1] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
+  'git log': a => a.includes('--oneline') ? '3f9c2a1 (HEAD -> main, origin/main) lägg till sök\n8b1d0e4 fixa menyn\n1a2b3c4 första versionen'
+    : 'commit 3f9c2a1e7d4b (HEAD -> main, origin/main)\nAuthor: Du <du@buildapp.se>\nDate:   Sat Oct 17 14:02:11 2026 +0200\n\n    lägg till sök',
+  'git push': a => a.includes('-u') || a.includes('--set-upstream')
+    ? `remote: Create a pull request for '${a.at(-1)}' on GitHub by visiting:\nremote:      https://github.com/du/projekt/pull/new/${a.at(-1)}\nTo github.com:du/projekt.git\n * [new branch]      ${a.at(-1)} -> ${a.at(-1)}\nbranch '${a.at(-1)}' set up to track 'origin/${a.at(-1)}'.`
+    : 'To github.com:du/projekt.git\n   8b1d0e4..3f9c2a1  main -> main',
+  'git pull': 'Updating 3f9c2a1..7c8d9e0\nFast-forward\n index.html | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)',
+  'git clone': a => `Cloning into '${a.find(t => t.includes('/')).split('/').at(-1).replace(/\.git$/, '')}'...\nremote: Enumerating objects: 42, done.\nReceiving objects: 100% (42/42), 18.20 KiB | 1.82 MiB/s, done.`,
+  'git branch': a => a.some(t => /^-[dD]$|^--delete$/.test(t)) ? a.slice(2).filter(t => !t.startsWith('-')).map(b => `Deleted branch ${b} (was 3f9c2a1).`).join('\n')
+    : a.includes('-a') ? '* main\n  dark-mode\n  remotes/origin/HEAD -> origin/main\n  remotes/origin/main' : a.length > 2 ? '' : '* main\n  dark-mode',
+  'git switch': a => a.includes('-c') ? `Switched to a new branch '${a.at(-1)}'` : `Switched to branch '${a.at(-1)}'`,
+  'git checkout': a => a.includes('-b') ? `Switched to a new branch '${a.at(-1)}'` : POOLOF[a.at(-1)] === 'f' ? 'Updated 1 path from the index' : `Switched to branch '${a.at(-1)}'`,
+  'git diff': 'diff --git a/index.html b/index.html\n--- a/index.html\n+++ b/index.html\n@@ -12,7 +12,7 @@\n-  <h1>Välkommen</h1>\n+  <h1>Välkommen hem</h1>',
+  'git merge': a => `Updating 3f9c2a1..9e8f7a6\nFast-forward\n style.css | 12 ++++++++++--\n 1 file changed, 10 insertions(+), 2 deletions(-)`,
+  'git stash': a => a[2] === 'pop' ? 'On branch main\nChanges not staged for commit:\n        modified:   index.html\nDropped refs/stash@{0} (5b6c7d8e9f0a)' : 'Saved working directory and index state WIP on main: 3f9c2a1 lägg till sök',
+  'git reset': a => a.includes('--hard') ? 'HEAD is now at 3f9c2a1 lägg till sök' : a.includes('--soft') ? '' : `Unstaged changes after reset:\nM       ${/^HEAD/.test(a.at(-1)) ? 'index.html' : a.at(-1)}`,
+  'git remote': a => a[2] === 'add' ? '' : 'origin  git@github.com:du/projekt.git (fetch)\norigin  git@github.com:du/projekt.git (push)',
+  'git blame': '3f9c2a1e (Du 2026-10-17 14:02:11 +0200 1) <!doctype html>\n8b1d0e4c (Du 2026-10-15 09:41:03 +0200 2) <html lang="sv">',
+  'gh auth login': '! First copy your one-time code: 4F2A-9C1B\nPress Enter to open https://github.com/login/device in your browser...\n✓ Authentication complete.\n✓ Logged in as du',
+  'gh auth refresh': '! First copy your one-time code: 7D3E-2B8A\nPress Enter to open https://github.com/login/device in your browser...\n✓ Authentication complete.',
+  'gh auth switch': '✓ Switched active account for github.com to du-jobb (keyring)',
+  'gh auth status': 'github.com\n  ✓ Logged in to github.com account du (keyring)\n  - Active account: true',
+  'gh pr list': 'Showing 2 of 2 open pull requests in du/projekt\n\n#8  Lägg till sök  lagg-till-sok  about 1 hour ago\n#7  Mörkt läge     dark-mode      about 2 days ago',
+  'gh pr create': 'Creating pull request for dark-mode into main in du/projekt\n\nhttps://github.com/du/projekt/pull/9',
+  'gh pr checkout': "Switched to branch 'lagg-till-sok'",
+  'gh pr view': 'Lägg till sök du/projekt#8\nOpen • du wants to merge 2 commits into main from lagg-till-sok',
+  'gh pr merge': a => `✓ ${a.includes('--squash') || a.includes('-s') ? 'Squashed and merged' : a.includes('--rebase') || a.includes('-r') ? 'Rebased and merged' : 'Merged'} pull request ${arg(a, '-R') ?? arg(a, '--repo') ?? 'du/projekt'}#8 (Lägg till sök)`,
+  'gh repo create': a => `✓ Created repository du/${a.find((t, i) => i > 2 && !t.startsWith('-')) ?? 'projekt'} on GitHub`,
+  'gh repo clone': a => `Cloning into '${a[3].split('/').at(-1)}'...`,
+  // npm, node och verktygen runt dem
+  'npm install': a => a.length > 2 ? '\nadded 1 package, and audited 87 packages in 2s\n\nfound 0 vulnerabilities'
+    : '\nadded 86 packages, and audited 87 packages in 4s\n\n14 packages are looking for funding\n  run "npm fund" for details\n\nfound 0 vulnerabilities',
+  'npm i': a => OUT['npm install'](a),
+  'npm run': a => a[2] === 'build' ? '\n> projekt@1.0.0 build\n> vite build\n\n✓ 34 modules transformed.\ndist/index.html  0.46 kB\n✓ built in 1.21s'
+    : a[2] === 'test' ? OUT['npm test'] : `\n> projekt@1.0.0 ${a[2]}\n> vite\n\n  VITE v6.3.5  ready in 312 ms\n\n  ➜  Local:   http://localhost:5173/`,
+  'npm test': '\n> projekt@1.0.0 test\n> node --test\n\n✔ räknar rätt (1.2ms)\nℹ tests 1\nℹ pass 1\nℹ fail 0',
+  'npm create vite': '◇  Project name:\n│  vite-project\n◇  Select a framework:\n│  Vanilla\n└  Done. Now run:\n\n  cd vite-project\n  npm install\n  npm run dev',
+  'npm create vite@latest': a => OUT['npm create vite'], 'create-vite': a => OUT['npm create vite'], 'create-vite@latest': a => OUT['npm create vite'],
+  'npm create cloudflare': '╭ Create an application with Cloudflare Step 1 of 3\n├ In which directory do you want to create your application?\n│ dir ./my-worker\n╰ Application created',
+  'npm create cloudflare@latest': a => OUT['npm create cloudflare'],
+  'node': a => a.includes('-v') || a.includes('--version') ? 'v24.14.0' : 'Servern lyssnar på http://localhost:3000',
+  'which': (a, ps) => '/usr/bin/' + a.at(-1), 'command': a => '/usr/bin/' + a.at(-1), 'type': a => `${a.at(-1)} is /usr/bin/${a.at(-1)}`,
+  'get-command': a => 'CommandType     Name       Version    Source\n-----------     ----       -------    ------\nApplication     node.exe   24.14.0.0  C:\\Program Files\\nodejs\\node.exe',
+  'uvx': 'Installed 1 package in 12ms\nRuff: An extremely fast Python linter and code formatter.\n\nUsage: ruff [OPTIONS] <COMMAND>',
+  'uv tool run': a => OUT.uvx, 'uv tool install': 'Resolved 1 package in 98ms\nInstalled 1 package in 9ms\n + ruff==0.14.0\nInstalled 1 executable: ruff',
+  'uv add': 'Resolved 8 packages in 412ms\nPrepared 5 packages in 230ms\nInstalled 5 packages in 18ms\n + anyio==4.11.0\n + certifi==2025.10.5\n + httpcore==1.0.9\n + httpx==0.28.1\n + idna==3.11',
+  // webben
+  'curl': a => a.includes('jq') ? (a.includes('-r') ? '' : '"') + (NAMES[a.find(t => t.includes('/users/'))?.split('/').at(-1)] ?? 'The Octocat') + (a.includes('-r') ? '' : '"')
+    : a.includes('-I') || a.includes('--head') ? 'HTTP/2 200\ncontent-type: text/html\ncontent-length: 1256'
+    : a.includes('-o') || a.includes('-O') ? '  % Total    % Received % Xferd  Average Speed   Time\n100  1256  100  1256    0     0   9810      0 --:--:--'
+    : a.includes('-d') || a.includes('--json') ? '{"id":42,"namn":"test"}' : '<!doctype html>\n<html>\n<head>\n    <title>Example Domain</title>',
+  'invoke-webrequest': a => a.includes('-OutFile') ? '' : `\nStatusCode        : 200\nStatusDescription : OK\n${a.includes('Head') ? '' : 'Content           : <!doctype html>\n                    <html>...\n'}`,
+  'invoke-restmethod': a => a.some(t => /select-object|^select$/i.test(t)) ? NAMES[a.find(t => t.includes('/users/'))?.split('/').at(-1)] ?? 'The Octocat'
+    : a.includes('POST') ? '\nid namn\n-- ----\n42 test\n' : '<!doctype html>\n<html>...',
+  // loggar och sökning
+  'grep': (a, ps) => grepOut(a, ps), 'select-string': (a, ps) => grepOut(a, ps),
+  'tail': a => a.includes('grep') ? LOGLINES.filter(l => l.includes('ERROR')).join('\n') : LOGLINES.join('\n') + (a.includes('-f') ? '\n# (tail -f väntar på nya rader tills du trycker Ctrl+C)' : ''),
+  'head': a => LOGLINES.join('\n'),
+  'get-content': (a, ps) => a.some(t => psCmd(t) === 'select-string') ? grepOut(a, ps) : a.some(t => psCmd(t) === 'group-object')
+    ? '\nCount Name\n----- ----\n   41 GET / 200\n   12 GET /api/items 200\n    2 ERROR database timeout\n' : LOGLINES.join('\n'),
+  'sort': '     41 GET / 200\n     12 GET /api/items 200\n      2 ERROR database timeout',
+  'find': a => (a.find(t => t.includes('*')) ?? '').includes('.js') ? './app.js\n./src/main.js' : `./${a.at(-1)}`,
+  'get-childitem': a => `\n    Directory: C:\\Users\\du\\projekt\n\nMode                 LastWriteTime         Length Name\n----                 -------------         ------ ----\n-a----        2026-10-17     14:02           1256 app.js\n`,
+  // processer och portar
+  'ps': 'USER   PID %CPU %MEM COMMAND\ndu    4821  1.2  0.8 node server.js\ndu    5102  0.0  0.1 bash',
+  'get-process': '\nHandles  NPM(K)    PM(K)      WS(K)     CPU(s)     Id  SI ProcessName\n-------  ------    -----      -----     ------     --  -- -----------\n    312      28    41236      52108       1,22   4821   1 node\n',
+  'lsof': 'COMMAND   PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME\nnode    4821   du   23u  IPv6 0x1a2b      0t0  TCP *:3000 (LISTEN)',
+  'get-nettcpconnection': '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n',
+  'kill': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'export': '', 'sed': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
+  'env': 'HOME=/home/du\nPATH=/usr/local/bin:/usr/bin:/bin\nPORT=3000\nUSER=du',
+  'open': '', 'xdg-open': '', 'start': '', 'invoke-item': '', 'explorer': '', 'explorer.exe': '',
+  'ssh': 'Welcome to Ubuntu 24.04.3 LTS\nLast login: Fri Oct 16 21:14:03 2026 from 192.0.2.10\ndeploy@server:~$',
+  'scp': a => `${a[1]}                                     100%   43     1.2KB/s   00:00`,
+  // Terminalvett
+  'ip': '1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536\n    inet 127.0.0.1/8 scope host lo\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500\n    inet 192.168.1.42/24 brd 192.168.1.255 scope global eth0',
+  'ifconfig': 'en0: flags=8863<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500\n        inet 192.168.1.42 netmask 0xffffff00 broadcast 192.168.1.255',
+  'ipconfig': '\nWindows IP Configuration\n\nEthernet adapter Ethernet:\n\n   IPv4 Address. . . . . . . . . . . : 192.168.1.42\n   Subnet Mask . . . . . . . . . . . : 255.255.255.0\n   Default Gateway . . . . . . . . . : 192.168.1.1',
+  'get-netipaddress': '\nIPAddress         : 192.168.1.42\nInterfaceAlias    : Ethernet\nAddressFamily     : IPv4\nPrefixLength      : 24\n',
+  'ping': (a, ps) => ps ? '\nPinging google.com [142.250.74.46] with 32 bytes of data:\nReply from 142.250.74.46: bytes=32 time=9ms TTL=117\nReply from 142.250.74.46: bytes=32 time=8ms TTL=117\n\nPing statistics for 142.250.74.46:\n    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),'
+    : 'PING google.com (142.250.74.46) 56(84) bytes of data.\n64 bytes from 142.250.74.46: icmp_seq=1 ttl=117 time=8.9 ms\n64 bytes from 142.250.74.46: icmp_seq=2 ttl=117 time=8.4 ms' + (a.includes('-c') ? '\n\n--- google.com ping statistics ---\n4 packets transmitted, 4 received, 0% packet loss' : '\n# (ping håller på tills du trycker Ctrl+C)'),
+  'test-connection': '\nSource   Destination  IPV4Address     Bytes  Time(ms)\n------   -----------  -----------     -----  --------\nBUILDAPP google.com   142.250.74.46   32     9\n',
+  'nslookup': 'Server:  192.168.1.1\nAddress: 192.168.1.1#53\n\nNon-authoritative answer:\nName:    buildapp.se\nAddress: 185.199.108.153',
+  'dig': ';; ANSWER SECTION:\nbuildapp.se.        3600    IN      A       185.199.108.153\n\n;; Query time: 14 msec',
+  'host': 'buildapp.se has address 185.199.108.153',
+  'resolve-dnsname': '\nName          Type   TTL   Section    IPAddress\n----          ----   ---   -------    ---------\nbuildapp.se   A      3600  Answer     185.199.108.153\n',
+  'nc': 'Connection to buildapp.se port 443 [tcp/https] succeeded!',
+  'test-netconnection': a => a.includes('-TraceRoute') ? OUT.tracert : '\nComputerName     : buildapp.se\nRemoteAddress    : 185.199.108.153\nRemotePort       : 443\nTcpTestSucceeded : True\n',
+  'traceroute': 'traceroute to buildapp.se (185.199.108.153), 30 hops max\n 1  192.168.1.1  1.204 ms\n 2  10.12.0.1  6.118 ms\n 3  185.199.108.153  9.877 ms',
+  'tracert': '\nTracing route to buildapp.se [185.199.108.153]\n  1    1 ms    1 ms    1 ms  192.168.1.1\n  2    6 ms    6 ms    7 ms  10.12.0.1\n  3   10 ms    9 ms   10 ms  185.199.108.153\n\nTrace complete.',
+  'echo': (a, ps) => ({'$PATH': '/usr/local/bin:/usr/bin:/bin:/home/du/.local/bin', '$HOME': '/home/du', '$?': '0', '$env:PATH': 'C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\Program Files\\nodejs\\;C:\\Users\\du\\.local\\bin', '$env:path': 'C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\Program Files\\nodejs\\;C:\\Users\\du\\.local\\bin'})[a[1]] ?? a.slice(1).join(' '),
+  'write-output': (a, ps) => OUT.echo(a, ps),
+  '$env:path': a => OUT.echo(['echo', '$env:PATH']), '$home': 'C:\\Users\\du', '$?': 'True',
+  'hostname': 'buildapp',
+  'ssh-keygen': (a, ps) => `Generating public/private ed25519 key pair.\nEnter file in which to save the key (${ps ? 'C:\\Users\\du' : '/home/du'}/.ssh/id_ed25519):\nEnter passphrase (empty for no passphrase):\nYour identification has been saved in ${ps ? 'C:\\Users\\du' : '/home/du'}/.ssh/id_ed25519\nYour public key has been saved in ${ps ? 'C:\\Users\\du' : '/home/du'}/.ssh/id_ed25519.pub`,
+  'winget install': 'Found Git [Git.Git] Version 2.51.0\nThis application is licensed to you by its owner.\nDownloading https://github.com/git-for-windows/git/releases/download/v2.51.0.windows.1/Git-2.51.0-64-bit.exe\n  ██████████████████████████████  64.2 MB / 64.2 MB\nSuccessfully verified installer hash\nStarting package install...\nSuccessfully installed',
+  'winget search': 'Name     Id                 Version  Source\n--------------------------------------------\nNode.js  OpenJS.NodeJS      24.14.0  winget\nNode.js  OpenJS.NodeJS.LTS  22.20.0  winget',
+  'winget upgrade': 'Name  Id       Version  Available  Source\n-----------------------------------------\nGit   Git.Git  2.51.0   2.51.1     winget\n1 upgrades available.\n\n(1/1) Found Git [Git.Git] Version 2.51.1\nSuccessfully installed',
+  // Cloudflare och Firebase
+  'wrangler login': 'Attempting to login via OAuth...\nOpening a link in your default browser: https://dash.cloudflare.com/oauth2/auth?...\nSuccessfully logged in.',
+  'wrangler whoami': 'Getting User settings...\n👋 You are logged in with an OAuth Token, associated with the email du@buildapp.se.\nAccount Name: Du   Account ID: 0f3a9c41d2e8b7a6',
+  'wrangler dev': '⎔ Starting local server...\n[wrangler:info] Ready on http://localhost:8787',
+  'wrangler deploy': 'Total Upload: 12.34 KiB / gzip: 3.21 KiB\nUploaded projekt (2.10 sec)\nDeployed projekt triggers (0.84 sec)\n  https://projekt.du.workers.dev\nCurrent Version ID: 5e1d2c3b-7a8f-4e2d-9c1b-3a4f5e6d7c8b',
+  'wrangler tail': 'Successfully created tail, expires at 2026-10-17T20:14:02Z\nConnected to projekt, waiting for logs...\nGET https://projekt.du.workers.dev/ - Ok @ 2026-10-17 14:14:07',
+  'wrangler secret put': a => `✔ Enter a secret value: … ********\n🌀 Creating the secret for the Worker "projekt"\n✨ Success! Uploaded secret ${a.at(-1)}`,
+  'wrangler secret list': '[\n  {\n    "name": "API_KEY",\n    "type": "secret_text"\n  }\n]',
+  'wrangler d1 list': '┌──────────────────────────────────────┬──────┐\n│ uuid                                 │ name │\n├──────────────────────────────────────┼──────┤\n│ 7b1c2d3e-4f5a-6b7c-8d9e-0f1a2b3c4d5e │ db   │\n└──────────────────────────────────────┴──────┘',
+  'wrangler d1 execute': a => a.includes('--remote') ? '🌀 Executing on remote database db (7b1c2d3e-4f5a-6b7c-8d9e-0f1a2b3c4d5e):\n🚣 Executed 3 queries in 0.84ms (6 rows read, 3 rows written)'
+    : '🌀 Executing on local database db (7b1c2d3e-4f5a-6b7c-8d9e-0f1a2b3c4d5e) from .wrangler/state/v3/d1:\n🚣 3 commands executed successfully.',
+  'wrangler deployments list': 'Created:     2026-10-17T12:02:11Z\nAuthor:      du@buildapp.se\nSource:      Upload\nVersion(s):  (100%) 5e1d2c3b-7a8f-4e2d-9c1b-3a4f5e6d7c8b',
+  'wrangler rollback': '├ Fetching latest deployment\n├ Performing rollback\n╰  SUCCESS  Worker Version 9a8b7c6d-1e2f-4a3b-8c5d-6e7f8a9b0c1d has been deployed to 100% of traffic.',
+  'firebase login': 'Visit this URL on this device to log in:\nhttps://accounts.google.com/o/oauth2/auth?...\n\nWaiting for authentication...\n\n✔  Success! Logged in as du@buildapp.se',
+  'firebase use': a => `Now using project ${a.at(-1)}`,
+  'firebase deploy': a => a.includes('firestore:rules') ? "=== Deploying to 'buildapp-demo'...\n\n✔  firestore: released rules firestore.rules to cloud.firestore\n\n✔  Deploy complete!"
+    : "=== Deploying to 'buildapp-demo'...\n\ni  deploying hosting\n✔  hosting[buildapp-demo]: release complete\n\n✔  Deploy complete!\n\nHosting URL: https://buildapp-demo.web.app",
+  'firebase emulators:start': 'i  emulators: Starting emulators: auth, firestore, hosting\n✔  All emulators ready! It is now safe to connect your app.\ni  View Emulator UI at http://127.0.0.1:4000/',
+};
+Object.setPrototypeOf(OUT, null);
+// Utskriften för ett löst kommando, som rader. Tysta kommandon får en rad om att tystnad betyder att det gick bra.
+function sample(u, ps) {
+  let a = u.filter(t => t !== 'sudo');
+  if (a[0] === 'npx') a = a.slice(1);
+  if (a[0] === 'git' && a[1] === '-C') a = ['git', ...a.slice(3)];
+  const w = [ps ? psCmd(a[0]) : a[0].toLowerCase(), ...a.slice(1).map(t => t.toLowerCase())];
+  if (a[1] === '=') w.splice(0, w.length, 'kill'); // $env:PORT = 3000 är tyst, som kill
+  for (let i = Math.min(3, w.length); i > 0; i--) {
+    const k = w.slice(0, i).join(' ');
+    if (!(k in OUT)) continue;
+    const v = typeof OUT[k] === 'function' ? OUT[k](a, ps) : OUT[k];
+    return v ? v.split('\n') : ['# (inget svar: när ett kommando är tyst gick det bra)'];
+  }
+  return [];
 }
 
 // Det riktiga git --help, och vad --help gör för andra program
@@ -1513,6 +1669,7 @@ function run(raw) {
       if (!b && toy(u, notes)) continue;
       if (!b) { errs++; explain(u, bad, msgs); continue; }
       progressed = true;
+      if (b.pack !== 'fs') notes.push(...sample(u, S.ps)); // rätt svar ser ut som på riktigt
       typed += u.join(' ').length; // CPM räknar bara det som löste något
       if (++b.step === b.steps.length) hits.push(b);
       else b.el.querySelector('.prog').textContent = `steg ${b.step + 1} av ${b.steps.length}`;
@@ -2399,9 +2556,17 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
     const sc = scoresLoad();
     sheet('output', sc.length ? pre(['# utdata: din topplista', ...sc.map((x, i) => `${String(i + 1).padStart(2)}. ${fmt(x.s)} p · nivå ${x.l} · ${x.c} CPM · ${PACKS[x.p].name} · ${x.d}`)].join('\n')) : pre('Ingen utdata än. Spela en runda.'));
   },
-  debug: () => { sfx('error'); sheet('debug', pre(`> S.score = 999999
+  debug: () => {
+    sheet('debug', pre(`> S.score = 999999
 Fusk upptäckt. Larmet har gått.
-# Skämt, men poängen räknas bara när du skriver kommandona själv.`)); },
+# Skämt. Poängen är tillbaka, den räknas bara när du skriver kommandona själv.`));
+    // Larmet går på riktigt: 999 999 i statusraden, rött blink och siren, sedan den riktiga poängen igen
+    const root = document.documentElement;
+    $('#st-score').textContent = `${fmt(999999)} p`;
+    root.classList.add('alarm');
+    [0, 450, 900].forEach(t => setTimeout(() => sfx('error'), t));
+    setTimeout(() => { root.classList.remove('alarm'); lastStats = ''; stats(); }, 2000);
+  },
   ports: () => sheet('ports', pre(`PORT   PROCESS
 3000   node server.js   används redan
 # Porten är alltid upptagen. Den som håller den stänger du med
