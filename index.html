@@ -93,7 +93,12 @@ svg{display:block}
 .log{flex:none;height:9.8em;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;white-space:pre-wrap;word-break:break-word}
 .prompt{flex:none;display:flex;flex-wrap:wrap;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
 .u{color:var(--green);font-weight:700}.p{color:var(--blue);font-weight:700}
-.agent{color:#D97757;font-weight:700}.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
+.agent{color:#D97757;font-weight:700}
+.sl{position:absolute;left:0;bottom:30%;z-index:5;margin:0;font:13px/1.15 var(--mono);color:var(--fg);white-space:pre;pointer-events:none;animation:sl 3.2s linear forwards}
+@keyframes sl{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+html.crt{filter:sepia(1) hue-rotate(65deg) saturate(4) brightness(.95)}
+html.crt::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:none;background:repeating-linear-gradient(transparent 0 2px,rgba(0,0,0,.28) 2px 3px)}
+html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.cmt{color:var(--comment)}.hot{color:var(--yellow)}.dim{color:var(--faint)}
 .line.bad{animation:shake .25s}
 @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .cmdbox{position:relative;flex:1 1 12ch;min-width:0}
@@ -155,7 +160,7 @@ kbd{font:inherit;color:var(--yellow)}
 
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
 @media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.cmdcenter{flex-basis:auto;padding:0 12px}}
-@media (prefers-reduced-motion:reduce){.blk{transition:none}.line.bad,.blk.miss{animation:none}}
+@media (prefers-reduced-motion:reduce){.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
 <body>
@@ -1131,7 +1136,7 @@ function mp3Music(a) {
 // ---------- tillstånd ----------
 const prefs = {pack: 'fs', level: 1, shell: load(SHELL, null), kind: 'game'};
 const isPS = () => prefs.shell === 'ps';
-const promptHTML = (ps, cwd = ['projekt']) => S?.agent ? '<span class="agent">&gt;</span> ' : ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
+const promptHTML = (ps, cwd = ['projekt']) => S?.vim ? '<span class="dim">~</span> ' : S?.agent ? '<span class="agent">&gt;</span> ' : ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
   `<span class="u">du@buildapp</span>:<span class="p">${esc(['~', ...cwd].join('/'))}</span>$ `;
 let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, shared = '';
 
@@ -1390,6 +1395,7 @@ function explain(u, bad, msgs) {
 function run(raw) {
   if (!raw.trim()) return echo(raw, new Set());
   hist.push(raw); hpos = hist.length;
+  if (S.vim) return vimSay(raw);
   if (S.agent && !raw.trimStart().startsWith('!')) return agentSay(raw);
   const line = S.agent ? raw.trimStart().slice(1) : raw; // ! kör skalet, som i Claude Code
   let segs;
@@ -1403,6 +1409,7 @@ function run(raw) {
   if (WIPE.test(line.trim())) { echo(raw, new Set()); return crash(); }
   const who = segs.length === 1 && segs[0].length === 1 && segs[0][0].toLowerCase();
   if (!S.agent && Object.hasOwn(AGENTS, who)) { echo(raw, new Set()); return enterAgent(who); }
+  if (egg(segs.length === 1 ? segs[0] : [], raw)) return;
   const andor = S.ps && segs.find(g => g.op === '&&' || g.op === '||')?.op;
   if (andor) {
     echo(raw, new Set());
@@ -1934,6 +1941,72 @@ function resized() {
   for (const b of S.blocks) b.h = b.el.offsetHeight;
 }
 
+// ---------- påskägg: vim, sl, sudo ----------
+// vim: allt du skriver går till vim tills du skriver :q!. Blocken faller under tiden, det är fällan.
+function egg([c0, ...rest], raw) {
+  const arg = rest.join(' ');
+  if (S.ps) {
+    if (c0?.toLowerCase() !== 'sudo') return false;
+    echo(raw, new Set());
+    out('sudo.exe : Sudo is disabled on this machine. To enable it, go to the Developer Settings page in the Settings app', 'err');
+    out('# Windows 11 har fått sudo, men den är avstängd från början. Brukar du behöva den: högerklicka på terminalen och välj Kör som administratör.', 'cmt');
+    return true;
+  }
+  const reply = (text, cls, note) => { echo(raw, new Set()); out(text, cls); if (note) out(note, 'cmt'); return true; };
+  if (c0 === 'vim' || c0 === 'vi') { echo(raw, new Set()); enterVim(rest[0]); return true; }
+  if (c0 === 'sl') { echo(raw, new Set()); train(); return true; }
+  if (c0 === 'sudo' && /^(su|-i|-s|bash)$/.test(arg)) return reply('du is not in the sudoers file.  This incident will be reported.', 'err', '# Bara administratörer får bli root. Rapporten går till root, som aldrig läser sin post.');
+  if (c0 === 'sudo' && arg === 'make me a sandwich') return reply('Okay.', '', '# xkcd 149. Utan sudo vägrar make.');
+  if (c0 === 'make' && arg === 'me a sandwich') return reply("make: *** No rule to make target 'me'.  Stop.", 'err', '# Prova med sudo framför.');
+  return false;
+}
+function enterVim(file) {
+  const n = file && look(S.fs, [...S.cwd, ...file.split('/')], false).node;
+  S.vim = {tries: 0};
+  applyShell();
+  if (!file) out('~\n~                VIM - Vi IMproved\n~\n~   type  :q<Enter>               to exit\n~   type  :help<Enter>  or  <F1>  for on-line help\n~', 'dim');
+  else if (typeof n === 'string') out(n.split('\n').map(l => '  ' + l).join('\n') + `\n~\n"${file}" ${n.split('\n').length}L, ${new TextEncoder().encode(n).length}B`, 'dim');
+  else out(`~\n~\n"${file}" [New]`, 'dim');
+}
+function vimSay(raw) {
+  echo(raw, new Set());
+  const t = raw.trim(), V = S.vim;
+  if (/^(:(q|q!|qa|qa!|wq|wq!|x|x!|wqa)|ZZ|ZQ)$/.test(t)) {
+    S.vim = null;
+    applyShell();
+    return out('# Ute ur vim. :q! stänger utan att spara, :wq sparar först. Du klarade det som många googlar efter.', 'cmt');
+  }
+  if (t.startsWith(':')) return out(`E492: Not an editor command: ${t.slice(1)}`, 'err');
+  if (++V.tries % 3 === 2) out('# Du sitter i vim, så det du skriver är inga kommandon. :q! och Enter tar dig ut. Blocken väntar inte.', 'cmt');
+}
+// sl: tåget du får när du skriver fel på ls. Terminalen är låst tills det kört förbi, precis som det riktiga.
+function train() {
+  const el = document.createElement('pre');
+  el.className = 'sl';
+  el.textContent = String.raw`      ooO   o  .
+     ____|_|________    _____________
+    |  ___   ___    |__|  ./terminal |
+   /| |___| |___|   |  |  ls != sl   |
+  /_|_______________|__|_____________|
+     (O)   (O)  (O)      (O)     (O)
+`;
+  well.append(el);
+  cmd.readOnly = true;
+  setTimeout(() => { el.remove(); cmd.readOnly = false; out('# sl = steam locomotive. Programmet finns bara för att straffa den som skriver sl i stället för ls.', 'cmt'); }, 3200);
+}
+// ---------- påskägg: Konami-koden ger en grön skärm från 1983 ----------
+const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+let konami = 0;
+document.addEventListener('keydown', e => {
+  konami = e.key === KONAMI[konami] ? konami + 1 : e.key === KONAMI[0] ? 1 : 0;
+  if (konami < KONAMI.length) return;
+  konami = 0;
+  e.preventDefault(); e.stopPropagation(); // annars svarar a på en quizfråga
+  if (cmd.value.endsWith('b')) { cmd.value = cmd.value.slice(0, -1); sync(); }
+  const on = document.documentElement.classList.toggle('crt');
+  say(on ? '# ↑↑↓↓←→←→BA. Inga 30 extraliv här, men en skärm från 1983. Samma kod stänger av den.' : '# Tillbaka i färg.');
+}, true);
+
 // ---------- påskägg: formatera om datorn ----------
 // rm -rf / med --no-preserve-root eller /*, dd, mkfs, format C:, Remove-Item C:\ ... låtsas krascha datorn.
 // Kraschen sparas (term-crash) och sitter kvar efter vanlig F5. Ut kommer man genom att installera om exakt rätt,
@@ -2164,15 +2237,27 @@ const EGGS = {
   'meningen med livet': '42\n# Hittat på 0,00042 sekunder.', 'meaning of life': '42',
   bugg: '1 träff: du.\n# Skämt. Läs felmeddelandet en gång till, svaret står ofta där.', bug: '1 träff: du.',
   sudo: '# Sökningen kräver inte sudo. Den här gången.', google: '# Det här är inte Google, men svaret är närmare.',
-  vim: '# Du hittade vim. Nu hittar du aldrig ut.\n# :q! stänger utan att spara, :wq sparar och stänger.',
+  vim: '# Du hittade vim. Nu hittar du aldrig ut.\n# :q! stänger utan att spara, :wq sparar och stänger. Skriv vim i terminalen om du vågar.',
   stackoverflow: '# Frågan är stängd som dubblett.', claude: '# Jag kan inte spela åt dig. Men skriv claude i terminalen mitt i en runda, så får du träffa mig.',
   'hur avslutar jag vim': '# :q! och Enter. Du är inte ensam: frågan har setts över tre miljoner gånger.',
 };
 // Vardagsord och engelska till orden uppgifterna använder, så att "radera mapp" hittar "Ta bort mappen"
 const SYN = {radera: 'bort', delete: 'bort', remove: 'bort', ta: '', ny: 'skapa', nytt: 'skapa', create: 'skapa', new: 'skapa', folder: 'mapp', directory: 'mapp', file: 'fil', byt: 'namn', rename: 'namn'};
+function palette() {
+  DO.search();
+  const q = $('#q');
+  if (!q) return;
+  q.value = '>';
+  hits('>');
+}
 function hits(q) {
   const k = q.trim().toLowerCase(), box = $('#hits');
   if (Object.hasOwn(EGGS, k)) return void (box.innerHTML = pre(EGGS[k]));
+  if (k.startsWith('>')) { // kommandopaletten: menyernas kommandon, som i VS Code
+    const f = k.slice(1).trim(), all = Object.entries(MENUS).flatMap(([m, list]) => list.filter(Boolean).map(([n, kb, a]) => [`${m}: ${n}`, kb, a]));
+    const found = all.filter(([n]) => n.toLowerCase().includes(f));
+    return void (box.innerHTML = found.length ? found.map(([n, kb, a]) => `<button type="button" class="hit" data-item="${esc(a)}">${esc(n)}<small>${esc(kb)}</small></button>`).join('') : '<p class="note">Inga kommandon matchar.</p>');
+  }
   if (!k) return void (box.innerHTML = '');
   const ps = S?.ps ?? isPS(), words = k.split(/\s+/).map(w => (Object.hasOwn(SYN, w) ? SYN[w] : w)).filter(Boolean);
   const found = TASKS.filter(t => !ps || t[5]).map(t => fill(t, a => a[0], ps))
@@ -2309,6 +2394,7 @@ cmd.addEventListener('keydown', e => {
     else if (!typing(e)) return;
     return e.preventDefault();
   }
+  if (k === 'P' && e.ctrlKey && e.shiftKey && mode !== 'shell') { e.preventDefault(); return palette(); }
   if (/^[pf]$/i.test(k) && e.ctrlKey && mode !== 'shell') { e.preventDefault(); return DO.search(); } // Ctrl+P, Ctrl+F, Ctrl+Shift+P/F
   if (k.toLowerCase() === 'e' && e.ctrlKey && e.shiftKey && mode !== 'shell') { e.preventDefault(); return DO.explorer(); }
   if (k === 's' && e.ctrlKey) { e.preventDefault(); return DO.save(); }
@@ -2362,6 +2448,8 @@ cmd.addEventListener('keydown', e => {
     hpos = Math.max(0, Math.min(hist.length, hpos + (k === 'ArrowUp' ? -1 : 1)));
     cmd.value = hist[hpos] ?? '';
     cmd.setSelectionRange(cmd.value.length, cmd.value.length);
+  } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd) && S?.vim) {
+    e.preventDefault(); out('Type  :qa!  and press <Enter> to abandon all changes and exit Vim', 'dim');
   } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd) && S?.agent && !cmd.value) {
     e.preventDefault();
     if (performance.now() - (S.agent.cc || 0) < 2000) leaveAgent(); else { S.agent.cc = performance.now(); out('Tryck Ctrl+C igen för att avsluta.', 'dim'); }

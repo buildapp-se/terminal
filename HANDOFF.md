@@ -13,6 +13,8 @@ reviewedAt: 2026-10-17
 
 **2026-10-17, man och Get-Help.** Hjälpkortet går att öppna med riktiga hjälpkommandon i stället för klick: `man` i bash, `Get-Help`/`help`/`man` i PowerShell, med eller utan kommandonamn. Verifierat: `terminal.test.js` och `mancheck.js` (scratchpad) i Chromium, båda skalen, rätt block, okänt namn, bash `help` orörd.
 
+**2026-10-17, småäggen.** vim-fällan, sl, sudo, Konami och kommandopaletten. `eggcheck.js` grönt i tre motorer.
+
 **2026-10-17, VS Code-ramen.** Sidofält med riktiga vyer, README som flik, filer öppnas i redigeraren, dragbar panel. Klicktest `chromecheck.js` grönt i tre motorer.
 
 **2026-10-17, quizläget.** Eget läge i menyn: tio frågor per paket ur `TASKS`, flerval åt båda hållen och para ihop, resultat och bästa per paket (`term-quiz`). Bossfrågan läser ai-quizet som förut (Patrik gillade dem); `git --help` med flera fungerar nu i PowerShell också. Spelet har egen `integritet.html`; ai:s text är version 2.8 och hänvisar hit. Verifierat i Chromium, Firefox och WebKit (`quizmode.js`) och i `terminal.test.js`.

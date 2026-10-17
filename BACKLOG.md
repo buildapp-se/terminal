@@ -12,7 +12,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Terminalpanelen går att dra upp och ner, som i VS Code (Patrik 2026-10-17).
 - [x] Allt klickbart till vänster (aktivitetsfältet, sidofältets vyer) ser ut ungefär som i VS Code (Patrik 2026-10-17).
 - [x] VS Code-ramen klickbar 2026-10-17: menyer, README-flik, utforskaren, sök med påskägg, källkontroll, PROBLEMS, OUTPUT, DEBUG CONSOLE, PORTS, fönsterknappar, zen-läge.
-- [ ] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
+- [x] Påskägg i terminalen: vim-fällan (`:q!` för att komma ut), sl, sudo-raden, Konami, en riktig kommandopalett (Ctrl+Shift+P med `>`).
 - [ ] Bygg om paketet Som Claude Code från loggdatan (2026-10-17: grep, head, git, curl, uv, ls, tail, node i topp; PowerShell mest för att döda dev-servrar). Ta också med kommandon Patrik kör själv med `!` (bash-input i transkripten), t.ex. `powershell -Command "Stop-Process -Id N"`: det han gör på riktigt ska han kunna öva på.
 - [ ] Patrik spelar och lyssnar: välj ljud bland `terminal-ljud.js`, `?ljud=gemini` och `?ljud=mp3` (bara lokalt, spåren i `_musik/`), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
@@ -27,7 +27,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 Krascher, fusk, mobil och de största PowerShell-avvikelserna är fixade (`db47b77`). Kvar, alla små:
 
 - [ ] bash: `cd -` (förra mappen), globbar (`ls *.txt`, `rm *.log`), `wc` utan flagga ger rader, ord och tecken, flera filer till `cat`/`head`/`wc`, `tail -n +28`, `./notes.txt` ska ge "Permission denied", `ls -1/-R/-d`, `cat < f`, `echo $HOME`, `cd a b` ska ge "too many arguments", `mv a b mapp` med flera källor.
-- [ ] bash: kommandon som saknas: find, grep (fritt), tree, which, less, man, nano/vim, export.
+- [ ] bash: kommandon som saknas: find, grep (fritt), tree, which, less, man, nano, export.
 - [ ] PowerShell: `New-Item -Name` och `-Value`, `-Force` som skriver över, jokertecken, `gci`-filter (`-Name`, `-File`, `-Directory`, `-Hidden`), kommalistor (`rm a, b`), extra positionella argument ("A positional parameter cannot be found..."), `cd..` och `cd\`, `$HOME`/`$PWD`, dold mapp kräver `-Force` för att tas bort, `Rename-Item` med sökväg ska ge fel, `.\deploy.sh`, `ls -l` och `ls -a` ger 5.1:s fel.
 - [ ] PowerShell: kommandon som finns men säger "not recognized": Get-Help, Write-Host, Test-Path, Get-Item, Out-File, ii, start, explorer, tree.
 - [ ] Kosmetiskt: `;;` och `ls |` ger syntaxfel, pil ner återställer halvskriven rad, `Get-ChildItem`-tabellen bryts på 390 px, `s` i menyn byter skal även för den som börjar skriva `ls`.
