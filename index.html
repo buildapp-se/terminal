@@ -285,12 +285,13 @@ kbd{font:inherit;color:var(--yellow)}
 <script src="/ai/quiz-data.js" defer></script>
 <script>
 /* pure:start  (ren logik utan DOM, testas av terminal.test.js) */
+// I svårighetsordning, så menyn går från lätt till svårt (Patrik 2026-10-17)
 const PACKS = {
   fs: {name: 'Filer & mappar', tag: 'fil', c: '#4FC1FF', hint: 'mkdir, cd, ls, rm, mv, cp', psHint: 'New-Item, Set-Location, Get-ChildItem'},
   git: {name: 'Git & GitHub', tag: 'git', c: '#DCDCAA', hint: 'git, gh'},
+  vett: {name: 'Terminalvett', tag: 'vett', c: '#4EC9B0', hint: 'ping, PATH, uv, ssh-keygen, winget', psHint: 'ipconfig, Resolve-DnsName, $env:PATH'},
   cc: {name: 'Vad Claude gör', tag: 'claude', c: '#C586C0', hint: 'det som rullar förbi när Claude jobbar: grep, curl, jq, npm', psHint: 'det som rullar förbi när Claude jobbar: Select-String, npm'},
   stop: {name: 'Vibe-kodaren', tag: 'du', c: '#D97757', hint: 'det du kör utan att veta vad det är: gh auth, git push, wrangler'},
-  vett: {name: 'Terminalvett', tag: 'vett', c: '#4EC9B0', hint: 'ping, PATH, uv, ssh-keygen, winget', psHint: 'ipconfig, Resolve-DnsName, $env:PATH'},
   moln: {name: 'Cloudflare & Firebase', tag: 'moln', c: '#F38020', hint: 'wrangler, firebase'},
   all: {name: 'Allt', hint: 'alla paketen blandat'},
 };

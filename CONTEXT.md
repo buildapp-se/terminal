@@ -117,6 +117,7 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 - PowerShell 5.1, inte 7: det är vad en Windows-dator har från början. `&&` och `cd -` finns
   bara i 7, och det får hjälpkortet säga.
 - Skalet låses per runda, ingen "lugn start".
+- Paketen står i svårighetsordning i menyn (`PACKS`): Filer & mappar, Git & GitHub, Terminalvett, Vad Claude gör, Vibe-kodaren, Cloudflare & Firebase, Allt (Patrik 2026-10-17). Sparat val är nyckeln, inte numret.
 
 ## Environments and operations
 
