@@ -1716,8 +1716,11 @@ function mp3Music(a) {
     mute(m) { mute(m); muted = m; apply(); },
   });
 }
+// Ljudvalet ligger i adressen (?ljud=), inte i localStorage: byte laddar om sidan med ny motor. Patrik lyssnar fram vilken som blir kvar.
+const LJUD = [['', 'standard'], ['gemini', 'gemini'], ...(/^(localhost|127.0.0.1)$/.test(location.hostname) ? [['mp3', 'mp3 (lokalt)']] : [])];
+const ljud = new URLSearchParams(location.search).get('ljud') ?? '';
 {
-  const s = document.createElement('script'), ljud = new URLSearchParams(location.search).get('ljud');
+  const s = document.createElement('script');
   s.src = ljud === 'gemini' ? 'terminal-ljud-gemini.js' : 'terminal-ljud.js';
   if (ljud === 'mp3') s.onload = () => mp3Music(audio);
   document.head.append(s);
@@ -2497,7 +2500,8 @@ function run(raw) {
         if (toy(u, notes) || editorCmd(u, notes)) continue;
         const guess = sample(u, S.ps);
         if (mode !== 'play' && guess.length) { notes.push(...guess); continue; } // i quizet får man prova fritt
-        if (u[0] === 'git') notes.push(...guess); // git gjorde det ändå, men det löste inget block
+        // Ett riktigt kommando som inget block bad om: visa vad det hade gjort, men det kostar ändå (låst beslut, mellanläge Patrik 2026-10-17)
+        if (guess.length) { notes.push(...guess, '# rätt kommando, men inget block bad om det. Läs blocken först.'); errs++; continue; }
         errs++; explain(u, bad, msgs); continue;
       }
       progressed = true; S.lastU = u;
@@ -2663,6 +2667,8 @@ function settings() {
     <div class="opts">${shellOpts(prefs.shell, locked)}</div>
     <h2># ljud</h2>
     <div class="opts"><button class="opt" data-snd="1" aria-pressed="${soundOn}">på</button><button class="opt" data-snd="0" aria-pressed="${!soundOn}">av</button></div>
+    <h2># ljudmotor <span class="dim">(laddar om sidan)</span></h2>
+    <div class="opts">${LJUD.map(([k, name]) => `<button class="opt" data-ljud="${k}" aria-pressed="${k === ljud}">${name}</button>`).join('')}</div>
     <div class="actions"><button data-act="back"><kbd>Esc</kbd> tillbaka</button></div>`;
   screen.hidden = false;
 }
@@ -2781,6 +2787,7 @@ screen.addEventListener('click', e => {
   if (!t) return;
   if (t.dataset.pack) setPack(t.dataset.pack);
   if (t.dataset.shell && !t.disabled) { setShell(t.dataset.shell); if (mode === 'shell') menu(); }
+  if (t.dataset.ljud !== undefined && t.dataset.ljud !== ljud) { const u = new URL(location.href); t.dataset.ljud ? u.searchParams.set('ljud', t.dataset.ljud) : u.searchParams.delete('ljud'); location.href = u; return; }
   if (t.dataset.snd) { setSound(t.dataset.snd === '1'); screen.querySelectorAll('[data-snd]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.snd === '1') === soundOn)); }
   if (t.dataset.lv) setLevel(+t.dataset.lv);
   if (t.dataset.qa) mode === 'boss' ? bossAnswer(+t.dataset.qa) : quizAnswer(+t.dataset.qa);

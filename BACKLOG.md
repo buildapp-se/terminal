@@ -2,6 +2,14 @@
 
 Flyttat från `buildapp-se/ai` 2026-10-17.
 
+## Prioritet (2026-10-17)
+
+1. **Straffar rätt svar:** likvärdiga former (agent A), git-världens omöjligheter (agent B), rödmarkeringen i  (Brain).
+2. **Låtsasskalet och småfel:** PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
+3. **Större bygg:** mer git i världen (agent B efter steg 1), Bit och dcg, Vad Claude gör ur loggarna, idéerna ur granskningen.
+4. **Underhåll:** PS-tabellerna samlade, mer logik in i  och testad. Efter agenterna, eftersom det rör samma kod.
+5. **Sist:** programspråk, delad topplista, mp3 (Lyrias villkor).
+
 ## Spelet
 
 - [x] `[P1]` Paket "När agenten stannar", 18 uppgifter 2026-10-17, med Patriks egna `gh pr merge 8 -R Elwyndaz/forskning --merge` och `git branch -D` på flera grenar. Kvar ur underlaget: `git worktree remove`, `codex mcp add`, `claude plugin install`, `wsl.exe -e bash -lc`, `MSYS_NO_PATHCONV=1`.
@@ -20,7 +28,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
   - Fördelar: lär ut varför agenten stannar (passar Vibe-kodaren och När agenten stannar), vanan att läsa raden före Enter, och det säkrare alternativet (`--force-with-lease`, `git stash`).
   - Nackdelar: `rm -r` och `git restore .` är rätt svar i Filer & mappar, så Bit kan tjata (tips en gång per kommando och runda). Tabellen kan glida isär från dcg när dcg uppdateras (därav kontrollskriptet). Risk för falsk trygghet: dcg släpper igenom `chmod 777` och `DROP TABLE`, så Bit ska säga "dcg släpper igenom det här, men…" även för dem.
 - [ ] Mer git i världen, i den ordning de lär ut mest (analysagentens lista 2026-10-17): `git add` med en riktig "Staged Changes"-lista och commit som bara tar det stagade; `git stash`/`stash pop`; `git reset` (`--hard` tar tillbaka filerna, `HEAD~1` tar bort senaste commiten); `git -C mapp` mot rätt mapp.
-- [ ] Patrik spelar och lyssnar: välj ljud bland `terminal-ljud.js`, `?ljud=gemini` och `?ljud=mp3` (bara lokalt, spåren i `_musik/`), radera det som väljs bort.
+- [ ] Patrik spelar och lyssnar: välj ljudmotor i inställningarna (# ljudmotor: standard, gemini, mp3 bara lokalt; sätter `?ljud=` och laddar om, byggt 2026-10-17), radera det som väljs bort.
 - [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
 - [x] Egen integritetstext för spelet, `integritet.html`, 2026-10-17.
 - [x] Paket Terminalvett (15 uppgifter 2026-10-17, utan hjälp-uppgifter eftersom man/Get-Help öppnar hjälpkortet, och utan zip): hjälp (Get-Help, Get-Command), installera (winget, npm, uv, npx/uvx), processer och portar, miljö (PATH, `$?`), nätverk (ipconfig, ping, Resolve-DnsName, Test-NetConnection), ssh-keygen, zip. Hjälpkortet får raden "begreppet bakom".
@@ -39,7 +47,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [ ] PS-uttryck: `"hej"`, `"hej" > f`, `$PSVersionTable`, `$env:USERPROFILE`, `(Get-Content f).Count`, `(Get-Command node).Source`.
 - [ ] Windows-program i PS: netstat, findstr, tasklist, taskkill, where.exe, py, tnc (alias för Test-NetConnection).
 - [ ] Godkänn likvärdiga former: `git push/pull origin main`; långa flaggor (`--lines=10`, `--recursive`, `--message=`, `--verbose`, `--delete`, `--ignore-case`), `-n10`, `kill -15/-TERM`, `ps -aux`, `chmod a+x`, `curl -s`, `ssh-keygen -C`, `ping -c4`; PS namngivna `Test-NetConnection -ComputerName`, `Resolve-DnsName -Name`, `Test-Connection -Count`, `Stop-Process -Id -Force`.
-- [ ] Giltiga fria kommandon räknas som tyst fel (`node --version`, `gh pr list`, `Get-Process`): visa `sample()` och "# rätt kommando, men inget block bad om det".
+- [x] Giltiga fria kommandon (`node --version`, `ping`) visar `sample()` och "# rätt kommando, men inget block bad om det", räknas fortfarande som fel (låst beslut, mellanläge Patrik 2026-10-17).
 - [ ] bash: `ls -z` ska ge "invalid option", `rmdir ..` fel text, `node spel.py` kör Python. Förklaringen till `find -name *.js` utan citattecken: nyansera.
 - [ ] "Lista filerna i mappen du står i" är 9 av 40 block i Filer & mappar: sänk vikten.
 - [ ] Mobil: ingen pausknapp (texten säger Esc), kugghjulet syns inte, "Enter starta" under kanten; quizets para ihop och hjälpkortet: dd hamnar utanför 390 px (dt över dd under 600 px). Hjälpkortets första rad klipps under panelflikarna.
