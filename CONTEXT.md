@@ -52,6 +52,14 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   tystnad betyder att det gick bra, även i Filer & mappar. Nytt kommando i `TASKS`: lägg en rad i `OUT`,
   annars visas inget (`altcheck.js` i scratchpad hittar sådana). Rör i Filer & mappar körs av `piped`:
   första kommandot mot filsystemet, sedan head/tail/sort/wc eller Select-Object/Measure-Object på raderna.
+- **Världen (`S`) ändras av allt man skriver**, block eller inte, i spelet och i quizet (2026-10-17, Patriks krav):
+  `fake` kör filsystemet för varje kommando (fel räknas bara för fria kommandon och Filer & mappar),
+  `gitWorld` gör clone (ny mapp), init, commit, grenar (`S.branch`, `S.branches`, startar med `POOLS.b`)
+  och restore. `S.commits` börjar med `SEEDLOG`. `git status`, `log` och `branch` i `OUT` läser `S`.
+  `render()` ritar om prompten, statusradens gren (`#branch`), utforskaren (fälls ut till mappen du står i),
+  källkontrollen och öppen fil efter varje kommando. Fria kommandon som inte löser block är fortfarande fel i spelet,
+  men händer ändå. Quizet (`fresh()` + `quiz()`) har en levande terminal: bokstav (eller siffra + bokstav vid
+  para ihop) och Enter svarar, tomt Enter går vidare, allt annat körs. Test `worldcheck.js` i scratchpad.
 - **Små paket:** `draw` släpper inga dubbletter av block som redan ligger i brunnen, utom som sista
   utväg i `spawn` när alla uppgifter redan ligger där (annars frös rundan i paket med 15 uppgifter).
 - **Poäng:** landade block ger halva poängen utan kombo, block med hjälp 0, CPM räknar bara tecken i delar som

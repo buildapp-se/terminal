@@ -214,7 +214,7 @@ kbd{font:inherit;color:var(--yellow)}
   <div class="pop" id="pop" role="menu" hidden></div>
   <footer class="status">
     <span class="remote"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="m2 6 3 3-3 3M14 4l-3 3 3 3"/></svg></span>
-    <button type="button" class="hide" data-do="scm"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 3-6 2-6 4"/></svg>main</button>
+    <button type="button" class="hide" data-do="scm"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="5" cy="3.5" r="1.5"/><circle cx="5" cy="12.5" r="1.5"/><circle cx="11" cy="5.5" r="1.5"/><path d="M5 5v6M11 7c0 3-6 2-6 4"/></svg><span id="branch">main</span></button>
     <button type="button" id="st-err" data-do="problems">&#8855; 0 &#9888; 0</button>
     <span class="sp" id="st-level">nivå 1</span>
     <span id="st-score">0 p</span>
@@ -1240,13 +1240,13 @@ function start() {
   document.body.className = 'play';
   cmd.value = ''; sync(); cmd.focus();
   music();
-  refreshSide();
+  render();
 }
 // Ny värld: filsystemet, mappen, git och en tom logg. Spelet och quizet börjar båda här.
 function fresh() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, commits: [], blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, branch: 'main', branches: new Set(['main', ...POOLS.b]), commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
 }
@@ -1434,20 +1434,31 @@ function grepOut(a, ps) {
 }
 const OUT = {
   // git och gh
-  'git status': 'On branch main\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)\n        modified:   index.html\n\nno changes added to commit (use "git add" and/or "git commit -a")',
+  // git status, log och branch läser världen, så att terminalen och källkontrollen säger samma sak
+  'git status': () => {
+    const ch = S ? changes(S.base ?? WORLD, S.fs) : [], rel = p => p.join('/'), mod = ch.filter(c => c[1] !== 'U'), neu = ch.filter(c => c[1] === 'U');
+    return [`On branch ${S?.branch ?? 'main'}`,
+      ...(mod.length ? ['Changes not staged for commit:', '  (use "git add <file>..." to update what will be committed)', ...mod.map(([p, st]) => `        ${st === 'D' ? 'deleted: ' : 'modified:'}   ${rel(p)}`), ''] : []),
+      ...(neu.length ? ['Untracked files:', '  (use "git add <file>..." to include in what will be committed)', ...neu.map(([p]) => `        ${rel(p)}`), ''] : []),
+      ch.length ? 'no changes added to commit (use "git add" and/or "git commit -a")' : 'nothing to commit, working tree clean'].join('\n');
+  },
   'git add': '', 'git restore': '', 'git init': (a, ps) => `Initialized empty Git repository in ${ps ? 'C:/Users/du' : '/home/du'}/projekt/.git/`,
-  'git commit': a => `[main ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
-  'git log': a => a.includes('--oneline') ? '3f9c2a1 (HEAD -> main, origin/main) lägg till sök\n8b1d0e4 fixa menyn\n1a2b3c4 första versionen'
-    : 'commit 3f9c2a1e7d4b (HEAD -> main, origin/main)\nAuthor: Du <du@buildapp.se>\nDate:   Sat Oct 17 14:02:11 2026 +0200\n\n    lägg till sök',
+  'git commit': a => `[${S?.branch ?? 'main'} ${S?.commits?.[0]?.id ?? '3f9c2a1'}] ${arg(a, '-m') ?? 'ändringar'}\n 1 file changed, 4 insertions(+), 1 deletion(-)`,
+  'git log': a => {
+    const log = S?.commits ?? SEEDLOG.map(([id, msg]) => ({id, msg})), head = i => (i ? '' : ` (HEAD -> ${S?.branch ?? 'main'})`);
+    return a.includes('--oneline') ? log.map((c, i) => `${c.id}${head(i)} ${c.msg}`).join('\n')
+      : log.slice(0, 3).map((c, i) => `commit ${c.id}${'e7d4b0c9f1a2b3c4d5e6f708192a3b4c5'.slice(0, 33)}${head(i)}\nAuthor: Du <du@buildapp.se>\nDate:   Sat Oct 17 14:0${2 - i}:11 2026 +0200\n\n    ${c.msg}`).join('\n\n');
+  },
   'git push': a => a.includes('-u') || a.includes('--set-upstream')
     ? `remote: Create a pull request for '${a.at(-1)}' on GitHub by visiting:\nremote:      https://github.com/du/projekt/pull/new/${a.at(-1)}\nTo github.com:du/projekt.git\n * [new branch]      ${a.at(-1)} -> ${a.at(-1)}\nbranch '${a.at(-1)}' set up to track 'origin/${a.at(-1)}'.`
     : 'To github.com:du/projekt.git\n   8b1d0e4..3f9c2a1  main -> main',
   'git pull': 'Updating 3f9c2a1..7c8d9e0\nFast-forward\n index.html | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)',
   'git clone': a => `Cloning into '${a.find(t => t.includes('/')).split('/').at(-1).replace(/\.git$/, '')}'...\nremote: Enumerating objects: 42, done.\nReceiving objects: 100% (42/42), 18.20 KiB | 1.82 MiB/s, done.`,
   'git branch': a => a.some(t => /^-[dD]$|^--delete$/.test(t)) ? a.slice(2).filter(t => !t.startsWith('-')).map(b => `Deleted branch ${b} (was 3f9c2a1).`).join('\n')
-    : a.includes('-a') ? '* main\n  dark-mode\n  remotes/origin/HEAD -> origin/main\n  remotes/origin/main' : a.length > 2 ? '' : '* main\n  dark-mode',
+    : a.slice(2).some(t => !t.startsWith('-')) ? '' : [...(S?.branches ?? ['main', 'dark-mode'])].map(b => (b === (S?.branch ?? 'main') ? '* ' : '  ') + b)
+      .concat(a.includes('-a') ? ['  remotes/origin/HEAD -> origin/main', '  remotes/origin/main'] : []).join('\n'),
   'git switch': a => a.includes('-c') ? `Switched to a new branch '${a.at(-1)}'` : `Switched to branch '${a.at(-1)}'`,
-  'git checkout': a => a.includes('-b') ? `Switched to a new branch '${a.at(-1)}'` : POOLOF[a.at(-1)] === 'f' ? 'Updated 1 path from the index' : `Switched to branch '${a.at(-1)}'`,
+  'git checkout': a => a.includes('-b') ? `Switched to a new branch '${a.at(-1)}'` : POOLOF[a.at(-1)] === 'f' || a.includes('--') ? 'Updated 1 path from the index' : `Switched to branch '${a.at(-1)}'`,
   'git diff': 'diff --git a/index.html b/index.html\n--- a/index.html\n+++ b/index.html\n@@ -12,7 +12,7 @@\n-  <h1>Välkommen</h1>\n+  <h1>Välkommen hem</h1>',
   'git merge': a => `Updating 3f9c2a1..9e8f7a6\nFast-forward\n style.css | 12 ++++++++++--\n 1 file changed, 10 insertions(+), 2 deletions(-)`,
   'git stash': a => a[2] === 'pop' ? 'On branch main\nChanges not staged for commit:\n        modified:   index.html\nDropped refs/stash@{0} (5b6c7d8e9f0a)' : 'Saved working directory and index state WIP on main: 3f9c2a1 lägg till sök',
@@ -1557,6 +1568,8 @@ const OUT = {
   'firebase emulators:start': 'i  emulators: Starting emulators: auth, firestore, hosting\n✔  All emulators ready! It is now safe to connect your app.\ni  View Emulator UI at http://127.0.0.1:4000/',
 };
 Object.setPrototypeOf(OUT, null);
+// Projektets historik när rundan börjar, senaste först. Grenarna i POOLS.b finns på GitHub, så git switch hittar dem.
+const SEEDLOG = [['3f9c2a1', 'lägg till sök'], ['8b1d0e4', 'fixa menyn'], ['1a2b3c4', 'första versionen']];
 const QUIET = '# (inget svar: när ett kommando är tyst gick det bra)';
 // Utskriften för ett löst kommando, som rader. Tysta kommandon får en rad om att tystnad betyder att det gick bra.
 function sample(u, ps) {
@@ -1724,8 +1737,7 @@ function run(raw) {
     prevOk = errs === errsBefore;
   }
   echo(raw, bad, '', at);
-  if (S.cwd !== at) applyShell();
-  refreshSide();
+  render();
   if (hint) msgs.push(hint);
   msgs.forEach(m => out(m, m.startsWith('#') ? 'cmt' : 'err'));
   notes.join('\n').split('\n').forEach(l => out(l, l.startsWith('#') ? 'cmt' : ''));
@@ -1814,7 +1826,7 @@ function menu() {
   screen.hidden = false;
   stats();
   music();
-  refreshSide();
+  render();
 }
 
 // ---------- skal och inställningar ----------
@@ -1996,7 +2008,7 @@ function quiz() {
   Q.total = Q.qs.reduce((n, q) => n + (q.pairs ? q.pairs.length : 1), 0);
   out('# quiz: svara med bokstaven och Enter, eller klicka. Allt annat du skriver körs här, så prova gärna kommandona först.', 'cmt');
   cmd.value = ''; sync(); cmd.focus();
-  refreshSide();
+  render();
   quizShow();
 }
 function quizShow() {
@@ -2109,9 +2121,20 @@ function commit(u) {
 function gitWorld(u) {
   if (u[0] !== 'git') return;
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
-  const here = look(S.fs, S.cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-'));
+  const here = look(S.fs, S.cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), br = S.branches;
   if (u[1] === 'commit') return commit(u);
+  // grenar: skapa, byta, ta bort (aldrig den du står på)
+  const creates = (u[1] === 'switch' && u.includes('-c')) || (u[1] === 'checkout' && u.includes('-b'));
+  if (creates && args[0]) { br.add(args[0]); S.branch = args[0]; }
+  else if ((u[1] === 'switch' || u[1] === 'checkout') && br.has(args[0])) S.branch = args[0];
+  if (u[1] === 'branch' && u.some(t => /^-[dD]$|^--delete$/.test(t))) args.forEach(b => b !== S.branch && br.delete(b));
+  else if (u[1] === 'branch' && args[0]) br.add(args[0]);
   if (typeof here !== 'object') return;
+  // restore och checkout -- f: filen som den var vid senaste commit
+  if (u[1] === 'restore' || (u[1] === 'checkout' && !creates && !br.has(args[0]))) for (const f of args) {
+    const p = resolve(S.cwd, f), was = look(S.base ?? WORLD, p, S.ps).node, dir = look(S.fs, p.slice(0, -1), S.ps).node;
+    if (typeof was === 'string' && typeof dir === 'object') own(dir, p.at(-1), was);
+  }
   if (u[1] === 'clone' && args[0]) {
     const name = args[1] ?? args[0].split('/').at(-1).replace(/\.git$/, '');
     if (!Object.hasOwn(here, name)) own(here, name, {'.git': {}, 'README.md': `# ${name}\n`});
@@ -2143,13 +2166,13 @@ const VIEWS = {
     ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
   scm: () => {
     const ch = S ? changes(S.base ?? WORLD, S.fs) : [], log = S?.commits ?? [];
-    return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Enter för commit på 'main')" aria-label="Commit-meddelande"></textarea>
+    return ['Source Control', `<textarea class="q" rows="1" placeholder="Meddelande (Enter för commit på '${esc(S?.branch ?? 'main')}')" aria-label="Commit-meddelande"></textarea>
       <button type="button" class="btn" data-side="commit">&#10003; Commit</button>
       <div class="sec open"><span class="tw">${CHEV}</span>Changes<span class="badge" data-n="${ch.length}">${ch.length}</span></div>
       ${ch.map(([pth, st]) => `<button type="button" class="row" style="padding-left:20px">${fileIcon(pth.at(-1))}<span>${esc(pth.at(-1))}</span><span class="d">${esc(pth.slice(0, -1).join('/'))}</span><span class="st st-${st}">${st}</span></button>`).join('')}
       <p class="note">${ch.length ? 'U = ny, M = ändrad, D = borttagen. Det är vad git status visar.' : 'Inga ändringar än.'}${log.length ? '' : ' Allt du gjort den här rundan är ocommittat. Som vanligt.'}</p>
       <div class="sec open"><span class="tw">${CHEV}</span>Graph<span class="badge" data-n="${log.length}">${log.length}</span></div>
-      ${log.map((c, i) => `<div class="row" style="padding-left:20px"><span class="gdot" aria-hidden="true">&#9679;</span><span>${esc(c.msg)}</span><span class="d">${c.id}${i ? '' : ' · main'}</span></div>`).join('')}
+      ${log.map((c, i) => `<div class="row" style="padding-left:20px"><span class="gdot" aria-hidden="true">&#9679;</span><span>${esc(c.msg)}</span><span class="d">${c.id}${i ? '' : ' · ' + esc(S.branch)}</span></div>`).join('')}
       ${log.length ? '<p class="note">Det här är git log --oneline. Senaste överst.</p>' : '<p class="note">Inga commits än. Committa i terminalen, eller skriv ett meddelande här ovanför och tryck Enter.</p>'}`];
   },
   run: () => ['Run and Debug', `<button type="button" class="btn" data-side="run">&#9654; ${S ? 'Rundan kör redan' : 'Starta rundan'}</button>
@@ -2179,6 +2202,14 @@ function closeSide() {
   cmd.focus();
 }
 const refreshSide = () => { if (sideView && sideView !== 'search') openSide(sideView); };
+// Allt som visar världen ritas om härifrån efter varje kommando: prompten, statusraden, sidofältet och öppen fil
+function render() {
+  applyShell(); // prompt, skal och stats
+  S?.cwd.forEach((_, i) => openDirs.add(S.cwd.slice(0, i + 1).join('/'))); // utforskaren visar var du står
+  refreshSide();
+  if (edTab === 'file') { const y = $('#code').scrollTop; showEditor('file'); $('#code').scrollTop = y; }
+  $('#branch').textContent = S?.branch ?? 'main';
+}
 side.addEventListener('click', e => {
   const r = e.target.closest('[data-path]'), a = e.target.closest('[data-side]')?.dataset.side;
   if (a === 'close') return closeSide();
