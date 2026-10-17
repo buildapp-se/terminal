@@ -232,6 +232,8 @@ const PACKS = {
   git: {name: 'Git & GitHub', tag: 'git', c: '#DCDCAA', hint: 'git, gh'},
   cc: {name: 'Som Claude Code', tag: 'claude', c: '#C586C0', hint: 'grep, curl, find, jq, npm', psHint: 'Select-String, Invoke-WebRequest, npm'},
   stop: {name: 'När agenten stannar', tag: 'du', c: '#D97757', hint: 'gh auth, git push, wrangler, winget'},
+  vett: {name: 'Terminalvett', tag: 'vett', c: '#4EC9B0', hint: 'ping, PATH, uv, ssh-keygen, winget', psHint: 'ipconfig, Resolve-DnsName, $env:PATH'},
+  moln: {name: 'Cloudflare & Firebase', tag: 'moln', c: '#F38020', hint: 'wrangler, firebase'},
   all: {name: 'Allt', hint: 'alla paketen blandat'},
 };
 
@@ -246,6 +248,7 @@ const POOLS = {
   word: ['TODO', 'fetch', 'useState', 'password', 'API_KEY'],
   user: ['octocat', 'torvalds', 'sindresorhus'],
   pkg: ['zod', 'express', 'dotenv', 'lodash'],
+  proj: ['buildapp-demo', 'recept-app', 'skolsajt'],
 };
 
 // [paket, svårighet 1–5, uppgift, svar, förklaring, PowerShell-svar, PowerShell-förklaring]
@@ -353,6 +356,38 @@ const TASKS = [
   ['cc', 5, 'Kopiera {f} till mappen /var/www på server.example.com, som användaren deploy', 'scp {f} deploy@server.example.com:/var/www', 'scp = secure copy. Samma inloggning som ssh.', '=', "scp följer med ssh i Windows."],
   ['cc', 5, 'Visa de 5 vanligaste raderna i {log}', ['sort {log} | uniq -c | sort -rn | head -n 5', 'sort {log} | uniq -c | sort -rn | head -5'], 'Klassisk kedja: sortera, räkna dubbletter, sortera på antal, ta topp 5.', "Get-Content {log} | Group-Object | Sort-Object Count -Descending | Select-Object -First 5", "Group-Object räknar likadana rader. Sortera på antal och ta topp 5."],
   ['cc', 5, 'Klona {user}/{repo}, gå in i mappen och installera paketen', [['git clone https://github.com/{user}/{repo}.git', 'git clone https://github.com/{user}/{repo}', 'gh repo clone {user}/{repo}'], ['cd {repo}'], ['npm install', 'npm i']], 'Det första du gör med nästan varje JavaScript-projekt.', [["git clone https://github.com/{user}/{repo}.git", "git clone https://github.com/{user}/{repo}", "gh repo clone {user}/{repo}"], ["Set-Location {repo}"], ["npm install", "npm i"]], "Det första du gör med nästan varje JavaScript-projekt."],
+  // Terminalvett: det man behöver runt omkring, nätverk, miljö och installationer
+  ['vett', 1, 'Visa datorns IP-adress', ['ip a', 'ip addr', 'ifconfig'], 'ip a visar varje nätverkskort och dess adress. ifconfig är det äldre verktyget, och det som finns på Mac.', ['ipconfig', 'Get-NetIPAddress'], 'ipconfig visar adresserna kort. Leta efter IPv4 Address.'],
+  ['vett', 1, 'Kolla om google.com svarar', ['ping google.com', 'ping -c 4 google.com'], 'ping mäter hur lång tid ett litet paket tar fram och tillbaka. På Mac och Linux håller den på tills du trycker Ctrl+C, -c 4 stannar efter fyra.', ['ping google.com', 'Test-Connection google.com'], 'ping i Windows stannar själv efter fyra paket. Test-Connection är PowerShells egen.'],
+  ['vett', 2, 'Slå upp vilken IP-adress buildapp.se har', ['nslookup buildapp.se', 'dig buildapp.se', 'host buildapp.se'], 'DNS är internets telefonkatalog. Fungerar en sida inte efter en flytt är DNS första misstänkt.', ['Resolve-DnsName buildapp.se', 'nslookup buildapp.se'], 'Resolve-DnsName är PowerShells egen. nslookup finns i alla system.'],
+  ['vett', 2, 'Visa mapparna där terminalen letar efter program', 'echo $PATH', 'PATH är en lista med mappar, med : emellan. "command not found" betyder att programmet inte ligger i någon av dem.', ['$env:PATH', 'echo $env:PATH'], 'Miljövariabler heter $env:NAMN i PowerShell. Mapparna skiljs åt med ;.'],
+  ['vett', 2, 'Kör verktyget ruff en gång utan att installera det', ['uvx ruff', 'uv tool run ruff'], 'uvx är Pythons npx: hämtar verktyget till en cache och kör det.', '='],
+  ['vett', 2, 'Lägg till Python-paketet httpx i projektet', 'uv add httpx', 'uv add skriver paketet i pyproject.toml och installerar det i projektets egen miljö.', '='],
+  ['vett', 3, 'Installera verktyget ruff för gott med uv', 'uv tool install ruff', 'Verktyget får en egen miljö och hamnar i PATH, så att du kan skriva ruff var du än står.', '='],
+  ['vett', 3, 'Visa om förra kommandot lyckades', 'echo $?', '0 betyder lyckat, allt annat är en felkod. Skript kollar just det.', ['$?', 'echo $?'], 'PowerShell svarar True eller False i stället för en siffra.'],
+  ['vett', 3, 'Skapa en SSH-nyckel av typen ed25519', 'ssh-keygen -t ed25519', 'Du får två filer i ~/.ssh: den privata stannar hos dig, den som slutar på .pub lägger du på GitHub eller servern.', '=', 'Windows har ssh-keygen inbyggt. Den privata nyckeln stannar hos dig, den som slutar på .pub lägger du på GitHub eller servern.'],
+  ['vett', 3, 'Sök efter programmet node i winget', 'winget search node', 'winget är Windows pakethanterare. Id:t i listan, som OpenJS.NodeJS, är det du installerar med.', '='],
+  ['vett', 1, 'Visa datorns namn', 'hostname', 'Namnet andra datorer ser i nätverket, och det som står i prompten på många servrar.', '='],
+  ['vett', 2, 'Visa sökvägen till din hemmapp', 'echo $HOME', '$HOME är samma mapp som ~. Skript använder $HOME, du skriver ~.', ['$HOME', 'echo $HOME'], '$HOME är din hemmapp, C:\\Users och ditt namn.'],
+  ['vett', 4, 'Visa vägen nätverkspaketen tar till buildapp.se', 'traceroute buildapp.se', 'Varje rad är en router på vägen. Där svaren slutar komma sitter problemet.', ['tracert buildapp.se', 'Test-NetConnection buildapp.se -TraceRoute'], 'tracert är Windows traceroute. Varje rad är en router på vägen.'],
+  ['vett', 4, 'Uppdatera alla program som winget känner till', 'winget upgrade --all', 'Utan --all listar winget bara vad som går att uppdatera. Vissa installationer ber om administratörsrätt.', '='],
+  ['vett', 4, 'Kolla om port 443 på buildapp.se tar emot anslutningar', ['nc -zv buildapp.se 443', 'nc -vz buildapp.se 443'], '443 är porten för https. -z kollar bara, -v berättar vad som hände.', 'Test-NetConnection buildapp.se -Port 443', 'TcpTestSucceeded : True betyder att porten svarar. 443 är porten för https.'],
+  // Cloudflare och Firebase: verktygen som publicerar sajterna
+  ['moln', 1, 'Visa vilket Cloudflare-konto du är inloggad på', ['npx wrangler whoami', 'wrangler whoami'], 'whoami visar konto och behörigheter. Kör det innan en deploy, så att den hamnar rätt.', '='],
+  ['moln', 1, 'Starta workern lokalt', ['npx wrangler dev', 'wrangler dev'], 'Workern körs på localhost:8787. Inget går ut på riktigt förrän du kör deploy.', '='],
+  ['moln', 1, 'Logga in på Firebase', ['firebase login', 'npx firebase login'], 'Webbläsaren öppnas och du godkänner med ditt Google-konto. Inloggningen sparas på datorn.', '='],
+  ['moln', 2, 'Publicera workern', ['npx wrangler deploy', 'wrangler deploy'], 'deploy laddar upp workern, och den är live för alla direkt.', '='],
+  ['moln', 2, 'Följ workerns loggar medan den körs', ['npx wrangler tail', 'wrangler tail'], 'Varje anrop och varje console.log syns medan det händer. Ctrl+C slutar.', '='],
+  ['moln', 2, 'Välj Firebase-projektet {proj}', ['firebase use {proj}', 'npx firebase use {proj}'], 'use bestämmer vilket projekt kommandona gäller. Att publicera till fel projekt är ett vanligt misstag.', '='],
+  ['moln', 2, 'Starta ett nytt Cloudflare-projekt', ['npm create cloudflare@latest', 'npm create cloudflare'], 'create-cloudflare ställer några frågor och sätter upp ett färdigt projekt med wrangler.', '='],
+  ['moln', 3, 'Publicera bara webbsidan till Firebase', ['firebase deploy --only hosting', 'npx firebase deploy --only hosting'], '--only hosting låter funktioner och databasregler vara. Utan det publiceras allt i firebase.json.', '='],
+  ['moln', 3, 'Starta Firebase-emulatorerna', ['firebase emulators:start', 'npx firebase emulators:start'], 'Databas, inloggning och funktioner körs på din dator, så du kan testa utan att röra riktiga data.', '='],
+  ['moln', 3, 'Lista D1-databaserna i ditt konto', ['npx wrangler d1 list', 'wrangler d1 list'], 'D1 är Cloudflares SQL-databas. Namnet i listan är det du skriver efter execute.', '='],
+  ['moln', 3, 'Kör schema.sql mot den lokala kopian av D1-databasen db', ['npx wrangler d1 execute db --local --file=schema.sql', 'wrangler d1 execute db --local --file=schema.sql', 'npx wrangler d1 execute db --file=schema.sql', 'wrangler d1 execute db --file=schema.sql'], 'Lokalt är standard: utan --remote rörs bara kopian på din dator.', '='],
+  ['moln', 4, 'Lista hemligheterna i workern', ['npx wrangler secret list', 'wrangler secret list'], 'Bara namnen syns. Värdena går inte att läsa tillbaka, bara skriva över.', '='],
+  ['moln', 4, 'Visa workerns senaste versioner', ['npx wrangler deployments list', 'wrangler deployments list'], 'Varje deploy blir en version med id, tid och vem som gjorde den.', '='],
+  ['moln', 4, 'Gå tillbaka till workerns förra version', ['npx wrangler rollback', 'wrangler rollback'], 'rollback tar fram förra versionen på sekunder. Snabbare än att laga och publicera igen.', '='],
+  ['moln', 5, 'Publicera bara databasreglerna för Firestore', ['firebase deploy --only firestore:rules', 'npx firebase deploy --only firestore:rules'], 'Reglerna bestämmer vem som får läsa och skriva. Testa dem i emulatorn först.', '='],
   // När agenten stannar: kommandon som Claude Code och Codex ber dig köra själv (ur loggarna 2026-10-17). Förklaringen säger varför.
   ['stop', 1, 'Logga in på GitHub, i webbläsaren', ['gh auth login', 'gh auth login -w', 'gh auth login -h github.com -w', 'gh auth login --web'], 'Agenten stannar: inloggningen sker i webbläsaren, och där kan den inte klicka. -w = web.', '='],
   ['stop', 1, 'Logga in på Cloudflare med wrangler', ['npx wrangler login', 'wrangler login'], 'Agenten stannar: wrangler öppnar webbläsaren och vill att du godkänner.', '='],
@@ -579,6 +614,26 @@ const GLOSS = {
   'git branch --force': 'tvinga, även om grenen inte är ihopslagen',
   'db': 'databasens namn',
   'Git.Git': 'Gits id i winget',
+  'firebase': 'Firebases terminalverktyg', 'firebase login': 'logga in med Google i webbläsaren', 'firebase use': 'välj vilket projekt kommandona gäller',
+  'firebase deploy': 'publicera', 'firebase deploy --only': 'bara det som följer, resten lämnas orört', 'firebase deploy hosting': 'webbsidan, Firebase Hosting',
+  'firebase deploy firestore:rules': 'databasens säkerhetsregler', 'firebase emulators:start': 'starta emulatorerna: databas, inloggning och funktioner på din dator',
+  'wrangler whoami': 'vilket konto du är inloggad på', 'wrangler dev': 'kör workern lokalt, på localhost:8787', 'wrangler deploy': 'ladda upp och publicera workern',
+  'wrangler tail': 'visa workerns loggar live', 'wrangler rollback': 'gå tillbaka till förra versionen', 'wrangler deployments': 'workerns versioner',
+  'wrangler deployments list': 'lista dem, nyast först', 'wrangler secret list': 'lista hemligheternas namn, aldrig värdena', 'wrangler d1 list': 'lista databaserna i kontot',
+  'wrangler d1 execute --local': 'mot den lokala kopian på din dator',
+  'npm create cloudflare': 'paketet create-cloudflare, som sätter upp ett Cloudflare-projekt', 'npm create cloudflare@latest': 'create-cloudflare, @latest = senaste versionen',
+  'ip': 'visa nätverksinställningar', 'ip a': 'a = address: visa adresserna', 'ip addr': 'addr = address: visa adresserna', 'ifconfig': 'visa nätverkskorten, det äldre verktyget',
+  'ipconfig': 'visa nätverkskorten och IP-adresserna i Windows', 'Get-NetIPAddress': 'visa datorns IP-adresser',
+  'ping': 'skicka små paket och mät svarstiden', 'ping -c': 'count: hur många paket', 'Test-Connection': 'PowerShells ping', 'google.com': 'datorn du vill nå',
+  'nslookup': 'fråga DNS vilken adress ett namn har', 'dig': 'fråga DNS, med alla detaljer', 'host': 'fråga DNS, kort svar', 'Resolve-DnsName': 'fråga DNS vilken adress ett namn har',
+  'buildapp.se': 'domänen', 'hostname': 'visa datorns namn', '$HOME': 'din hemmapp', 'traceroute': 'visa routrarna på vägen till en annan dator', 'tracert': 'Windows traceroute', 'Test-NetConnection -TraceRoute': 'visa routrarna på vägen', 'nc': 'netcat: öppna nätverksanslutningar', 'nc -z': 'z = zero I/O: kolla bara om porten svarar', 'nc -v': 'v = verbose: berätta vad som händer',
+  'Test-NetConnection': 'testa en anslutning till en annan dator', 'Test-NetConnection -Port': 'vilken port som ska testas',
+  '$PATH': 'listan med mappar där terminalen letar efter program', '$env:PATH': 'listan med mappar där terminalen letar efter program', '$?': 'om förra kommandot lyckades',
+  'uv': 'Pythons snabba pakethanterare', 'uvx': 'kör ett Python-verktyg utan att installera det, som npx', 'uv tool': 'verktyg som körs från terminalen',
+  'uv tool run': 'kör verktyget en gång', 'uv tool install': 'installera verktyget för gott', 'uv add': 'lägg till ett paket i projektet',
+  'ruff': 'ett verktyg som granskar Python-kod', 'httpx': 'ett Python-paket för webbanrop',
+  'ssh-keygen': 'skapa ett nyckelpar för ssh', 'ssh-keygen -t': 'type: vilken sorts nyckel', 'ed25519': 'den moderna nyckeltypen, kort och säker',
+  'winget search': 'sök efter program', 'winget search node': 'det du söker efter', 'winget upgrade': 'uppdatera program', 'winget upgrade --all': 'alla som har en nyare version',
   'winget': 'Windows pakethanterare',
   'winget install': 'installera ett program',
   'winget install --id': 'programmets id',
@@ -696,10 +751,11 @@ Object.assign(GLOSS, {
   '$env:PORT 3000': 'värdet 3000', '$env:PORT=3000': 'miljövariabeln PORT får värdet 3000',
 });
 Object.assign(GLOSS, {python: 'programmet Python, som kör .py-filer', python3: 'Python 3. På Mac och Linux heter programmet ofta så'});
+for (const k of Object.keys(GLOSS)) if (/^(wrangler|firebase)\b/.test(k)) GLOSS['npx ' + k] ??= GLOSS[k];
 const POOLNAME = {d: 'namnet på mappen', f: 'namnet på filen', log: 'loggfilen', py: 'Python-filen som körs', js: 'JavaScript-filen som körs', b: 'namnet på grenen', repo: 'namnet på repot', msg: 'meddelandet, i citattecken eftersom det har mellanslag',
-  word: 'ordet du söker efter', user: 'användarnamnet på GitHub', pkg: 'paketet som installeras'};
+  word: 'ordet du söker efter', user: 'användarnamnet på GitHub', pkg: 'paketet som installeras', proj: 'id:t på Firebase-projektet'};
 const POOLOF = Object.fromEntries(Object.entries(POOLS).flatMap(([k, vs]) => vs.map(v => [v, k])));
-const NUMS = {gh: 'numret på pull requesten', head: 'antal rader', tail: 'antal rader', kill: 'processens id, PID', 'Get-Content': 'antal rader', 'Select-Object': 'antal', 'Stop-Process': 'processens id, PID', 'Get-NetTCPConnection': 'portnumret'};
+const NUMS = {ping: 'antal paket', nc: 'portnumret', 'Test-NetConnection': 'portnumret', gh: 'numret på pull requesten', head: 'antal rader', tail: 'antal rader', kill: 'processens id, PID', 'Get-Content': 'antal rader', 'Select-Object': 'antal', 'Stop-Process': 'processens id, PID', 'Get-NetTCPConnection': 'portnumret'};
 
 // Delar upp ett svar i [del, förklaring]. Förklaringen är null om ordlistan saknar delen.
 function parts(raw, ps = false) {
