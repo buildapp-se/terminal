@@ -2938,7 +2938,12 @@ function run(raw) {
       // Världen ändras av allt du skriver, block eller inte: filsystemet, mappen du står i och git (clone, init, commit).
       // Filsystemets fel räknas bara där filsystemet rättar: fria kommandon och Filer & mappar.
       let r = null;
-      try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps, S.env); } catch (e) { if (!b || b.pack === 'fs') { errs++; msgs.push(e.message); continue; } }
+      try { r = fake(S.fs, S.cwd, S.ps ? canon(u, true, true) : key, S.ps, S.env); } catch (e) { if (!b || b.pack === 'fs') {
+        errs++; msgs.push(e.message);
+        // ls -a och ls -la är bash-vana: i PowerShell är ls bara ett alias, och -a betyder -Attributes
+        if (S.ps && psCmd(u[0]) === 'get-childitem' && u.some(t => /^-[alh]+$/i.test(t) && t.toLowerCase() !== '-h')) hint = `# ${u[0]} är ett alias för Get-ChildItem i PowerShell, så bash-flaggorna fungerar inte (-a blir -Attributes). Dolda filer: ${u[0]} -Force. Storlek och datum visas ändå.`;
+        continue;
+      } }
       if (r) { S.cwd = r.cwd; if (r.seen !== undefined) S.seen.add(r.seen); } // seen kan vara '', hemmappen
       if (r?.out.some(l => l.includes('skatten!')) && key.some(t => /skatt\.txt$/i.test(t))) treasure(); // cat, Get-Content, less
       // git före utskriften, som visar commitens hash. Gits fel (okänd gren, grenen finns redan) är fel, även för ett block.
