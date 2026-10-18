@@ -2101,7 +2101,7 @@ const prefs = {pack: 'fs', level: 1, shell: load(SHELL, null), kind: 'game'};
 const isPS = () => prefs.shell === 'ps';
 const promptHTML = (ps, cwd = ['projekt']) => S?.vim ? '<span class="dim">~</span> ' : S?.agent ? '<span class="agent">&gt;</span> ' : ps ? `<span class="p">PS ${esc(where(cwd, true)).replace(/\\/g, '&#92;')}&gt;</span> ` :
   `<span class="u">du@buildapp</span>:<span class="p">${esc(['~', ...cwd].join('/'))}</span>$ `;
-let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, draft = '', shared = '', menuTyped = 0;
+let mode = 'menu', S = null, last = performance.now(), hist = [], hpos = 0, draft = '', shared = '';
 
 function laneCount() { const w = well.clientWidth; return w < 560 ? 1 : w < 980 ? 2 : 3; }
 const toLane = (el, lane, n) => { el.style.left = `calc(${lane * 100 / n}% + 4px)`; el.style.width = `calc(${100 / n}% - 8px)`; };
@@ -3045,22 +3045,28 @@ function menu() {
   mode = 'menu';
   document.body.className = 'menu-on';
   well.querySelectorAll('.blk').forEach(e => e.remove());
-  S = null;
+  // Fri lek: menyn har en egen värld utan block, så att kommandoraden går att prova innan rundan. start() och quiz() börjar om med fresh().
+  if (!S?.sandbox || S.ps !== isPS()) {
+    fresh();
+    S.sandbox = true;
+    delete S.pack; delete S.level; // statusraden visar menyns val, prefs, inte lekvärldens
+    out(`# fri lek: prova vad du vill här, inget räknas. Tom rad och Enter, eller start, startar ${prefs.kind === 'quiz' ? 'quizet' : 'spelet'}.`, 'cmt');
+  }
   petFeel('sleep', 1);
   const scores = scoresLoad(), quizKind = prefs.kind === 'quiz';
   screen.innerHTML = `<pre class="logo" aria-label="./terminal">${BANNER}</pre>
-    <p>Uppgifter faller som block. Skriv rätt kommando innan de når botten.</p>
+    <p>Uppgifter faller som block. Skriv rätt kommando innan de når botten. <span class="dim">Kommandoraden längst ner fungerar redan nu: prova <span class="hot">${isPS() ? 'Get-ChildItem' : 'ls'}</span>, <span class="hot">cd server</span> eller <span class="hot">git status</span>.</span></p>
     <div class="cols"><div>
-    <h2># skal <span class="dim">(s byter)</span></h2>
+    <h2># skal <span class="dim">(klicka, eller Ctrl+,)</span></h2>
     <div class="opts">${shellOpts()}</div>
-    <h2># läge <span class="dim">(m byter)</span></h2>
+    <h2># läge <span class="dim">(klicka)</span></h2>
     <div class="opts">${KINDS.map(([k, name, hint]) => `<button class="opt" data-kind="${k}" aria-pressed="${k === prefs.kind}">${name.padEnd(12)}<span class="dim">${hint}</span></button>`).join('')}</div>
     <h2># paket <span class="dim">(↑ ↓ eller 1 till ${Object.keys(PACKS).length})</span></h2>
     <div class="opts">${Object.entries(PACKS).map(([k, p], i) =>
       `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${quizKind ? (b => (b ? `bäst ${b.r} av ${b.t}` : 'inte gjort än'))(quizBest(k, isPS())) : isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
     ${quizKind ? '' : `<h2># startnivå <span class="dim">(← →)</span></h2>
     <div class="lvl"><button data-lv="-1" aria-label="Lägre nivå">&lsaquo;</button><b id="lv">${prefs.level}</b><span class="hot" id="bar">[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]</span><button data-lv="1" aria-label="Högre nivå">&rsaquo;</button></div>`}
-    <div class="actions"><button data-act="go"><kbd>Enter</kbd> ${quizKind ? 'starta quiz' : 'starta'}</button></div>
+    <div class="actions"><button data-act="go"><kbd>Enter</kbd> ${quizKind ? 'starta quiz' : 'starta'}</button><span class="dim">på tom rad, eller skriv start</span></div>
     </div><div>
     <h2># så funkar det</h2>
     ${quizKind ? '<p>Tio frågor om paketets kommandon: välj kommandot till en uppgift, välj vad ett kommando gör, och para ihop fyra åt gången. Ingen tid, ingen brunn. Efteråt ser du hur många rätt du fick och vilka du ska öva på.</p>' : ''}
@@ -4243,22 +4249,17 @@ cmd.addEventListener('keydown', e => {
     else if (!typing(e)) return;
     return e.preventDefault();
   }
-  if (mode === 'menu') {
-    if (k === 'Enter') go();
-    else if ((k === 's' || k === 'm') && performance.now() - menuTyped < 1500) menuTyped = performance.now(); // ls eller mkdir skrivet i menyn ska inte byta skal eller läge
-    else if (k === 's') setShell(otherShell());
-    else if (k === 'm') setKind(prefs.kind === 'quiz' ? 'game' : 'quiz');
-    else if (k >= '1' && k <= String(Object.keys(PACKS).length)) setPack(Object.keys(PACKS)[k - 1]);
-    else if (k === 'ArrowUp' || k === 'ArrowDown') {
-      const keys = Object.keys(PACKS), i = keys.indexOf(prefs.pack) + (k === 'ArrowUp' ? -1 : 1);
-      setPack(keys[(i + keys.length) % keys.length]);
-    }
+  // Menyn är också ett skal (fri lek). Tom rad: Enter startar och siffror och pilar styr menyn. Med text på raden, eller i vim och agenterna, gäller skalets tangenter längre ner.
+  if (mode === 'menu' && !cmd.value.trim() && !S.agent && !S.vim) {
+    const keys = Object.keys(PACKS);
+    if (k === 'Enter') { e.preventDefault(); return go(); }
+    if (k >= '1' && k <= String(keys.length)) setPack(keys[k - 1]);
+    else if ((k === 'ArrowUp' || k === 'ArrowDown') && !S.tried) setPack(keys[(keys.indexOf(prefs.pack) + (k === 'ArrowUp' ? -1 : 1) + keys.length) % keys.length]); // efter första kommandot hämtar pilarna historiken, som i ett skal
     else if (k === 'ArrowLeft' || k === 'ArrowRight') setLevel(k === 'ArrowLeft' ? -1 : 1);
-    else if (typing(e)) { menuTyped = performance.now(); return e.preventDefault(); }
-    else return;
-    e.preventDefault();
-    return music();
+    if (/^([1-9]|Arrow(Left|Right))$/.test(k) || (/^Arrow(Up|Down)$/.test(k) && !S.tried)) { e.preventDefault(); return music(); }
   }
+  if (mode === 'menu' && k === 'Enter' && /^start$/i.test(cmd.value.trim()) && !S.agent && !S.vim) { e.preventDefault(); cmd.value = ''; sync(); return go(); }
+  if (mode === 'menu' && k === 'Enter') S.tried = true;
   if (mode === 'quiz' || mode === 'quizover') {
     if (k === 'Escape') { e.preventDefault(); return menu(); }
     if (k !== 'Enter') return; // skriv som vanligt
