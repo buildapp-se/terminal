@@ -32,6 +32,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Paket Cloudflare & Firebase (15 uppgifter 2026-10-17: wrangler login/dev/deploy/tail/secret put, d1 execute --remote, rollback) och Firebase (login, use, deploy --only hosting, emulators:start).
 - [ ] Programspråk som egna paket (Python-REPL, JS-konsol, SQL).
 - [ ] Delad topplista mellan vänner. Kräver backend och ny integritetstext; bara om ni faktiskt tävlar.
+- [ ] `[P2]` Typkontroll utan byggsteg (2026-10-18): projektet saknar TypeScript, i strid med regeln om `strict: true` i varje JS-projekt. Flytta skriptet ur `index.html` till `terminal.js`, lägg `jsconfig.json` med `checkJs` och `strict: true`, typa med JSDoc och kör `npx tsc --noEmit` som kontroll. Räkna med hundratals anmärkningar i första körningen.
 
 ## Testagenternas fynd (2026-10-17)
 
