@@ -91,6 +91,7 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
   Räknaren syns binärt i hela nibbles med inledande nollor (`binStr`, Patrik: 0000, 0001, 0010), klick förklarar platsvärdena (`binParts`).
   Humör i `petSVG`: sover i menyn, rädd när högen når övre tredjedelen och vid allt i `DANGER` (ren tabell, agent E 2026-10-17: dcg 0.15.3:s regler med regelnamn, varför och säkrare väg, plus sådant dcg släpper igenom som chmod 777 och DROP TABLE; högst en varning per regel och runda; block med farligt svar får en röd ⚠; `node tools/dcg-check.mjs` jämför tabellen med riktiga `dcg test` och kräver dcg lokalt),
   ledsen vid fel, knuff mot hjälpkortet efter tre fel i rad. Blicken följer lägsta fallande block. Pratar sparsamt (minst 30 s mellan tips).
+  Terminalen svarar som skalet, Bit förklarar varför (Patrik 2026-10-18): bash-vanor i PowerShell (`ls -a`, `--help` på en cmdlet) ger bara PowerShells fel i terminalen och förklaringen som tips från Bit.
   Från 1 000 px bor Bit i ett sidofält till höger (`#chat`, som Copilot Chat och Claude Code i VS Code, Patrik 2026-10-17): stor figur, binärregistret som lampor med
   platsvärdena under, mätare till nästa stadium och en logg med etiketterna Tips, Varning, Kul att veta (`FACTS`, högst varannan minut) och Nytt
   (nivå, kombo från tre, clear-laddning, rundans slut, tillväxt). Varningar skrivs också i terminalen. Knappen i titelraden stänger panelen.
