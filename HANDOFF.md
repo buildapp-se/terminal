@@ -4,10 +4,12 @@ status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
 nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-10-17
+reviewedAt: 2026-10-18
 ---
 
 # Handoff: ./terminal
+
+**2026-10-18, licens.** GPL-3.0 (`LICENSE`, texten från GitHubs licens-API) och en `README.md` för den publika repo-sidan, på Patriks begäran.
 
 **2026-10-17 kväll, efter Patriks speltest.** dcg 0.15.3: `DANGER` följer nya regelnamn (PowerShell-raderna `core.filesystem:powershell-remove-item-recursive`, `branch -d` `core.git:branch-delete`), `dcg-check` överens om 1 006 rader. Kugghjulet ritat med kuggar (såg ut som en sol), ljudvalen på en rad. `land()` räknar om blockets höjd, annars hamnade svaret under kanten. Hjälpkortet och inställningarna säger hur de öppnas. Kedjor: `STEPTEXT` + `chainParts` ger ett block per steg efter varandra (nästa släpps när steget före är löst, så a && b && c på en rad löser alla), samlat block med "steg x av y" och långsammare fall från nivå svårighet + 2. OG-bild `og.png` med taggar, genereras med `tools/og.cjs`. `node app.js` som Patrik fick fel på gick inte att återskapa: blocket med app.js ger rätt. Verifierat: `terminal.test.js`, hela Playwright-sviten, `landed.js`, `split-game.js`, `combo-game.js` i scratchpad.
 
