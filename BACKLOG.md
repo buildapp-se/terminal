@@ -8,7 +8,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 2. **Klart:**  PS-uttryck, Windows-program, bash-detaljer, text som börjar med streck (agent C); mobil, quizräknaren, OUTPUT-fliken, skal i topplistan, vim/claude i quizet, filer vid storleksbyte (agent D); vikten för "Lista filerna" (Brain).
 3. **Klart:** större bygg (agent B, E, F, G).
 4. **Underhåll:** PS-tabellerna samlade, mer logik in i `pure` och testad. Efter agenterna, eftersom det rör samma kod.
-5. **Sist:** programspråk, delad topplista, mp3 (Lyrias villkor).
+5. **Sist:** programspråk, delad topplista, mp3.
 
 ## Spelet
 
@@ -26,7 +26,7 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Bit reagerar på allt som dcg blockerar (agent E 2026-10-17): `DANGER` + `danger()` i pure, 17 dcg-regler och 6 som dcg släpper igenom ("dcg släpper igenom det här, men…"), högst en varning per regel och runda, röd ⚠ på block med farligt svar, `tools/dcg-check.mjs` jämför med riktiga `dcg test`. dcg 0.12.0 stoppar även `git restore fil` och `git branch -d`, så de varnas också. Kvar: `git stash drop` (dcg varnar bara), cmd:s `rmdir /s` och `del /s`.
 - [x] Mer git i världen (agent B): staging (`S.index`, Staged Changes), stash, reset. Förenklat: `stash pop` skriver över i stället för att slå ihop.
 - [ ] Patrik spelar och lyssnar: välj ljudmotor i inställningarna (# ljudmotor: standard, gemini, mp3 bara lokalt; sätter `?ljud=` och laddar om, byggt 2026-10-17), radera det som väljs bort.
-- [ ] Om mp3 vinner: kolla Lyrias användningsvillkor, ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
+- [ ] Om mp3 vinner (villkoren kollade 2026-10-18: OK med AI angivet som källa, se vaultens Job - Musik med Gemini): ta in `_musik/` i git och kolla att looparna inte hackar i skarven.
 - [x] Egen integritetstext för spelet, `integritet.html`, 2026-10-17.
 - [x] Paket Terminalvett (15 uppgifter 2026-10-17, utan hjälp-uppgifter eftersom man/Get-Help öppnar hjälpkortet, och utan zip): hjälp (Get-Help, Get-Command), installera (winget, npm, uv, npx/uvx), processer och portar, miljö (PATH, `$?`), nätverk (ipconfig, ping, Resolve-DnsName, Test-NetConnection), ssh-keygen, zip. Hjälpkortet får raden "begreppet bakom".
 - [x] Paket Cloudflare & Firebase (15 uppgifter 2026-10-17: wrangler login/dev/deploy/tail/secret put, d1 execute --remote, rollback) och Firebase (login, use, deploy --only hosting, emulators:start).
