@@ -132,3 +132,6 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 `git push` till `main`, GitHub Pages bygger automatiskt. Ingen backend.
 Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright` mot
 `uv run --no-project python -m http.server` lokalt.
+
+## Audits
+- Database: 2026-10-25, none, localStorage
