@@ -2377,6 +2377,7 @@ function editorCmd(u, notes) {
 // Pratar sparsamt: när den växer, ett tips om en flagga du inte använde, när du kört fast, och när du skriver något farligt.
 const PET = 'term-pet';
 const pet = load(PET, {bits: 0, last: '', hello: false});
+if (!Number.isSafeInteger(pet.bits) || pet.bits < 0) pet.bits = 0; // lagrat värde hamnar i innerHTML
 const petEl = $('#pet'), bubble = $('#bubble'), chat = $('#chat'), chatLog = $('#chatlog'), reg = $('#reg');
 // Breda skärmar: Bit bor i sidofältet till höger, som Copilot Chat och Claude Code i VS Code (Patrik 2026-10-17). Smala: i terminalens hörn med bubblor.
 const wideBit = matchMedia('(min-width: 1000px)');
@@ -3069,7 +3070,7 @@ function menu() {
     <div class="opts">${KINDS.map(([k, name, hint]) => `<button class="opt" data-kind="${k}" aria-pressed="${k === prefs.kind}">${name.padEnd(12)}<span class="dim">${hint}</span></button>`).join('')}</div>
     <h2># paket <span class="dim">(↑ ↓ eller 1 till ${Object.keys(PACKS).length})</span></h2>
     <div class="opts">${Object.entries(PACKS).map(([k, p], i) =>
-      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${quizKind ? (b => (b ? `bäst ${b.r} av ${b.t}` : 'inte gjort än'))(quizBest(k, isPS())) : isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
+      `<button class="opt" data-pack="${k}" aria-pressed="${k === prefs.pack}">[${i + 1}] ${p.name.padEnd(20)}<span class="dim">${quizKind ? (b => (b ? `bäst ${esc(b.r)} av ${esc(b.t)}` : 'inte gjort än'))(quizBest(k, isPS())) : isPS() && p.psHint || p.hint}</span></button>`).join('')}</div>
     ${quizKind ? '' : `<h2># startnivå <span class="dim">(← →)</span></h2>
     <div class="lvl"><button data-lv="-1" aria-label="Lägre nivå">&lsaquo;</button><b id="lv">${prefs.level}</b><span class="hot" id="bar">[${'#'.repeat(prefs.level)}${'-'.repeat(10 - prefs.level)}]</span><button data-lv="1" aria-label="Högre nivå">&rsaquo;</button></div>`}
     <div class="actions"><button data-act="go"><kbd>Enter</kbd> ${quizKind ? 'starta quiz' : 'starta'}</button><span class="dim">på tom rad, eller skriv start</span></div>
@@ -3079,7 +3080,7 @@ function menu() {
     <p${quizKind ? ' hidden' : ''}>Lös vilket block som helst. ${isPS() ? '<span class="hot">;</span> mellan kommandon' : '<span class="hot">&&</span> eller flera argument (<span class="hot">mkdir a b</span>)'} rensar flera på en gång och ger kombo. Klicka på ett block för hjälp. 10 rätt i rad ger en <span class="hot">clear</span> som tömmer brunnen. Missade block visar svaret och kan fortfarande rensas för halva poängen.</p>
     ${matchMedia('(pointer:coarse)').matches ? '<p class="hot">Spelas bäst med tangentbord.</p>' : ''}
     <h2># topplista</h2>
-    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${s.l}</td><td>${s.c} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${shName(s.sh)}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
+    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${esc(s.l)}</td><td>${esc(s.c)} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${shName(s.sh)}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
     </div></div>`;
   screen.hidden = false;
   stats();
@@ -3375,7 +3376,7 @@ function quizEnd() {
   screen.innerHTML = `<p class="cmt"># quiz klart: ${esc(PACKS[Q.pack].name)} · ${Q.ps ? 'PowerShell' : 'bash'}</p>
     <p><span class="hot">${Q.right} av ${Q.total} rätt</span> <span class="hot">[${'#'.repeat(n)}${'-'.repeat(w - n)}]</span></p>
     <p class="dim">${Q.qs.length} frågor, varje par i para ihop räknas för sig.</p>
-    <p class="dim">${better && Q.right > 0 ? (prev ? `Nytt bästa, förra var ${prev.r} av ${prev.t}.` : 'Ditt första resultat i det här quizet.') : `Ditt bästa: ${prev ? `${prev.r} av ${prev.t}` : 'inget än'}.`}</p>
+    <p class="dim">${better && Q.right > 0 ? (prev ? `Nytt bästa, förra var ${esc(prev.r)} av ${esc(prev.t)}.` : 'Ditt första resultat i det här quizet.') : `Ditt bästa: ${prev ? `${esc(prev.r)} av ${esc(prev.t)}` : 'inget än'}.`}</p>
     ${Q.missed.length ? `<h2># öva på de här</h2><dl class="parts">${Q.missed.map(x => `<dt>${esc(x.cmd)}</dt><dd>${esc(x.text)}</dd>`).join('')}</dl>` : '<p class="hot">Allt rätt!</p>'}
     <div class="actions"><button data-act="quiz"><kbd>Enter</kbd> nytt quiz</button><button data-act="start">spela i stället</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>`;
   screen.scrollTop = 0;

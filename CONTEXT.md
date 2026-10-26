@@ -135,3 +135,4 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 
 ## Audits
 - Database: 2026-10-25, none, localStorage
+- OWASP Top 10: 2026-10-26, pass, code review (Gemini 3.8 Flash, reviewed by Claude); fixed: stored highscores, quiz results and pet bits were put into innerHTML unescaped (needs a script on the shared buildapp.se origin to plant them), now escaped or coerced, checked in Chromium with poisoned localStorage; left: no CSP or frame headers of its own (zone Transform Rule covers headers), localStorage shared by every app on buildapp.se
