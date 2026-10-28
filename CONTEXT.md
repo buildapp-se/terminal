@@ -141,8 +141,8 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - Headers (automated): 2026-10-27, pass, 6 of 6 on buildapp.se/terminal, Observatory B+ on buildapp.se
 - Secrets: 2026-10-28, pass, gitleaks 0 findings in 101 commits
 - Actions: 2026-10-28, n/a, no GitHub Actions workflows
-- UX (automated): 2026-10-28, warn, 5 of 6 script checks pass on buildapp.se/terminal (no --interact): warn Fitts targets; screenshot review not done
-- WCAG 2.2 AA (automated): 2026-10-28, fail, axe 4.14.0 2 violations on 6 elements on buildapp.se/terminal (mobile, one page): color-contrast (serious), label-content-name-mismatch (serious)
+- UX (automated): 2026-10-28, needs-review, 6 of 6 script checks pass on buildapp.se/terminal (no --interact); screenshot review not done
+- WCAG 2.2 AA (automated): 2026-10-28, needs-review, axe 4.14.0 0 violations on buildapp.se/terminal (mobile, one page); manual keyboard pass not done
 - OG image: 2026-10-28, pass, 1200x630 PNG, 58 kB, https://buildapp.se/terminal/og.png
 - Markup: 2026-10-28, pass, W3C 0 HTML errors on / and integritet.html, 0 broken links (GET); 3 CSS errors on / are validator gaps for valid Baseline CSS (field-sizing, container-type, @container); 2 "section lacks heading" warnings
 - Lighthouse: 2026-10-28, warn, mobile: a11y 93, best practices 100, SEO 100; perf by trace (Slow 4G, 4x CPU): LCP 1,7 s, CLS 0, render-blocking requests about 550 ms; fails color-contrast, label-content-name-mismatch, landmark-one-main
