@@ -4,10 +4,12 @@ status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
 nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-10-26
+reviewedAt: 2026-10-28
 ---
 
 # Handoff: ./terminal
+
+**2026-10-28, Audits-kolumnerna ifyllda.** Secrets, Actions, UX och WCAG med aifabrikens `audit-run.mjs`; OG image, Markup (W3C nu, länkar med GET), Lighthouse (Chrome DevTools MCP, mobil, plus prestandaspår), Git history och Search Console (gsc MCP) för hand; TLS via SSL Labs-API:t. Mutation hoppades över: ingen package.json eller Stryker-uppsättning, inte snabbt. Fynd i BACKLOG under "Granskning 2026-10-28" (kontrast, `#pet`-etikett, klickytor, main-landmärke, gmail i historiken). Inga kodändringar.
 
 **2026-10-18, licens.** GPL-3.0 (`LICENSE`, texten från GitHubs licens-API) och en `README.md` för den publika repo-sidan, på Patriks begäran.
 

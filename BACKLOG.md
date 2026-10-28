@@ -65,3 +65,13 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [ ] Underhåll: PowerShell-cmdlets står i åtta tabeller (`PSALIAS`, `PSPARAMS`, `PSPOS`, `PSOP`, `PSCMD`, `PSNAME`, `KNOWNPS`...) som har glidit isär; samla i en. `node()` vid källkontrollen dubblerar `look()`.
 - [ ] Tester: `OUT`, `sample`, `gitWorld`, `changes`, `petTip` ligger utanför `pure` och testas inte; svaren i andra paket än Filer & mappar körs inte genom `fake()` i testet.
 - [x] Idéer ur granskningen (agent G): klickbara lampor 8 4 2 1 med chmod-tolkning i Bits panel, port 3000 ledig när node 4821 är dödad (ps, netstat, lsof, Get-NetTCPConnection, PORTS), piratlapp på Bit vid skatten, riktig `git diff`/`--staged` (udiff). Kvar: `git diff HEAD`/`--stat` mot en gren, pkill/killall.
+
+## Granskning 2026-10-28 (Audits-kolumnerna)
+
+- [ ] `[P2]` Kontrast: `.dim` (#6e7681) ger 3,86:1 mot #181818 och 1,84:1 på vald knapp (#264f78) i skalvalet; Bits `.bin` (#7a7a7a) 4,13:1. Krav 4,5:1 (axe och Lighthouse, mobil).
+- [ ] `[P2]` `#pet` har `aria-label` utan den synliga texten (0000), label-content-name-mismatch.
+- [ ] `[P2]` Klickytor under 44 px enligt UX-skriptet (Fitts), vilka element är inte listade; skärmbildsgenomgången inte gjord.
+- [ ] `[P3]` Ingen `<main>`-landmärke (landmark-one-main).
+- [ ] `[P3]` Två `<section>` utan rubrik (W3C-varning, rad 261 och 268 i levererad HTML).
+- [ ] `[P3]` Renderblockerande förfrågningar kostar cirka 550 ms LCP på Slow 4G (troligen Google Fonts-CSS).
+- [ ] `[P3]` Personlig gmail som författaradress på 15 commits i den publika historiken. Skriva om kräver omskriven publicerad historik (fråga Patrik först) eller accepteras; nya commits går redan via noreply.

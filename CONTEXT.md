@@ -139,3 +139,13 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - ZAP baseline: 2026-10-27, n/a, static site on GitHub Pages with no server, cookies or forms; headers, TLS and markup are covered by their own columns, so a passive ZAP scan would repeat them
 - npm audit: 2026-10-27, n/a, no package.json
 - Headers (automated): 2026-10-27, pass, 6 of 6 on buildapp.se/terminal, Observatory B+ on buildapp.se
+- Secrets: 2026-10-28, pass, gitleaks 0 findings in 101 commits
+- Actions: 2026-10-28, n/a, no GitHub Actions workflows
+- UX (automated): 2026-10-28, warn, 5 of 6 script checks pass on buildapp.se/terminal (no --interact): warn Fitts targets; screenshot review not done
+- WCAG 2.2 AA (automated): 2026-10-28, fail, axe 4.14.0 2 violations on 6 elements on buildapp.se/terminal (mobile, one page): color-contrast (serious), label-content-name-mismatch (serious)
+- OG image: 2026-10-28, pass, 1200x630 PNG, 58 kB, https://buildapp.se/terminal/og.png
+- Markup: 2026-10-28, pass, W3C 0 HTML errors on / and integritet.html, 0 broken links (GET); 3 CSS errors on / are validator gaps for valid Baseline CSS (field-sizing, container-type, @container); 2 "section lacks heading" warnings
+- Lighthouse: 2026-10-28, warn, mobile: a11y 93, best practices 100, SEO 100; perf by trace (Slow 4G, 4x CPU): LCP 1,7 s, CLS 0, render-blocking requests about 550 ms; fails color-contrast, label-content-name-mismatch, landmark-one-main
+- Git history: 2026-10-28, warn, searched `git log -p --all` (101 commits) for household first names, street names, postcodes, personnummer and mail addresses: no addresses or family names in content; owner's first name in docs (93 diff lines, intentional); personal gmail as author email on 15 commits
+- TLS: 2026-10-28, pass, SSL Labs A+ on all 4 buildapp.se endpoints (2 IPv4, 2 IPv6), HSTS max-age=15552000; includeSubDomains
+- Search Console: 2026-10-28, pass, sc-domain:buildapp.se verified, /terminal/ submitted and indexed (crawled 2026-10-21), sitemap.xml valid, 0 errors
