@@ -9,6 +9,8 @@ reviewedAt: 2026-10-28
 
 # Handoff: ./terminal
 
+**2026-10-28, granskningens a11y- och UX-fynd fixade.** Kontrast, `#pet`-namnet, klickytor (44 px under 700 px), `<main>` och rubriklösa sektioner; på köpet `aria-valuenow` på draglisten, dold förhandsflik som visades tom, skalvalet 24 px på dator och lekytans lampor. axe 0 överträdelser lokalt på 390 och 1280 px (även best-practice), Fitts 0 under 44 px på 390 px. Kvar i BACKLOG: renderblockerande typsnitt och gmail i historiken.
+
 **2026-10-28, Audits-kolumnerna ifyllda.** Secrets, Actions, UX och WCAG med aifabrikens `audit-run.mjs`; OG image, Markup (W3C nu, länkar med GET), Lighthouse (Chrome DevTools MCP, mobil, plus prestandaspår), Git history och Search Console (gsc MCP) för hand; TLS via SSL Labs-API:t. Mutation hoppades över: ingen package.json eller Stryker-uppsättning, inte snabbt. Fynd i BACKLOG under "Granskning 2026-10-28" (kontrast, `#pet`-etikett, klickytor, main-landmärke, gmail i historiken). Inga kodändringar.
 
 **2026-10-18, licens.** GPL-3.0 (`LICENSE`, texten från GitHubs licens-API) och en `README.md` för den publika repo-sidan, på Patriks begäran.

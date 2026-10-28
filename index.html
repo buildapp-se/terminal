@@ -22,12 +22,13 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
 <style>
 /* Färger från VS Code Dark Modern och dess terminal */
-:root{color-scheme:dark;--bg:#181818;--editor:#1F1F1F;--border:#2B2B2B;--fg:#CCCCCC;--dim:#9D9D9D;--faint:#6E7681;--accent:#0078D4;
+:root{color-scheme:dark;--bg:#181818;--editor:#1F1F1F;--border:#2B2B2B;--fg:#CCCCCC;--dim:#9D9D9D;--faint:#808893;--accent:#0078D4;
   --green:#23D18B;--blue:#3B8EEA;--red:#F14C4C;--yellow:#E5C07B;--comment:#6A9955;
   --key:#9CDCFE;--str:#CE9178;--num:#B5CEA8;--brace:#FFD700;
   --ui:"Segoe WPC","Segoe UI",system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono',Consolas,Menlo,monospace}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 body{background:var(--bg);color:var(--fg);font:13px/1.4 var(--ui);overflow:hidden}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 svg{display:block}
@@ -80,7 +81,7 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .sash{flex:none;height:4px;margin:-2px 0;position:relative;z-index:3;cursor:ns-resize;touch-action:none}
 .sash:hover,.sash.drag,.sash:focus-visible{background:var(--accent);outline:0;transition:background .1s .2s}
 .mdh{color:#569CD6;font-weight:700}
-.tab.preview{font-style:italic}.tab.dirty::after{content:'\25CF';margin-left:4px;color:#fff}
+.tab[hidden]{display:none}.tab.preview{font-style:italic}.tab.dirty::after{content:'\25CF';margin-left:4px;color:#fff}
 .code .edit{grid-column:1/-1;width:100%;height:100%;min-height:200px;resize:none;border:0;outline:0;padding:0 12px 0 72px;background:var(--editor);color:#D4D4D4;font:inherit;white-space:pre;tab-size:2}
 .tabs{flex:none;display:flex;height:35px;background:var(--bg);border-bottom:1px solid var(--border)}
 .tab{display:flex;align-items:center;gap:6px;padding:0 12px;border-right:1px solid var(--border);color:var(--dim)}
@@ -152,11 +153,11 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:
 .screen{container-type:inline-size}@container (min-width:1000px){.cols{grid-template-columns:auto minmax(0,64ch)}} /* terminalens bredd, inte fönstrets: Bits panel tar 270 px */
 .screen p{max-width:76ch}
 .opts{display:flex;flex-direction:column;align-items:flex-start}.opts.row{flex-direction:row;flex-wrap:wrap;gap:0 2ch}
-.opt{padding:1px 6px;margin-left:-6px;text-align:left;white-space:pre}
+.opt{min-height:24px;padding:1px 6px;margin-left:-6px;text-align:left;white-space:pre}
 .opt[aria-pressed=true]{background:#264F78;color:#fff}
 .opt:hover{background:#2A2D2E}
 .opt[aria-pressed=true]:hover{background:#264F78}
-.opt .dim{margin-left:1ch}
+.opt .dim{margin-left:1ch}.opt[aria-pressed=true] .dim{color:#BCC6D0}
 .dbg{display:flex;gap:1ch}.dbg input{flex:1;min-width:0;background:none;border:0;outline:0;color:inherit;font:inherit}
 @media (max-width:700px){.opt{white-space:normal}.opt .dim{display:block;margin-left:0}} /* smal skärm: undertexten på egen rad */
 .qz .opt{white-space:pre-wrap;margin-bottom:2px}.opt.ok{background:#1E3A2A;color:#89D185}.opt.no{background:#4B1818;color:#F48771}.opt:disabled{cursor:default}
@@ -184,7 +185,7 @@ kbd{font:inherit;color:var(--yellow)}
 .pet svg{display:block;width:100%;height:100%;transform:scale(var(--s,1));transform-origin:50% 100%;overflow:visible}
 .pet:hover svg{transform:scale(var(--s,1)) rotate(-4deg)}
 .pet:focus-visible{outline:1px solid var(--accent)}
-.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#7A7A7A;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
+.pet .bin{position:absolute;right:58px;bottom:4px;font:11px var(--mono);color:#888;white-space:nowrap;pointer-events:none}.pet .bin b{color:#8FE3C8;font-weight:400}
 .pet .body{transform-box:fill-box;transform-origin:50% 100%;animation:breathe 2.6s ease-in-out infinite}
 .pet .egg{transform-box:fill-box;transform-origin:50% 100%;animation:wobble 3s ease-in-out infinite}
 .pet.eat .body,.pet.happy .body{animation:boing .32s ease-in-out 3}.pet.scared .body{animation:shiver .12s linear infinite}.pet.sad .body{animation:none;transform:scaleY(.94)}
@@ -217,7 +218,7 @@ kbd{font:inherit;color:var(--yellow)}
 .reg .sum{margin-top:8px;font:12px var(--mono);color:var(--dim)}
 .reg .meter{height:4px;margin:10px 0 4px;border-radius:2px;background:#262626;overflow:hidden}.reg .meter i{display:block;height:100%;background:linear-gradient(90deg,#8FE3C8,#B8C4FF)}
 .reg .left{font-size:11px;color:var(--faint)}
-.reg.play{padding-top:10px}.reg.play .lamp{padding:0}.reg.play .lamp:hover b{outline:1px solid #555}.reg.play .lamp:focus-visible b{outline:1px solid var(--accent)}.reg.play .left{font-family:var(--mono);margin-top:2px}
+.reg.play .lamp b::before{content:"0"}.reg.play .lamp.on b::before{content:"1"}.reg.play{padding-top:10px}.reg.play .lamp{padding:0}.reg.play .lamp:hover b{outline:1px solid #555}.reg.play .lamp:focus-visible b{outline:1px solid var(--accent)}.reg.play .left{font-family:var(--mono);margin-top:2px}
 .chat-log{flex:1;overflow:auto;min-height:0;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .chat-log .empty{color:var(--faint);font-size:12px;line-height:1.5}
 .msg{padding:7px 10px;border-radius:6px;background:#202020;border-left:3px solid var(--k);font-size:12.5px;line-height:1.5;color:var(--fg)}
@@ -228,6 +229,10 @@ kbd{font:inherit;color:var(--yellow)}
 @media (max-width:999px){.bitbtn{display:none}}
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
 @media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.mob{display:flex}.cmdcenter{flex-basis:auto;padding:0 12px}}
+@media (max-width:700px){ /* klickytor minst 44 px på telefon (Fitts); sökrutan ser ut som förut tack vare genomskinlig kant */
+  .titlebar,.ptabs{height:44px}.status{height:45px}.side{inset:44px 0 45px}.ptabs>button{line-height:44px}.mob button{width:44px;height:44px}
+  .cmdcenter{height:44px;border:9px solid transparent;border-radius:15px;background-clip:padding-box;box-shadow:inset 0 0 0 1px #3C3C3C}
+  .status button{align-self:stretch}.opt{min-height:44px}#cmd{inset:-13px 0}}
 @media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
 </style>
 </head>
@@ -257,15 +262,15 @@ kbd{font:inherit;color:var(--yellow)}
     </nav>
     <aside class="side" id="side" hidden><div class="side-h"><span id="sidet"></span><span class="dim" aria-hidden="true">&#8943;</span><button type="button" class="x" data-side="close" aria-label="Stäng sidofältet">&times;</button></div><div class="side-b" id="sideb"></div></aside>
 
-    <div class="work">
-      <section class="editor">
+    <main class="work"><h1 class="sr">./terminal</h1>
+      <div class="editor">
         <div class="tabs"><button type="button" class="tab on" data-do="stats"><b>{}</b> stats.json</button><button type="button" class="tab" data-do="readme"><span class="ic" style="color:#519ABA">M&#8595;</span> README.md</button><button type="button" class="tab preview" data-do="file" hidden></button></div>
         <div class="crumbs" id="crumbs" aria-hidden="true"></div>
         <div class="code" id="code" aria-hidden="true"></div>
-      </section>
+      </div>
       <div class="sash" id="sash" role="separator" aria-orientation="horizontal" aria-label="Dra för att ändra terminalens höjd, eller använd pil upp och ner" tabindex="0"></div>
 
-      <section class="panel">
+      <div class="panel">
         <div class="ptabs">
           <button type="button" data-do="problems">PROBLEMS<span class="badge" id="problems" data-n="0">0</span></button><button type="button" data-do="output">OUTPUT</button><button type="button" data-do="debug">DEBUG CONSOLE</button><button type="button" class="on" data-do="terminal">TERMINAL</button><button type="button" data-do="ports">PORTS</button>
           <div class="mob"><button type="button" class="pz" data-do="pause" title="Pausa eller fortsätt (Esc)" aria-label="Pausa eller fortsätt"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button><button type="button" data-do="settings" title="Inställningar (Ctrl+,)" aria-label="Inställningar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path stroke-linejoin="round" d="M19.3 10.6L21.9 10.8L21.9 13.2L19.3 13.4L18.2 16.1L19.9 18.2L18.2 19.9L16.1 18.2L13.4 19.3L13.2 21.9L10.8 21.9L10.6 19.3L7.9 18.2L5.8 19.9L4.1 18.2L5.8 16.1L4.7 13.4L2.1 13.2L2.1 10.8L4.7 10.6L5.8 7.9L4.1 5.8L5.8 4.1L7.9 5.8L10.6 4.7L10.8 2.1L13.2 2.1L13.4 4.7L16.1 5.8L18.2 4.1L19.9 5.8L18.2 7.9Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
@@ -277,13 +282,13 @@ kbd{font:inherit;color:var(--yellow)}
           <div class="prompt"><span id="ps1"></span><span class="cmdbox"><span id="mirror"></span><input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Skriv kommando"></span></div>
           <div class="bubble" id="bubble" role="status" hidden></div><button type="button" class="pet" id="pet"></button>
         </div>
-      </section>
-    </div>
+      </div>
+    </main>
     <aside class="chat" id="chat" aria-label="Bit" hidden>
       <div class="side-h"><span>Bit</span><span class="dim" aria-hidden="true">&#8943;</span></div>
       <div class="chat-pet" id="chatpet"></div>
       <div class="reg" id="reg"></div>
-      <div class="reg play" id="play"><div class="nm">Lek med bitarna</div><div class="lamps"><button type="button" class="lamp" aria-pressed="false" aria-label="biten 8" data-v="8"><b>0</b><small>8</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 4" data-v="4"><b>0</b><small>4</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 2" data-v="2"><b>0</b><small>2</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 1" data-v="1"><b>0</b><small>1</small></button></div><div class="sum" id="playsum"></div><div class="left" id="playmode"></div></div>
+      <div class="reg play" id="play"><div class="nm">Lek med bitarna</div><div class="lamps"><button type="button" class="lamp" aria-pressed="false" aria-label="biten 8" data-v="8"><b></b><small>8</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 4" data-v="4"><b></b><small>4</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 2" data-v="2"><b></b><small>2</small></button><button type="button" class="lamp" aria-pressed="false" aria-label="biten 1" data-v="1"><b></b><small>1</small></button></div><div class="sum" id="playsum"></div><div class="left" id="playmode"></div></div>
       <div class="chat-log" id="chatlog" aria-live="polite"><p class="empty">Bit lyssnar på terminalen. Tips, varningar, kul fakta och det som händer i rundan hamnar här.</p></div>
     </aside>
   </div>
@@ -2466,7 +2471,7 @@ function petDraw(mood) {
   petEl.className = 'pet ' + mood + (chat.hidden ? '' : ' big');
   petEl.style.setProperty('--s', .78 + st * .02);
   petEl.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true">${petSVG(st, mood, !!S?.pirate)}</svg><span class="bin" aria-hidden="true">${[...binStr(pet.bits)].map(d => (d === '1' ? '<b>1</b>' : d)).join('')}</span>`;
-  petEl.setAttribute('aria-label', `Bit, ${PET_STAGES[st][1]}, ${bitar(pet.bits)} uppätna. Klicka för att klappa.`);
+  petEl.setAttribute('aria-label', `Bit ${binStr(pet.bits)}, ${PET_STAGES[st][1]}, ${bitar(pet.bits)} uppätna. Klicka för att klappa.`);
   petPanel();
 }
 // Ett humör en stund, sedan tillbaka till grundläget (petIdle i tick)
@@ -2483,7 +2488,7 @@ function petPanel() {
 const play = $('#play');
 function playDraw() {
   let n = 0;
-  for (const l of play.querySelectorAll('.lamp')) { const on = l.getAttribute('aria-pressed') === 'true'; l.classList.toggle('on', on); l.querySelector('b').textContent = +on; if (on) n += +l.dataset.v; }
+  for (const l of play.querySelectorAll('.lamp')) { const on = l.getAttribute('aria-pressed') === 'true'; l.classList.toggle('on', on); if (on) n += +l.dataset.v; }
   $('#playsum').textContent = lampSum(n);
   $('#playmode').textContent = `chmod: ${lampMode(n)}`;
 }
@@ -3754,6 +3759,7 @@ function resized() {
   ch.textContent = 'x'.repeat(20); log.append(ch);
   COLS = Math.floor(log.clientWidth / (ch.getBoundingClientRect().width / 20 || 8.4)) || 120; // tecken per rad, för PowerShell-tabellen
   ch.remove();
+  sash.setAttribute('aria-valuenow', editor.offsetHeight);
   if (editor.style.height && editor.offsetHeight > $('.work').clientHeight - 340) editor.style.height = Math.max(35, $('.work').clientHeight - 340) + 'px';
   if (!S) return;
   S.H = well.clientHeight;

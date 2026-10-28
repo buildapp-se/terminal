@@ -68,10 +68,10 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 
 ## Granskning 2026-10-28 (Audits-kolumnerna)
 
-- [ ] `[P2]` Kontrast: `.dim` (#6e7681) ger 3,86:1 mot #181818 och 1,84:1 på vald knapp (#264f78) i skalvalet; Bits `.bin` (#7a7a7a) 4,13:1. Krav 4,5:1 (axe och Lighthouse, mobil).
-- [ ] `[P2]` `#pet` har `aria-label` utan den synliga texten (0000), label-content-name-mismatch.
-- [ ] `[P2]` Klickytor under 44 px enligt UX-skriptet (Fitts), vilka element är inte listade; skärmbildsgenomgången inte gjord.
-- [ ] `[P3]` Ingen `<main>`-landmärke (landmark-one-main).
-- [ ] `[P3]` Två `<section>` utan rubrik (W3C-varning, rad 261 och 268 i levererad HTML).
+- [x] `[P2]` Kontrast: `.dim` (#6e7681) ger 3,86:1 mot #181818 och 1,84:1 på vald knapp (#264f78) i skalvalet; Bits `.bin` (#7a7a7a) 4,13:1. Krav 4,5:1 (axe och Lighthouse, mobil). Fixat 2026-10-28: `--faint` #808893, vald rads undertext #BCC6D0, `.bin` #888.
+- [x] `[P2]` `#pet` har `aria-label` utan den synliga texten (0000), label-content-name-mismatch. Fixat 2026-10-28: namnet börjar med bitarna; lekytans lampor ritar 0/1 med CSS av samma skäl.
+- [x] `[P2]` Klickytor under 44 px enligt UX-skriptet (Fitts), vilka element är inte listade; skärmbildsgenomgången inte gjord. Fixat 2026-10-28: på 390 px var det sökrutan, panelflikarna, kugghjulet, skalvalet, kommandoraden och statusradens knappar; under 700 px är titel-, flik- och statusraden 44 px, sökrutan har genomskinlig kant och `#cmd` en högre osynlig yta. Skalvalet minst 24 px även på dator.
+- [x] `[P3]` Ingen `<main>`-landmärke (landmark-one-main). Fixat 2026-10-28: `.work` är `<main>` med dold `<h1>`.
+- [x] `[P3]` Två `<section>` utan rubrik (W3C-varning, rad 261 och 268 i levererad HTML). Fixat 2026-10-28: redigeraren och panelen är `<div>`, de är fönsterytor, inte avsnitt.
 - [ ] `[P3]` Renderblockerande förfrågningar kostar cirka 550 ms LCP på Slow 4G (troligen Google Fonts-CSS).
 - [ ] `[P3]` Personlig gmail som författaradress på 15 commits i den publika historiken. Skriva om kräver omskriven publicerad historik (fråga Patrik först) eller accepteras; nya commits går redan via noreply.
