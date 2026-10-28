@@ -146,6 +146,6 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - OG image: 2026-10-28, pass, 1200x630 PNG, 58 kB, https://buildapp.se/terminal/og.png
 - Markup: 2026-10-28, pass, W3C 0 HTML errors on / and integritet.html, 0 broken links (GET); 3 CSS errors on / are validator gaps for valid Baseline CSS (field-sizing, container-type, @container); 2 "section lacks heading" warnings
 - Lighthouse: 2026-10-28, warn, mobile: a11y 93, best practices 100, SEO 100; perf by trace (Slow 4G, 4x CPU): LCP 1,7 s, CLS 0, render-blocking requests about 550 ms; fails color-contrast, label-content-name-mismatch, landmark-one-main
-- Git history: 2026-10-28, warn, searched `git log -p --all` (101 commits) for household first names, street names, postcodes, personnummer and mail addresses: no addresses or family names in content; owner's first name in docs (93 diff lines, intentional); personal gmail as author email on 15 commits
+- Git history: 2026-10-28, warn, searched `git log -p --all` (101 commits) for household first names, street names, postcodes, personnummer and mail addresses: no addresses or family names in content; owner's first name in docs (93 diff lines, intentional); personal gmail as author email on 15 commits, accepted by owner 2026-10-28 (no history rewrite)
 - TLS: 2026-10-28, pass, SSL Labs A+ on all 4 buildapp.se endpoints (2 IPv4, 2 IPv6), HSTS max-age=15552000; includeSubDomains
 - Search Console: 2026-10-28, pass, sc-domain:buildapp.se verified, /terminal/ submitted and indexed (crawled 2026-10-21), sitemap.xml valid, 0 errors
