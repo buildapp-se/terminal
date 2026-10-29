@@ -149,3 +149,4 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - Git history: 2026-10-28, warn, searched `git log -p --all` (101 commits) for household first names, street names, postcodes, personnummer and mail addresses: no addresses or family names in content; owner's first name in docs (93 diff lines, intentional); personal gmail as author email on 15 commits, accepted by owner 2026-10-28 (no history rewrite)
 - TLS: 2026-10-28, pass, SSL Labs A+ on all 4 buildapp.se endpoints (2 IPv4, 2 IPv6), HSTS max-age=15552000; includeSubDomains
 - Search Console: 2026-10-28, pass, sc-domain:buildapp.se verified, /terminal/ submitted and indexed (crawled 2026-10-21), sitemap.xml valid, 0 errors
+- Dependabot: 2026-10-29, pass, 0 open alerts
