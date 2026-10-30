@@ -135,7 +135,7 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 
 ## Audits
 - Database: 2026-10-25, none, localStorage
-- OWASP Top 10: 2026-10-26, pass, code review (Gemini 3.8 Flash, reviewed by Claude); fixed: stored highscores, quiz results and pet bits were put into innerHTML unescaped (needs a script on the shared buildapp.se origin to plant them), now escaped or coerced, checked in Chromium with poisoned localStorage; left: no CSP or frame headers of its own (zone Transform Rule covers headers), localStorage shared by every app on buildapp.se
+- OWASP Top 10: 2026-10-30, pass, code review (Mistral Large; Claude read only the verdict line, lows unread), no live probe; 0 high, 0 medium reported
 - ZAP baseline: 2026-10-27, n/a, static site on GitHub Pages with no server, cookies or forms; headers, TLS and markup are covered by their own columns, so a passive ZAP scan would repeat them
 - npm audit: 2026-10-27, n/a, no package.json
 - Headers (automated): 2026-10-27, pass, 6 of 6 on buildapp.se/terminal, Observatory B+ on buildapp.se
