@@ -4,8 +4,9 @@ status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
 nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-10-28
+reviewedAt: 2026-11-02
 ---
+**2026-11-02:** kontaktadressen är nu `kontakt@buildapp.se` (förut `kontakt@orgutveckling.se`). Integritetstexten version 1.3.
 
 # Handoff: ./terminal
 
