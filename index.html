@@ -19,7 +19,8 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"></noscript>
 <style>
 /* Färger från VS Code Dark Modern och dess terminal */
 :root{color-scheme:dark;--bg:#181818;--editor:#1F1F1F;--border:#2B2B2B;--fg:#CCCCCC;--dim:#9D9D9D;--faint:#808893;--accent:#0078D4;
@@ -617,63 +618,62 @@ function canonStage([cmd, ...rest]) {
 }
 
 // ---------- PowerShell ----------
+// Alla cmdlets i en tabell, så att alias, parametrar och positionella platser inte glider isär:
+// a: alias (ett alias kan ha argument efter namnet, som mkdir), op: bash-motsvarigheten, name: dess riktiga namn,
+// pos: positionella parametrar i ordning, params: 'alla parametrar:värdena som är växlar', palias: förkortningar av parametrar,
+// drop: parametrar som inte ändrar svaret. PSALIAS, PSPARAMS, PSPARAMALIAS, PSPOS, PSDROP, PSOP och PSCMD är vyer av tabellen.
 // Alias som finns inbyggda i Windows PowerShell 5.1. mkdir är en funktion som blir New-Item -ItemType Directory.
-const PSALIAS = {
-  ls: 'get-childitem', dir: 'get-childitem', gci: 'get-childitem', cd: 'set-location', sl: 'set-location', chdir: 'set-location',
-  pwd: 'get-location', gl: 'get-location', cat: 'get-content', gc: 'get-content', type: 'get-content',
-  rm: 'remove-item', del: 'remove-item', ri: 'remove-item', erase: 'remove-item', rd: 'remove-item', rmdir: 'remove-item',
-  cp: 'copy-item', copy: 'copy-item', cpi: 'copy-item', mv: 'move-item', move: 'move-item', mi: 'move-item',
-  ren: 'rename-item', rni: 'rename-item', ni: 'new-item', mkdir: 'new-item -itemtype directory', md: 'new-item -itemtype directory',
-  echo: 'write-output', write: 'write-output', sleep: 'start-sleep', ps: 'get-process', gps: 'get-process',
-  kill: 'stop-process', spps: 'stop-process', select: 'select-object', where: 'where-object', '?': 'where-object',
-  '%': 'foreach-object', foreach: 'foreach-object', sls: 'select-string', gcm: 'get-command', help: 'get-help', man: 'get-help',
-  curl: 'invoke-webrequest', wget: 'invoke-webrequest', iwr: 'invoke-webrequest', irm: 'invoke-restmethod',
-  sort: 'sort-object', measure: 'measure-object', group: 'group-object', ac: 'add-content', sc: 'set-content', clear: 'clear-host', cls: 'clear-host',
-  ii: 'invoke-item', start: 'start-process', saps: 'start-process', gi: 'get-item', 'cd..': 'set-location ..', 'cd\\': 'set-location \\', // cd.. och cd\ är egna funktioner i PowerShell
-  tnc: 'test-netconnection', // från modulen NetTCPIP, som laddas första gången du använder den
+const PS = {
+  'get-childitem': {a: 'ls, dir, gci', op: 'ls', name: 'Get-ChildItem', pos: 'path filter', params: 'path literalpath filter include exclude recurse depth force name attributes directory file hidden readonly system followsymlink:recurse force name directory file hidden readonly system followsymlink'},
+  'set-location': {a: 'cd, sl, chdir, cd.. .., cd\\ \\', op: 'cd', name: 'Set-Location', params: 'path literalpath passthru stackname:passthru'},
+  'get-location': {a: 'pwd, gl', op: 'pwd', params: 'psprovider psdrive stack stackname:stack'},
+  'get-content': {a: 'cat, gc, type', op: 'cat', name: 'Get-Content', params: 'path literalpath readcount totalcount tail filter include exclude force delimiter wait raw encoding stream:force wait raw', palias: {head: 'totalcount', first: 'totalcount', last: 'tail'}},
+  'remove-item': {a: 'rm, del, ri, erase, rd, rmdir', op: 'rm', name: 'Remove-Item', params: 'path literalpath filter include exclude recurse force stream:recurse force'},
+  'copy-item': {a: 'cp, copy, cpi', op: 'cp', name: 'Copy-Item', pos: 'path destination', params: 'path literalpath destination container force filter include exclude recurse passthru:container force recurse passthru'},
+  'move-item': {a: 'mv, move, mi', op: 'mv', name: 'Move-Item', pos: 'path destination', params: 'path literalpath destination force filter include exclude passthru:force passthru'},
+  'rename-item': {a: 'ren, rni', op: 'ren', name: 'Rename-Item', pos: 'path newname', params: 'path literalpath newname force passthru:force passthru'},
+  'new-item': {a: 'ni, mkdir -itemtype directory, md -itemtype directory', op: 'new', name: 'New-Item', params: 'path name itemtype value force:force', palias: {type: 'itemtype'}},
+  'write-output': {a: 'echo, write', op: 'echo', name: 'Write-Output', pos: 'inputobject', params: 'inputobject noenumerate:noenumerate'},
+  'start-sleep': {a: 'sleep', pos: 'seconds'},
+  'get-process': {a: 'ps, gps', pos: 'name', params: 'name id inputobject includeusername module fileversioninfo:includeusername module fileversioninfo'},
+  'stop-process': {a: 'kill, spps', pos: 'id', params: 'id name inputobject passthru force:passthru force', drop: /^-force$/},
+  'select-object': {a: 'select', pos: 'property', params: 'inputobject property excludeproperty expandproperty unique last first skip skiplast wait index:unique wait'},
+  'where-object': {a: 'where, ?'},
+  'foreach-object': {a: '%, foreach'},
+  'select-string': {a: 'sls', op: 'sls', name: 'Select-String', pos: 'pattern path', params: 'inputobject pattern path literalpath simplematch casesensitive quiet list include exclude notmatch allmatches encoding context:simplematch casesensitive quiet list notmatch allmatches'},
+  'get-command': {a: 'gcm', pos: 'name'},
+  'get-help': {a: 'help, man', pos: 'name'},
+  'invoke-webrequest': {a: 'curl, wget, iwr', pos: 'uri'},
+  'invoke-restmethod': {a: 'irm', pos: 'uri'},
+  'sort-object': {a: 'sort', pos: 'property', params: 'property descending unique casesensitive culture inputobject:descending unique casesensitive'},
+  'measure-object': {a: 'measure', pos: 'property', params: 'property sum average maximum minimum line word character inputobject ignorewhitespace:sum average maximum minimum line word character ignorewhitespace'},
+  'group-object': {a: 'group', pos: 'property'},
+  'add-content': {a: 'ac', op: 'add', name: 'Add-Content', pos: 'path value', params: 'path literalpath value force encoding nonewline passthru filter include exclude:force nonewline passthru'},
+  'set-content': {a: 'sc', op: 'set', name: 'Set-Content', pos: 'path value', params: 'path literalpath value force encoding nonewline passthru filter include exclude:force nonewline passthru'},
+  'clear-host': {a: 'clear, cls'},
+  'invoke-item': {a: 'ii', op: 'open', name: 'Invoke-Item', params: 'path literalpath filter include exclude:'},
+  'start-process': {a: 'start, saps', op: 'open', name: 'Start-Process', pos: 'filepath argumentlist', params: 'filepath argumentlist workingdirectory wait passthru nonewwindow verb windowstyle:wait passthru nonewwindow'},
+  'get-item': {a: 'gi', op: 'item', name: 'Get-Item', params: 'path literalpath filter include exclude force stream:force'},
+  'test-netconnection': {a: 'tnc', pos: 'computername', params: 'computername commontcpport port traceroute hops informationlevel diagnoserouting constrainsourceaddress constraininterface:traceroute diagnoserouting'},
+  'get-nettcpconnection': {pos: 'localaddress'},
+  'out-file': {op: 'out', name: 'Out-File', pos: 'filepath encoding', params: 'filepath literalpath encoding append force noclobber width nonewline inputobject:append force noclobber nonewline'},
+  'resolve-dnsname': {pos: 'name type', params: 'name type server dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly:dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly'},
+  'test-connection': {pos: 'computername', params: 'computername count delay buffersize throttlelimit timetolive source credential impersonation authentication asjob dcomauthentication wsmanauthentication protocol quiet:asjob quiet', drop: /^-count=4$/},
+  'test-path': {op: 'test', name: 'Test-Path', params: 'path literalpath filter include exclude pathtype isvalid olderthan newerthan:isvalid'},
+  'write-host': {op: 'host', name: 'Write-Host', pos: 'object', params: 'object nonewline separator foregroundcolor backgroundcolor:nonewline'},
 };
 // Parametrarna PowerShell känner till per cmdlet, så att förkortningar (-Rec) och felstavningar (-rf) går att avgöra.
 // Värdet efter två punkter är parametrar som är växlar och inte tar något värde.
 const COMMON = 'whatif confirm erroraction verbose';
-const PSPARAMS = Object.fromEntries(Object.entries({
-  'get-childitem': 'path literalpath filter include exclude recurse depth force name attributes directory file hidden readonly system followsymlink:recurse force name directory file hidden readonly system followsymlink',
-  'get-content': 'path literalpath readcount totalcount tail filter include exclude force delimiter wait raw encoding stream:force wait raw',
-  'set-location': 'path literalpath passthru stackname:passthru',
-  'get-location': 'psprovider psdrive stack stackname:stack',
-  'new-item': 'path name itemtype value force:force',
-  'remove-item': 'path literalpath filter include exclude recurse force stream:recurse force',
-  'copy-item': 'path literalpath destination container force filter include exclude recurse passthru:container force recurse passthru',
-  'move-item': 'path literalpath destination force filter include exclude passthru:force passthru',
-  'rename-item': 'path literalpath newname force passthru:force passthru',
-  'select-string': 'inputobject pattern path literalpath simplematch casesensitive quiet list include exclude notmatch allmatches encoding context:simplematch casesensitive quiet list notmatch allmatches',
-  'select-object': 'inputobject property excludeproperty expandproperty unique last first skip skiplast wait index:unique wait',
-  'sort-object': 'property descending unique casesensitive culture inputobject:descending unique casesensitive',
-  'measure-object': 'property sum average maximum minimum line word character inputobject ignorewhitespace:sum average maximum minimum line word character ignorewhitespace',
-  'stop-process': 'id name inputobject passthru force:passthru force',
-  'get-process': 'name id inputobject includeusername module fileversioninfo:includeusername module fileversioninfo',
-  'test-path': 'path literalpath filter include exclude pathtype isvalid olderthan newerthan:isvalid',
-  'get-item': 'path literalpath filter include exclude force stream:force',
-  'write-output': 'inputobject noenumerate:noenumerate',
-  'write-host': 'object nonewline separator foregroundcolor backgroundcolor:nonewline',
-  'out-file': 'filepath literalpath encoding append force noclobber width nonewline inputobject:append force noclobber nonewline',
-  'set-content': 'path literalpath value force encoding nonewline passthru filter include exclude:force nonewline passthru',
-  'add-content': 'path literalpath value force encoding nonewline passthru filter include exclude:force nonewline passthru',
-  'invoke-item': 'path literalpath filter include exclude:',
-  'start-process': 'filepath argumentlist workingdirectory wait passthru nonewwindow verb windowstyle:wait passthru nonewwindow',
-  'test-netconnection': 'computername commontcpport port traceroute hops informationlevel diagnoserouting constrainsourceaddress constraininterface:traceroute diagnoserouting',
-  'test-connection': 'computername count delay buffersize throttlelimit timetolive source credential impersonation authentication asjob dcomauthentication wsmanauthentication protocol quiet:asjob quiet',
-  'resolve-dnsname': 'name type server dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly:dnsonly cacheonly dnssecok dnsseccd nohostsfile llmnrnetbiosonly llmnrfallback llmnronly netbiosfallback noidn norecursion quicktimeout tcponly',
-}).map(([k, v]) => { const [all, sw] = v.split(':'); return [k, {all: [...all.split(' '), ...COMMON.split(' ')], sw: new Set([...sw.split(' '), ...COMMON.split(' ')])}]; }));
-const PSPARAMALIAS = {'get-content': {head: 'totalcount', first: 'totalcount', last: 'tail'}, 'new-item': {type: 'itemtype'}};
+const PSALIAS = Object.fromEntries(Object.entries(PS).flatMap(([c, v]) => (v.a ? v.a.split(',') : []).map(x => {
+  const [n, ...r] = x.trim().split(' '); return [n, r.length ? `${c} ${r.join(' ')}` : c];
+})));
+const PSPARAMS = Object.fromEntries(Object.entries(PS).filter(([, v]) => v.params).map(([c, v]) => { const [all, sw] = v.params.split(':'); return [c, {all: [...all.split(' '), ...COMMON.split(' ')], sw: new Set([...sw.split(' '), ...COMMON.split(' ')])}]; }));
+const PSPARAMALIAS = Object.fromEntries(Object.entries(PS).filter(([, v]) => v.palias).map(([c, v]) => [c, v.palias]));
 // Ordningen positionella argument fyller parametrarna i: Select-String ord fil = -Pattern ord -Path fil
-const PSPOS = {'select-string': ['pattern', 'path'], 'copy-item': ['path', 'destination'], 'move-item': ['path', 'destination'], 'rename-item': ['path', 'newname'],
-  'set-content': ['path', 'value'], 'add-content': ['path', 'value'], 'write-output': ['inputobject'], 'measure-object': ['property'], 'sort-object': ['property'],
-  'group-object': ['property'], 'select-object': ['property'], 'stop-process': ['id'], 'get-process': ['name'], 'invoke-webrequest': ['uri'], 'invoke-restmethod': ['uri'],
-  'get-command': ['name'], 'get-help': ['name'], 'start-sleep': ['seconds'], 'get-nettcpconnection': ['localaddress'],
-  'get-childitem': ['path', 'filter'], 'write-host': ['object'], 'out-file': ['filepath', 'encoding'], 'start-process': ['filepath', 'argumentlist'],
-  'test-netconnection': ['computername'], 'test-connection': ['computername'], 'resolve-dnsname': ['name', 'type']};
+const PSPOS = Object.fromEntries(Object.entries(PS).filter(([, v]) => v.pos).map(([c, v]) => [c, v.pos.split(' ')]));
 // Parametrar som inte ändrar svaret: Stop-Process avslutar alltid direkt, Test-Connection skickar 4 paket som standard
-const PSDROP = {'stop-process': /^-force$/, 'test-connection': /^-count=4$/};
+const PSDROP = Object.fromEntries(Object.entries(PS).filter(([, v]) => v.drop).map(([c, v]) => [c, v.drop]));
 const isCmdlet = c => /^[a-z]+-[a-z]+$/.test(c);
 const psval = (t, keep) => path((keep ? t : t.toLowerCase()).replace(/\\/g, '/')); // keep: till låtsasskalet, så Hello world inte blir hello world
 // Hela parameternamnet, även när det är förkortat. null om ingen parameter passar, '' om flera gör det.
@@ -1186,11 +1186,10 @@ const psTable = (at, items) => {
 };
 const longRow = ([n, v]) => `${typeof v === 'string' ? (n.endsWith('.sh') ? '-rwxr-xr-x' : '-rw-r--r--') : 'drwxr-xr-x'} 1 du du ${String(typeof v === 'string' ? v.length : 4096).padStart(5)} okt 17 12:00 ${n}`;
 const own = (o, k, v) => Object.defineProperty(o, k, {value: v, enumerable: true, writable: true, configurable: true});
-const PSOP = {'get-childitem': 'ls', 'set-location': 'cd', 'get-location': 'pwd', 'get-content': 'cat', 'remove-item': 'rm', 'rename-item': 'ren',
-  'move-item': 'mv', 'copy-item': 'cp', 'write-output': 'echo', 'set-content': 'set', 'add-content': 'add', 'new-item': 'new',
-  'test-path': 'test', 'get-item': 'item', 'write-host': 'host', 'out-file': 'out', 'invoke-item': 'open', 'start-process': 'open', 'select-string': 'sls'};
-const PSCMD = {ls: 'Get-ChildItem', cd: 'Set-Location', cat: 'Get-Content', rm: 'Remove-Item', ren: 'Rename-Item', mv: 'Move-Item', cp: 'Copy-Item',
-  set: 'Set-Content', add: 'Add-Content', new: 'New-Item', echo: 'Write-Output', test: 'Test-Path', item: 'Get-Item', host: 'Write-Host', out: 'Out-File', sls: 'Select-String', open: 'Invoke-Item'};
+const PSOP = Object.fromEntries(Object.entries(PS).filter(([, v]) => v.op).map(([c, v]) => [c, v.op]));
+// bash-motsvarigheten -> cmdletens riktiga namn. 'open' delas av Invoke-Item och Start-Process; Invoke-Item står först i PS och vinner.
+const PSCMD = {};
+for (const [c, v] of Object.entries(PS)) if (v.op && v.name && !Object.hasOwn(PSCMD, v.op)) PSCMD[v.op] = v.name;
 const PSONLY = new Set(Object.keys(PSCMD).filter(k => !['ls', 'cd', 'cat', 'rm', 'mv', 'cp', 'echo'].includes(k))); // ren och set finns inte i bash
 
 // Miljövariablerna från början. Det du sätter med export eller $env:X hamnar i env, som fake läser och skriver.
@@ -1983,7 +1982,7 @@ function gitRefs(u, g, inRepo = true) {
   return (u.includes('-a') ? [...local, ...remote] : u.includes('-r') ? remote.map(l => l.replace('remotes/', '')) : local).join('\n');
 }
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
-for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
+for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PS, ...Object.values(PS), PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
 
 // ---------- spelet ----------
@@ -3397,7 +3396,7 @@ const FILEICON = {md: ['M&#8595;', '#519ABA'], js: ['JS', '#CBCB41'], json: ['{}
 const fileIcon = n => { const [t, c] = FILEICON[n.split('.').pop().toLowerCase()] || ['&#8801;', '#A0A0A0']; return `<span class="ic" style="color:${c}">${t}</span>`; };
 const codeLines = lines => lines.map((l, i) => `<span class="ln">${i + 1}</span><span>${l}</span>`).join('');
 const mdLine = l => (/^#/.test(l) ? `<span class="mdh">${esc(l)}</span>` : /^\s*- /.test(l) ? esc(l).replace('-', '<span class="br">-</span>') : esc(l));
-const node = path => path.split('/').reduce((n, k) => (n && typeof n === 'object' && Object.hasOwn(n, k) ? n[k] : undefined), S?.fs ?? WORLD);
+const node = path => look(S?.fs ?? WORLD, path.split('/'), S?.ps).node;
 
 // Vad git skulle visa som ändrat: jämför låtsasfilsystemet med hur det såg ut från början
 function changes(a, b, path = []) {

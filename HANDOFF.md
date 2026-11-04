@@ -4,7 +4,7 @@ status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
 nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-11-02
+reviewedAt: 2026-11-04
 ---
 **2026-11-02:** kontaktadressen är nu `kontakt@buildapp.se` (förut `kontakt@orgutveckling.se`). Integritetstexten version 1.3.
 
@@ -58,3 +58,9 @@ OWASP-granskning (Gemini 3.8 Flash, granskad av Claude): highscores, quizresulta
 
 - `node terminal.test.js`: rättningen, alla svar i `TASKS` mot sig själva, låtsasskalet i båda skalen, testagenternas fynd.
 - Webbläsare: Playwright i Chromium, Firefox och WebKit mot en lokal server (se `CONTEXT.md`).
+
+## Session: kandidatgranskning 2026-11-04
+
+PowerShell-tabellerna har en gemensam källa. Alla sju härledda tabeller är jämförda före och efter: samma alias, parametrar, positioner, växlar och operationsnamn. Befintlig svit kontrollerar 139 uppgifter, 5 480 bash-svar och 253 PowerShell-svar. I riktig Chromium verifierades mkdir, cd, Set-Content och skiftlägesokänslig sökväg i utforskaren.
+
+Google Fonts blockerar inte längre första renderingen på spelet och integritetssidan. Lokal provning med 1,5 sekunders fördröjd typsnittsmall: DOMContentLoaded 1 607 ms före, 39 ms efter; stilmallen aktiverades och reservvägen utan JavaScript fungerade. Detta är ett kontrollerat lokalt prov, ingen ny live-LCP-mätning. Lokala commits, ingen push.
