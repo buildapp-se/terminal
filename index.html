@@ -575,6 +575,9 @@ function units(seg, ps = false) {
 }
 
 const path = t => t.replace(/^\.\/(?=.)/, '').replace(/(.)\/$/, '$1');
+// Raden som den visas, i ord och mellanrum: "fixa menyn" är ett ord, så fel text inom citattecken går att färga röd
+/** @param {string} raw */
+const lineParts = raw => raw.split(/(\s+|"(?:[^"\\]|\\.)*"|'[^']*')/).filter(Boolean);
 
 // Normalform: positionella argument i ordning, flaggor sorterade och ihopslagna (-rn = -r -n)
 function canon(seg, ps = false, keep = false) {
@@ -2378,7 +2381,7 @@ function out(text, cls = '') {
 function echo(raw, bad, extra = '', cwd = S?.cwd) {
   const d = document.createElement('div');
   d.className = 'line' + (bad.size ? ' bad' : '');
-  const words = raw.split(/(\s+)/).map(w => (bad.has(w.replace(/^['"]|['"]$/g, '')) ? `<span class="err">${esc(w)}</span>` : esc(w)));
+  const words = lineParts(raw).map(w => (bad.has(w.replace(/^['"]|['"]$/g, '')) ? `<span class="err">${esc(w)}</span>` : esc(w)));
   d.innerHTML = promptHTML(S?.ps ?? isPS(), cwd) + words.join('') + extra;
   log.append(d);
 }

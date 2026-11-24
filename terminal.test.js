@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -628,3 +628,8 @@ for (const task of TASKS) for (const ps of task[5] ? [false, true] : [false]) {
 { const b = fill(TASKS.find(t => t[2].startsWith('Skapa mappen {d}, gå in')), l => l[0], false), [a, , c] = chainParts(b);
   assert.ok(c.text.includes(a.text.slice('Skapa mappen '.length, a.text.indexOf(' ('))), 'samma mapp i steg 1 och 3'); }
 
+
+// Fel text inom citattecken är ett ord när raden färgas (explain lägger hela "fixa menyn" i bad)
+assert.deepStrictEqual(lineParts('git commit -m "fel text"  x'), ['git', ' ', 'commit', ' ', '-m', ' ', '"fel text"', '  ', 'x']);
+assert.deepStrictEqual(lineParts(`echo 'a b' > "c d"`), ['echo', ' ', "'a b'", ' ', '>', ' ', '"c d"']);
+assert.strictEqual(lineParts('echo "oavslutat citat').join(''), 'echo "oavslutat citat', 'inget tecken försvinner');
