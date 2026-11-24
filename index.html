@@ -814,6 +814,15 @@ function udiff(path, a, b) {
   }
   return out;
 }
+// git diff --stat ur udiff-utskrifterna: [[namn, rader]]. ponytail: ingen skalning av +/- för långa ändringar, som git gör över skärmbredden.
+/** @param {[string, string[]][]} files */
+function diffStat(files) {
+  const rows = files.map(/** @returns {[string, number, number]} */ ([n, d]) => { const i = d.findIndex(l => l.startsWith('@@')), body = i < 0 ? [] : d.slice(i); return [n, body.filter(l => l[0] === '+').length, body.filter(l => l[0] === '-').length]; });
+  const w = Math.max(...rows.map(r => r[0].length)), cw = Math.max(...rows.map(r => String(r[1] + r[2]).length)), s = (k, one) => `${k} ${one}${k === 1 ? '' : 's'}`;
+  const A = rows.reduce((t, r) => t + r[1], 0), D = rows.reduce((t, r) => t + r[2], 0);
+  return [...rows.map(([n, a, d]) => ` ${n.padEnd(w)} | ${String(a + d).padStart(cw)}${a + d ? ' ' + '+'.repeat(a) + '-'.repeat(d) : ''}`),
+    ` ${s(rows.length, 'file')} changed` + (A || !D ? `, ${s(A, 'insertion')}(+)` : '') + (D || !A ? `, ${s(D, 'deletion')}(-)` : '')];
+}
 // Färgen per rad i en utskrift: diffens - rött, + grönt, @@ blått. Bara inne i en diff, annars är "- [ ] punkt" i cat också rött.
 function diffCls(lines) {
   let on = false;
@@ -3513,8 +3522,9 @@ function gitWorld(u) {
   if (u[1] === 'diff') {
     const {staged, work} = repoChanges(R), cached = u.includes('--staged') || u.includes('--cached'), [from, to] = cached ? [S.base, S.index] : [S.index, S.fs];
     const only = args.filter(t => !REFRE.test(t) && !REMOTE.includes(t) && !S.branches.has(t)).map(f => resolve(cwd, f)), txt = n => (typeof n === 'string' ? n : undefined);
-    const lines = (cached ? staged : work.filter(c => c[1] !== 'U')).map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
-      .flatMap(p => { const a = txt(look(from, p, S.ps).node), b = txt(look(to, p, S.ps).node); return a === b ? [] : udiff(p.slice(R.length).join('/'), a, b); });
+    const files = (cached ? staged : work.filter(c => c[1] !== 'U')).map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
+      .flatMap(p => { const a = txt(look(from, p, S.ps).node), b = txt(look(to, p, S.ps).node), n = p.slice(R.length).join('/'); return a === b ? [] : [[n, udiff(n, a, b)]]; });
+    const lines = !files.length ? [] : u.includes('--stat') ? diffStat(files) : files.flatMap(f => f[1]);
     return lines.length ? lines.join('\n') : !cached && staged.length ? '# (inget svar: allt du ändrat är stagat. git diff --staged visar det.)' : '';
   }
   if (u[1] === 'push') S.pushed = S.commits.length;

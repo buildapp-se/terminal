@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -329,6 +329,12 @@ assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(
   assert.deepStrictEqual(udiff('ny.txt', undefined, 'hej').slice(1), ['new file mode 100644', 'index 0000000..' + udiff('ny.txt', undefined, 'hej')[2].slice(-7), '--- /dev/null', '+++ b/ny.txt', '@@ -0,0 +1 @@', '+hej']);
   assert.deepStrictEqual(udiff('x', 'a\nb', 'a').slice(-3), ['@@ -1,2 +1 @@', ' a', '-b']);
   assert.ok(udiff('gone', 'a', undefined).includes('+++ /dev/null'));
+  // --stat: en rad per fil och summan, avläst i git 2.55 (ental, och bara insertions när inget togs bort)
+  assert.deepStrictEqual(diffStat([['long-name.md', udiff('long-name.md', 'q', undefined)], ['new.txt', udiff('new.txt', undefined, '')], ['x.txt', udiff('x.txt', 'a\nb\nc', 'a\nB\nc\nd')]]),
+    [' long-name.md | 1 -', ' new.txt      | 0', ' x.txt        | 3 ++-', ' 3 files changed, 2 insertions(+), 2 deletions(-)']);
+  assert.deepStrictEqual(diffStat([['a', udiff('a', 'x', 'x\ny')]]), [' a | 1 +', ' 1 file changed, 1 insertion(+)']);
+  assert.deepStrictEqual(diffStat([['a', udiff('a', 'x\ny', 'x')]]), [' a | 1 -', ' 1 file changed, 1 deletion(-)']);
+  assert.deepStrictEqual(diffStat([['a', udiff('a', undefined, '')]]).at(-1), ' 1 file changed, 0 insertions(+), 0 deletions(-)');
   assert.deepStrictEqual(diffCls(['diff --git a/x b/x', 'index 1..2', '--- a/x', '+++ b/x', '@@ -1 +1 @@', '-a', '+b', ' c', '- [ ] punkt']), ['', '', '', '', 'hunk', 'err', 'add', '', 'err']);
   assert.deepStrictEqual(diffCls(['- [ ] punkt', '+ inte diff']), ['', ''], 'utanför en diff färgas inget');
   assert.deepStrictEqual(diffCls(['diff --git a/x b/x', '+a', '# kommentar', '-b']), ['', 'add', '', ''], 'diffen slutar vid första raden som inte hör dit');
