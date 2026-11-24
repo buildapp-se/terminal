@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger, STEPTEXT, chainParts} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, DANGER, danger, STEPTEXT, chainParts};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -432,6 +432,16 @@ assert.ok(canon(tokenize('Stop-Process -Id 4821 -Force', true), true, true).incl
   assert.throws(() => back('HEAD~3', h), /fatal: ambiguous argument 'HEAD~3': unknown revision/);
   assert.throws(() => gitRefs(tokenize('git reset --soft HEAD~5'), h), /ambiguous argument/);
   assert.strictEqual(gitRefs(tokenize('git reset HEAD~1'), h), undefined);
+  // Filer git inte känner till: texterna avlästa i git 2.55 (restore utan --staged stoppas av dcg, samma text som --staged)
+  const idx = structuredClone(WORLD), fsw = structuredClone(WORLD);
+  fsw.projekt['ny.txt'] = ''; delete fsw.projekt['notes.txt'];
+  const ps_ = (sub, ...f) => pathspec(sub, f, ['projekt'], fsw, idx, false);
+  assert.strictEqual(ps_('add', 'nope'), "fatal: pathspec 'nope' did not match any files");
+  assert.strictEqual(ps_('add', 'ny.txt', 'notes.txt', '.'), '', 'ny fil, borttagen men känd fil och mappen');
+  assert.strictEqual(ps_('checkout', 'nope'), "error: pathspec 'nope' did not match any file(s) known to git");
+  assert.strictEqual(ps_('restore', 'ny.txt'), "error: pathspec 'ny.txt' did not match any file(s) known to git", 'otrackad fil');
+  assert.strictEqual(ps_('restore', 'notes.txt'), '', 'borttagen fil går att hämta tillbaka');
+  assert.strictEqual(pathspec('add', ['NOTES.TXT'], ['projekt'], idx, idx, true), '', 'PowerShell bryr sig inte om skiftläge');
 }
 // Låtsasskalet, speltestarens fynd 2026-10-17. Texterna avlästa i Windows PowerShell 5.1 på Windows 11 och i Git Bash.
 sh = shell(true);

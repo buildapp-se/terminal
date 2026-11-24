@@ -1989,6 +1989,13 @@ function gitRefs(u, g, inRepo = true) {
   const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...[...REMOTE].sort().map(x => '  remotes/origin/' + x)];
   return (u.includes('-a') ? [...local, ...remote] : u.includes('-r') ? remote.map(l => l.replace('remotes/', '')) : local).join('\n');
 }
+// git add, restore och checkout på filer: gits fel för en sökväg git inte känner till, annars ''. add tar det som finns i mappen
+// eller redan i index (en borttagen fil stagas som borttagen); restore och checkout bara det som finns i index.
+/** @param {string} sub @param {string[]} files @param {string[]} cwd @param {object} fs @param {object} index @param {boolean} ps */
+function pathspec(sub, files, cwd, fs, index, ps) {
+  const bad = files.find(f => { const p = resolve(cwd, f); return look(index, p, ps).node === undefined && (sub !== 'add' || look(fs, p, ps).node === undefined); });
+  return bad === undefined ? '' : sub === 'add' ? `fatal: pathspec '${bad}' did not match any files` : `error: pathspec '${bad}' did not match any file(s) known to git`;
+}
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
 for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
@@ -3498,11 +3505,15 @@ function gitWorld(u) {
   if (u[1] === 'add') {
     const paths = args.length ? args.map(f => resolve(cwd, f)) : u.includes('-A') || u.includes('--all') ? [R] : [];
     if (!paths.length) return "Nothing specified, nothing added.\nhint: Maybe you wanted to say 'git add .'?";
+    const bad = pathspec('add', args, cwd, S.fs, S.index, S.ps);
+    if (bad) throw new Error(bad);
     for (const p of paths) place(S.index, p, look(S.fs, p, S.ps).node);
     return '';
   }
   // restore och checkout -- f: filen som den står i index. restore --staged: tillbaka i index som i HEAD, filen rörs inte.
-  if (u[1] === 'restore' || (u[1] === 'checkout' && (u.includes('--') || !REMOTE.includes(args[0]) && !S.branches.has(args[0])))) for (const f of args) {
+  const files = u[1] === 'restore' || (u[1] === 'checkout' && (u.includes('--') || !REMOTE.includes(args[0]) && !S.branches.has(args[0])));
+  if (files) { const bad = pathspec(u[1], args, cwd, S.fs, S.index, S.ps); if (bad) throw new Error(bad); }
+  if (files) for (const f of args) {
     const p = resolve(cwd, f), dir = look(S.fs, p.slice(0, -1), S.ps).node;
     if (u.includes('--staged') || u.includes('-S')) place(S.index, p, look(S.base, p, S.ps).node);
     else { const was = look(S.index, p, S.ps).node; if (typeof was === 'string' && typeof dir === 'object') own(dir, p.at(-1), was); }
@@ -3563,6 +3574,7 @@ function gitOk(b) {
       const u = tokenize(st[0].raw, S.ps), args = u.slice(2).filter(t => !t.startsWith('-'));
       gitRefs(u, g, !!repoOf(gitCwd(u)));
       if (u[0] === 'git' && u[1] === 'clone' && args[0] && here && Object.hasOwn(here, cloneName(args))) return false;
+      if (u[0] === 'git' && (['add', 'restore'].includes(u[1]) || (u[1] === 'checkout' && u.includes('--'))) && pathspec(u[1], args, gitCwd(u), S.fs, S.index, S.ps)) return false; // filen måste finnas, som i riktig git
     }
     return true;
   } catch { return false; }
