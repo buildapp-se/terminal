@@ -3518,14 +3518,17 @@ function gitWorld(u) {
   if (u[1] === '-C') u = ['git', ...u.slice(3)];
   const here = look(S.fs, cwd, S.ps).node, args = u.slice(2).filter(t => !t.startsWith('-')), R = repoOf(cwd) ?? cwd, top = S.commits[0];
   if (u[1] === 'commit') return commit(u, R);
-  // diff: ostagat (index mot filerna), --staged/--cached det stagade (HEAD mot index). Filnamn begränsar, grenar och HEAD~1 jämförs inte.
+  // diff: ostagat (index mot filerna), --staged/--cached det stagade (HEAD mot index), HEAD allt (HEAD mot filerna, utom ospårat).
+  // Filnamn begränsar. ponytail: grenar och HEAD~1 jämförs inte, grenarna har inga egna träd.
   if (u[1] === 'diff') {
-    const {staged, work} = repoChanges(R), cached = u.includes('--staged') || u.includes('--cached'), [from, to] = cached ? [S.base, S.index] : [S.index, S.fs];
+    const {staged, work} = repoChanges(R), cached = u.includes('--staged') || u.includes('--cached'), head = !cached && args.includes('HEAD');
+    const [from, to] = cached ? [S.base, S.index] : head ? [S.base, S.fs] : [S.index, S.fs], tracked = work.filter(c => c[1] !== 'U'), key = c => c[0].join('/');
     const only = args.filter(t => !REFRE.test(t) && !REMOTE.includes(t) && !S.branches.has(t)).map(f => resolve(cwd, f)), txt = n => (typeof n === 'string' ? n : undefined);
-    const files = (cached ? staged : work.filter(c => c[1] !== 'U')).map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
+    const picked = !head ? (cached ? staged : tracked) : [...staged, ...tracked.filter(c => !staged.some(s => key(s) === key(c)))].sort((x, y) => (key(x) < key(y) ? -1 : 1));
+    const files = picked.map(([p]) => [...R, ...p]).filter(p => !only.length || only.some(o => o.every((k, i) => k === p[i])))
       .flatMap(p => { const a = txt(look(from, p, S.ps).node), b = txt(look(to, p, S.ps).node), n = p.slice(R.length).join('/'); return a === b ? [] : [[n, udiff(n, a, b)]]; });
     const lines = !files.length ? [] : u.includes('--stat') ? diffStat(files) : files.flatMap(f => f[1]);
-    return lines.length ? lines.join('\n') : !cached && staged.length ? '# (inget svar: allt du ändrat är stagat. git diff --staged visar det.)' : '';
+    return lines.length ? lines.join('\n') : !cached && !head && staged.length ? '# (inget svar: allt du ändrat är stagat. git diff --staged visar det.)' : '';
   }
   if (u[1] === 'push') S.pushed = S.commits.length;
   if (typeof here !== 'object') return;
