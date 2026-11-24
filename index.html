@@ -2011,7 +2011,8 @@ function gitRefs(u, g, inRepo = true) {
   }
   if (sub === 'reset') { const ref = args.find(t => REFRE.test(t)); if (ref) back(ref, g); return; }
   // push --delete tar bort grenen på GitHub (och origin/grenen här), den lokala står kvar. GitHub vägrar ta bort förvalsgrenen.
-  if (sub === 'push' && args.length > 1 && u.some(t => t === '-d' || t === '--delete')) {
+  if (sub === 'push' && u.some(t => t === '-d' || t === '--delete')) {
+    if (args.length < 2) throw new Error("fatal: --delete doesn't make sense without any refs");
     const to = 'github.com:du/projekt.git', bad = args.slice(1).find(x => x === 'main' || !onGH(x));
     if (bad === 'main') throw new Error(`To ${to}\n ! [remote rejected] main (refusing to delete the current branch: refs/heads/main)\nerror: failed to push some refs to '${to}'`);
     if (bad) throw new Error(`error: unable to delete '${bad}': remote ref does not exist\nerror: failed to push some refs to '${to}'`);
@@ -2024,6 +2025,17 @@ function gitRefs(u, g, inRepo = true) {
       : !br.has(x) ? `error: branch '${x}' not found.` : (br.delete(x), `Deleted branch ${x} (was ${g.commits?.[0]?.id ?? '3f9c2a1'}).`)));
     if (lines.some(l => l.startsWith('error'))) throw new Error(lines.join('\n'));
     return lines.join('\n');
+  }
+  // -m byter namn, -c kopierar (en gren: den du står på); -M och -C skriver över en gren som redan finns. Texterna avlästa i git 2.55.
+  const mc = u.find(t => /^-[mMcC]$|^--(move|copy)$/.test(t));
+  if (mc) {
+    const [from, to] = args.length > 1 ? args : [g.branch, n];
+    if (!to) throw new Error('fatal: branch name required');
+    if (!br.has(from)) throw new Error(`fatal: no branch named '${from}'`);
+    if (from === to) return '';
+    if (/^-[mc]$|^--/.test(mc)) fresh(to); else br.add(to);
+    if (/^-[mM]$|^--move$/.test(mc)) { br.delete(from); if (g.branch === from) g.branch = to; }
+    return '';
   }
   if (n) { fresh(n); return ''; }
   const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...REMOTE.filter(onGH).sort().map(x => '  remotes/origin/' + x)];

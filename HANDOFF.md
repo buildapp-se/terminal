@@ -64,6 +64,8 @@ OWASP-granskning (Gemini 3.8 Flash, granskad av Claude): highscores, quizresulta
 
 Typkontroll utan byggsteg (BACKLOG P2): `tools/typecheck.mjs`, `tsconfig.json`, `tools/globals.d.ts`. 107 fel rättade i `index.html`, inga beteendeändringar. `noImplicitAny` kvar som P3 (cirka 1 400 platser). Skriptet flyttades inte till `terminal.js`, så utkast-PR #1 (kandidatgranskningen 2026-11-04) går fortfarande att slå ihop; den krockar bara där båda ändrat samma rad. Verifierat: typkontrollen, `terminal.test.js`, `stallcheck.js` (fs, git, stop, båda skalen) och ett röktest i Chromium mot både gamla och nya sidan.
 
-## Session: djuppass 2026-11-24 (gren `deep/2026-11-24`, worktree `C:\dev\terminal-deep-1124`), pågår
+## Session: djuppass 2026-11-24 (gren `deep/2026-11-24`, worktree `C:\dev\terminal-deep-1124`), klar
 
 Omfång: P3 och oprioriterade BACKLOG-rader som går att verifiera utan Patrik, sedan mutationstest och UX-granskning av buildapp.se/terminal/. Rör inte PS-tabellerna, typsnitten eller `OUT`-testerna (utkast-PR #1 äger dem).
+
+Gjort och pushat till `main`: dcg 0.16.0-reglerna i `DANGER`, `Select-Object -Skip`, pkill/killall, `git push origin HEAD`, `git diff --stat` och `git diff HEAD`, `git push origin --delete` och `git fetch --prune` som uppgifter i git-paketet (`S.gone`), `git branch -m/-M/-c/-C` (GitHubs `git branch -M main` gav fel), integritetssidans tillbakalänk 45 px. UX-granskningen (ux-audit, 390 och 1440 px) står i BACKLOG; Bits pratbubbla på telefon är Patriks val (P2). Mutation: Stryker på git-grenarna 79,75 till 94,79 % (Audits i `CONTEXT.md`), `udiff`/`diffCls` med handmutation. Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, `dcg-check.mjs` (1 048 rader), `term-deletecheck.js` i scratchpad lokalt och live i båda skalen.

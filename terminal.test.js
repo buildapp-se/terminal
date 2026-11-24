@@ -481,6 +481,53 @@ assert.ok(canon(tokenize('Stop-Process -Id 4821 -Force', true), true, true).incl
   assert.throws(() => back('HEAD~3', h), /fatal: ambiguous argument 'HEAD~3': unknown revision/);
   assert.throws(() => gitRefs(tokenize('git reset --soft HEAD~5'), h), /ambiguous argument/);
   assert.strictEqual(gitRefs(tokenize('git reset HEAD~1'), h), undefined);
+  // Mutationstest 2026-11-24 (Stryker på gitRefs, back, pathspec): det riktig git gör, som testerna ovan inte låste
+  assert.deepStrictEqual([...d.gone], [rb], 'bara grenen, inte origin');
+  assert.throws(() => gd('git push -d origin'), /^Error: fatal: --delete doesn't make sense without any refs$/);
+  for (const s of ['status', 'add .', 'commit -m x', 'log', 'branch', 'switch main', 'checkout main', 'merge x', 'diff', 'restore a', 'stash', 'reset', 'push', 'pull', 'fetch', 'remote -v', 'blame a'])
+    assert.throws(() => gitRefs(tokenize('git ' + s), g, false), /^Error: fatal: not a git repository/, 'git ' + s);
+  for (const s of ['git init', 'git clone https://github.com/du/x', 'git config user.name du', 'git --version', 'svn status', 'npm install'])
+    assert.strictEqual(gitRefs(tokenize(s), g, false), undefined, s);
+  assert.throws(() => gitRefs(tokenize('git -C budget status'), g, false), /not a git repository/, '-C före underkommandot');
+  // branch -m/-M/-c/-C (GitHubs instruktion git branch -M main gav "a branch named 'main' already exists"); avläst i git 2.55
+  {
+    const m = {branch: 'main', branches: new Set(['main', 'a'])}, gm = s => gitRefs(tokenize(s), m), nom = (s, re) => assert.throws(() => gm(s), re, s);
+    assert.strictEqual(gm('git branch -M main'), ''); assert.deepStrictEqual([...m.branches], ['main', 'a']);
+    nom('git branch -m nope x', /^Error: fatal: no branch named 'nope'$/);
+    nom('git branch -m a main', /^Error: fatal: a branch named 'main' already exists$/);
+    nom('git branch -m', /^Error: fatal: branch name required$/);
+    assert.strictEqual(gm('git branch -c a kopia'), ''); assert.ok(m.branches.has('a') && m.branches.has('kopia'));
+    nom('git branch --copy a kopia', /already exists/);
+    assert.strictEqual(gm('git branch -m ny'), ''); assert.strictEqual(m.branch, 'ny'); assert.ok(!m.branches.has('main'));
+    assert.strictEqual(gm('git branch -M a kopia'), ''); assert.deepStrictEqual([...m.branches].sort(), ['kopia', 'ny']);
+    assert.strictEqual(gm('git branch --move kopia k2'), ''); assert.strictEqual(gm('git branch'), '  k2\n* ny');
+    assert.strictEqual(gm('git branch -C ny ny2'), ''); assert.strictEqual(m.branch, 'ny', 'kopian byter inte gren');
+  }
+  for (const s of ['git commit -C HEAD', 'git branch -C main kopia', 'git rebase -C3 main', 'git rebase -C 3 main']) assert.doesNotThrow(() => gitRefs(tokenize(s), {branch: 'main', branches: new Set(['main', 'kopia'])}), s);
+  // back: tom historik, okänd hash; reset utan ref eller på en fil
+  assert.throws(() => back('HEAD', {}), /unknown revision/);
+  assert.throws(() => back('1234567', h), /fatal: ambiguous argument '1234567'/);
+  for (const s of ['git reset', 'git reset a', 'git reset old-cafe123', 'git reset cafe123.txt', 'git reset nytt.rs']) assert.strictEqual(gitRefs(tokenize(s), h), undefined, s);
+  // checkout -b, -- och lokala grenar; diff -b är whitespace, ingen gren
+  const c = {branch: 'main', branches: new Set(['main'])}, gc = s => gitRefs(tokenize(s), c);
+  assert.strictEqual(gc('git checkout -b ny'), undefined); assert.strictEqual(c.branch, 'ny');
+  assert.strictEqual(gc('git diff -b notes.txt'), undefined); assert.deepStrictEqual([...c.branches], ['main', 'ny']);
+  assert.strictEqual(gc('git checkout -- main'), undefined); assert.strictEqual(c.branch, 'ny', 'checkout -- tar filer, inte grenar');
+  assert.strictEqual(gc('git checkout main'), undefined); assert.strictEqual(gc('git checkout ny'), undefined); assert.strictEqual(c.branch, 'ny', 'lokal gren som inte finns på GitHub');
+  assert.strictEqual(gc('git merge ny'), 'Already up to date.');
+  assert.strictEqual(gc('git merge origin/fix-login'), undefined, 'GitHubs gren går att slå ihop utan att byta till den');
+  // branch -d på flera: alla rader, ett fel stoppar; nuvarande gren i PowerShell; tom historik
+  c.branches.add('a'); c.branches.add('b');
+  assert.strictEqual(gc('git branch -d a b'), 'Deleted branch a (was 3f9c2a1).\nDeleted branch b (was 3f9c2a1).');
+  c.branches.add('a');
+  assert.throws(() => gc('git branch -d a nope'), /^Error: Deleted branch a \(was 3f9c2a1\)\.\nerror: branch 'nope' not found\.$/);
+  assert.throws(() => gitRefs(tokenize('git branch -d main'), {branch: 'main', branches: new Set(['main']), ps: true}), /used by worktree at 'C:\/Users\/du\/projekt'/);
+  assert.strictEqual(gitRefs(tokenize('git branch -d x'), {branch: 'main', branches: new Set(['main', 'x']), commits: []}), 'Deleted branch x (was 3f9c2a1).');
+  assert.strictEqual(gc('git branch ny-d'), '', 'ett namn som slutar på -d är ingen flagga'); assert.strictEqual(gc('git branch fix-m'), ''); assert.ok(c.branches.has('fix-m') && c.branches.has('ny') && c.branch === 'ny', 'inte heller -m');
+  // branch -r och -a: GitHubs grenar i bokstavsordning
+  const gh = ['main', ...POOLS.b].sort();
+  assert.strictEqual(gitRefs(tokenize('git branch -r'), {branch: 'main', branches: new Set(['main'])}), ['  origin/HEAD -> origin/main', ...gh.map(x => '  origin/' + x)].join('\n'));
+  assert.strictEqual(gitRefs(tokenize('git branch -a'), {branch: 'main', branches: new Set(['main'])}), ['* main', '  remotes/origin/HEAD -> origin/main', ...gh.map(x => '  remotes/origin/' + x)].join('\n'));
   // Filer git inte känner till: texterna avlästa i git 2.55 (restore utan --staged stoppas av dcg, samma text som --staged)
   const idx = structuredClone(WORLD), fsw = structuredClone(WORLD);
   fsw.projekt['ny.txt'] = ''; delete fsw.projekt['notes.txt'];

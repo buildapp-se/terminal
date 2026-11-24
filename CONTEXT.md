@@ -153,3 +153,4 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - TLS: 2026-10-28, pass, SSL Labs A+ on all 4 buildapp.se endpoints (2 IPv4, 2 IPv6), HSTS max-age=15552000; includeSubDomains
 - Search Console: 2026-10-28, pass, sc-domain:buildapp.se verified, /terminal/ submitted and indexed (crawled 2026-10-21), sitemap.xml valid, 0 errors
 - Dependabot: 2026-10-29, pass, 0 open alerts
+- Mutation: 2026-11-24, warn, Stryker 9.6.1 (command runner, `terminal.test.js`) on `REMOTE` to `pathspec` in the pure section (git branches, `back`, `pathspec`): 94,79 % (79,75 % before new tests), 2 more killed and checked by hand after the run; 17 survivors are regex anchors on tokens that are already exact flags, `ref.slice(4)` and contrived names; the rest of the script not measured (no Stryker setup in the repo: the pure section is copied into a module in scratch). Earlier the same day `udiff`/`diffCls` got tests by hand-mutation, no score recorded
