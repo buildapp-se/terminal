@@ -328,7 +328,34 @@ assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(
   assert.deepStrictEqual(far.filter(l => l.startsWith('@@')), ['@@ -1,4 +1,4 @@', '@@ -13,4 +13,4 @@'], 'långt isär: två stycken');
   assert.deepStrictEqual(udiff('ny.txt', undefined, 'hej').slice(1), ['new file mode 100644', 'index 0000000..' + udiff('ny.txt', undefined, 'hej')[2].slice(-7), '--- /dev/null', '+++ b/ny.txt', '@@ -0,0 +1 @@', '+hej']);
   assert.deepStrictEqual(udiff('x', 'a\nb', 'a').slice(-3), ['@@ -1,2 +1 @@', ' a', '-b']);
-  assert.ok(udiff('gone', 'a', undefined).includes('+++ /dev/null'));
+  const gone = udiff('gone', 'a', undefined);
+  assert.deepStrictEqual(gone.slice(1), ['deleted file mode 100644', 'index ' + gone[2].slice(6, 13) + '..0000000', '--- a/gone', '+++ /dev/null', '@@ -1 +0,0 @@', '-a']);
+  // tom fil är noll rader, inte en tom rad (avläst i git 2.55)
+  assert.deepStrictEqual(udiff('e', '', 'a').slice(-2), ['@@ -0,0 +1 @@', '+a']);
+  assert.deepStrictEqual(udiff('f', 'a', '').slice(-2), ['@@ -1 +0,0 @@', '-a']);
+  // sex oförändrade rader emellan blir ett stycke, sju blir två (git 2.55)
+  const twelve = [...Array(12)].map((_, i) => String(i + 1));
+  const with2 = (a, b) => twelve.map(l => (l === '1' ? 'X' : l === a ? b : l)).join('\n');
+  assert.deepStrictEqual(udiff('g', twelve.join('\n'), with2('8', 'Y')).filter(l => l.startsWith('@@')), ['@@ -1,11 +1,11 @@']);
+  assert.deepStrictEqual(udiff('h', twelve.join('\n'), with2('9', 'Y')).filter(l => l.startsWith('@@')), ['@@ -1,4 +1,4 @@', '@@ -6,7 +6,7 @@']);
+  // index-raden: sju hexsiffror som beror på innehållet
+  const idx = [...Array(200)].map((_, i) => udiff('x', 'a', 'v' + i)[1]);
+  assert.ok(idx.every(l => /^index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$/.test(l)), 'index-raden: ' + idx.find(l => !/^index [0-9a-f]{7}\.\.[0-9a-f]{7} 100644$/.test(l)));
+  assert.ok(new Set(idx).size > 190, 'hashen ska bero på innehållet');
+  // varje stycke stämmer mot filerna och diffen är minimal (lika många +/- som utanför längsta gemensamma följden)
+  const lcs = (A, B) => { const T = A.map(() => new Array(B.length + 1).fill(0)).concat([new Array(B.length + 1).fill(0)]);
+    for (let i = A.length - 1; i >= 0; i--) for (let j = B.length - 1; j >= 0; j--) T[i][j] = A[i] === B[j] ? T[i + 1][j + 1] + 1 : Math.max(T[i + 1][j], T[i][j + 1]); return T[0][0]; };
+  let seed = 7; const rnd = n => (seed = (seed * 1103515245 + 12345) % 2147483648) % n;
+  for (let k = 0; k < 400; k++) {
+    const A = [...Array(rnd(9))].map(() => 'abc'[rnd(3)]), B = [...Array(rnd(9))].map(() => 'abc'[rnd(3)]), out = udiff('r', A.join('\n'), B.join('\n'));
+    const body = out.slice(out.findIndex(l => l.startsWith('@@')));
+    if (A.join('\n') === B.join('\n')) { assert.strictEqual(out.findIndex(l => l.startsWith('@@')), -1); continue; }
+    assert.strictEqual(body.filter(l => l[0] === '-').length, A.length - lcs(A, B), `minimal - för ${A} -> ${B}`);
+    assert.strictEqual(body.filter(l => l[0] === '+').length, B.length - lcs(A, B), `minimal + för ${A} -> ${B}`);
+    body.forEach((l, i) => { if (!l.startsWith('@@')) return; const [, as, ac = '1', bs, bc = '1'] = l.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@$/), end = body.findIndex((x, j) => j > i && x.startsWith('@@')), lines = body.slice(i + 1, end < 0 ? undefined : end);
+      assert.deepStrictEqual(lines.filter(x => x[0] !== '+').map(x => x.slice(1)), +ac ? A.slice(as - 1, as - 1 + +ac) : [], `stycket mot a: ${A} -> ${B}`);
+      assert.deepStrictEqual(lines.filter(x => x[0] !== '-').map(x => x.slice(1)), +bc ? B.slice(bs - 1, bs - 1 + +bc) : [], `stycket mot b: ${A} -> ${B}`); });
+  }
   // --stat: en rad per fil och summan, avläst i git 2.55 (ental, och bara insertions när inget togs bort)
   assert.deepStrictEqual(diffStat([['long-name.md', udiff('long-name.md', 'q', undefined)], ['new.txt', udiff('new.txt', undefined, '')], ['x.txt', udiff('x.txt', 'a\nb\nc', 'a\nB\nc\nd')]]),
     [' long-name.md | 1 -', ' new.txt      | 0', ' x.txt        | 3 ++-', ' 3 files changed, 2 insertions(+), 2 deletions(-)']);
@@ -337,6 +364,7 @@ assert.strictEqual(lampSum(11), '1 0 1 1 = 8 + 2 + 1 = 11'); assert.strictEqual(
   assert.deepStrictEqual(diffStat([['a', udiff('a', undefined, '')]]).at(-1), ' 1 file changed, 0 insertions(+), 0 deletions(-)');
   assert.deepStrictEqual(diffCls(['diff --git a/x b/x', 'index 1..2', '--- a/x', '+++ b/x', '@@ -1 +1 @@', '-a', '+b', ' c', '- [ ] punkt']), ['', '', '', '', 'hunk', 'err', 'add', '', 'err']);
   assert.deepStrictEqual(diffCls(['- [ ] punkt', '+ inte diff']), ['', ''], 'utanför en diff färgas inget');
+  assert.deepStrictEqual(diffCls(['diff --git a/x b/x', '-x --- y', '+x +++ y', '@@ -1 +1 @@ function main()']), ['', 'err', 'add', 'hunk'], 'bara --- och +++ först på raden är filhuvud; git skriver funktionen efter @@');
   assert.deepStrictEqual(diffCls(['diff --git a/x b/x', '+a', '# kommentar', '-b']), ['', 'add', '', ''], 'diffen slutar vid första raden som inte hör dit');
 }
 assert.strictEqual(lampMode(5),'101 = r-x = 5'); assert.strictEqual(lampMode(15), '111 = rwx = 7', 'chmod tar de tre lägsta bitarna'); assert.strictEqual(lampMode(8), '000 = --- = 0');
