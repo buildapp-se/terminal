@@ -401,6 +401,8 @@ const TASKS = [
   ['git', 3, 'Slå ihop grenen {b} med grenen du står på', 'git merge {b}', 'Har två ändringar rört samma rad blir det en konflikt som du får lösa.', '='],
   ['git', 3, 'Ta bort grenen {b}', ['git branch -d {b}', 'git branch -D {b}'], '-d vägrar om grenen inte är ihopslagen. -D tar bort ändå.', '='],
   ['git', 3, 'Skicka grenen {b} till GitHub första gången', ['git push -u origin {b}', 'git push --set-upstream origin {b}'], '-u kopplar grenen till GitHub, så räcker git push nästa gång.', '='],
+  ['git', 3, 'Städa bort grenar som inte längre finns på GitHub', ['git fetch --prune', 'git fetch -p'], 'prune = beskära. Tar bort dina origin/-kopior av grenar som någon har tagit bort på GitHub. Dina egna grenar rörs inte.', '='],
+  ['git', 4, 'Ta bort grenen {b} på GitHub', ['git push origin --delete {b}', 'git push -d origin {b}'], 'Grenen försvinner på GitHub, din lokala gren står kvar (den tar git branch -d bort). Görs ofta efter en ihopslagen pull request.', '='],
   ['git', 3, 'Kasta ändringarna i {f} som inte är stagade', ['git restore {f}', 'git checkout -- {f}', 'git checkout {f}'], 'Ändringarna är borta på riktigt, git har aldrig sparat dem.', '='],
   ['git', 3, 'Lägg undan dina ändringar tillfälligt', 'git stash', 'stash = gömma. Bra när du måste byta gren mitt i något.', '='],
   ['git', 3, 'Ta tillbaka ändringarna du lade undan', 'git stash pop', 'pop tar det senaste du lade undan och lägger tillbaka det.', '='],
@@ -1030,6 +1032,8 @@ const GLOSS = {
   'git add -A': 'all: alla ändringar i hela repot', 'git add --all': 'samma som -A: alla ändringar', 'git commit -m': 'message: meddelandet kommer direkt efter', 'git commit --amend': 'skriv om senaste commit i stället för att göra en ny',
   'git log --oneline': 'en rad per commit: kort hash och meddelande', 'git switch -c': 'create: skapa grenen och byt till den', 'git checkout -b': 'branch: skapa grenen och byt till den', 'git checkout --': 'det som följer är filer, inte grenar',
   'git branch -a': 'all: även grenarna på GitHub', 'git branch -d': 'delete: ta bort grenen, vägrar om den inte är ihopslagen', 'git branch -D': 'delete, och ta bort även om grenen inte är ihopslagen',
+  'git push --delete': 'ta bort grenen på GitHub i stället för att skicka den', 'git push -d': 'delete: ta bort grenen på GitHub i stället för att skicka den',
+  'git fetch': 'hämta det nya från GitHub utan att röra dina filer', 'git fetch --prune': 'ta bort origin/-grenar som inte finns på GitHub längre', 'git fetch -p': 'prune: ta bort origin/-grenar som inte finns på GitHub längre',
   'git push -u': 'upstream: koppla grenen till GitHub, så räcker git push nästa gång', 'git push --set-upstream': 'samma som -u: koppla grenen till GitHub', 'git remote -v': 'verbose: visa adresserna också', 'git reset --soft': 'soft: behåll ändringarna i staging',
   'gh': 'GitHubs egen terminalklient', 'gh repo': 'kommandon för repon', 'gh repo create': 'skapa ett nytt repo på GitHub', 'gh repo clone': 'klona ett repo från GitHub', 'gh pr': 'kommandon för pull requests',
   'gh pr create': 'öppna en pull request för grenen du står på', 'gh pr list': 'lista öppna pull requests', 'gh auth': 'inloggning', 'gh auth login': 'logga in på GitHub',
@@ -1974,7 +1978,7 @@ function makeQuiz(pack, ps) {
 }
 // Grenarna som riktig git: lokala i g.branches, GitHubs (POOLS.b) under remotes/origin/ tills man byter till dem.
 // Ändrar g, ger utskriften (undefined: OUT svarar) eller kastar gits riktiga fel. inRepo false: mappen är inte ett repo.
-const REMOTE = ['main', ...POOLS.b], NEEDREPO = new Set(['status', 'add', 'commit', 'log', 'branch', 'switch', 'checkout', 'merge', 'diff', 'restore', 'stash', 'reset', 'push', 'pull', 'remote', 'blame']);
+const REMOTE = ['main', ...POOLS.b], NEEDREPO = new Set(['status', 'add', 'commit', 'log', 'branch', 'switch', 'checkout', 'merge', 'diff', 'restore', 'stash', 'reset', 'push', 'pull', 'fetch', 'remote', 'blame']);
 const REFRE = /^(HEAD[~^\d]*|origin\/main|[0-9a-f]{7})$/;
 // Hur många commits bakåt ref pekar: HEAD~2, HEAD^, origin/main (det senast pushade) eller en hash. Kastar gits fel för det som inte finns.
 function back(ref, g) {
@@ -1990,21 +1994,30 @@ function gitRefs(u, g, inRepo = true) {
   const sub = u[1], args = u.slice(2).filter(t => !t.startsWith('-')), n = args[0], br = g.branches;
   if (!inRepo && NEEDREPO.has(sub)) throw new Error('fatal: not a git repository (or any of the parent directories): .git');
   const fresh = x => { if (br.has(x)) throw new Error(`fatal: a branch named '${x}' already exists`); br.add(x); };
+  const onGH = x => REMOTE.includes(x) && !g.gone?.has(x); // grenarna på GitHub, utom de som tagits bort med push --delete
   const sw = (sub === 'switch' && u.includes('-c')) || (sub === 'checkout' && u.includes('-b'));
   if (sw && n) { fresh(n); g.branch = n; return; }
-  if (n && (sub === 'switch' || (sub === 'checkout' && !u.includes('--') && (br.has(n) || REMOTE.includes(n))))) {
+  if (n && (sub === 'switch' || (sub === 'checkout' && !u.includes('--') && (br.has(n) || onGH(n))))) {
     if (n === g.branch) return `Already on '${n}'`;
     if (br.has(n)) { g.branch = n; return; }
-    if (!REMOTE.includes(n)) throw new Error(`fatal: invalid reference: ${n}`);
+    if (!onGH(n)) throw new Error(`fatal: invalid reference: ${n}`);
     br.add(n); g.branch = n; // en gren som bara finns på GitHub blir lokal när man byter till den
     return `branch '${n}' set up to track 'origin/${n}'.\nSwitched to a new branch '${n}'`;
   }
   if (sub === 'merge' && n) {
     if (n === g.branch) return 'Already up to date.';
-    if (!br.has(n) && !(n.startsWith('origin/') && REMOTE.includes(n.slice(7)))) throw new Error(`merge: ${n} - not something we can merge`);
+    if (!br.has(n) && !(n.startsWith('origin/') && onGH(n.slice(7)))) throw new Error(`merge: ${n} - not something we can merge`);
     return;
   }
   if (sub === 'reset') { const ref = args.find(t => REFRE.test(t)); if (ref) back(ref, g); return; }
+  // push --delete tar bort grenen på GitHub (och origin/grenen här), den lokala står kvar. GitHub vägrar ta bort förvalsgrenen.
+  if (sub === 'push' && args.length > 1 && u.some(t => t === '-d' || t === '--delete')) {
+    const to = 'github.com:du/projekt.git', bad = args.slice(1).find(x => x === 'main' || !onGH(x));
+    if (bad === 'main') throw new Error(`To ${to}\n ! [remote rejected] main (refusing to delete the current branch: refs/heads/main)\nerror: failed to push some refs to '${to}'`);
+    if (bad) throw new Error(`error: unable to delete '${bad}': remote ref does not exist\nerror: failed to push some refs to '${to}'`);
+    for (const x of args.slice(1)) (g.gone ??= new Set()).add(x);
+    return [`To ${to}`, ...args.slice(1).map(x => ` - [deleted]         ${x}`)].join('\n');
+  }
   if (sub !== 'branch') return;
   if (u.some(t => /^-[dD]$|^--delete$/.test(t))) {
     const lines = args.map(x => (x === g.branch ? `error: cannot delete branch '${x}' used by worktree at '${g.ps ? 'C:/Users/du' : '/home/du'}/projekt'`
@@ -2013,7 +2026,7 @@ function gitRefs(u, g, inRepo = true) {
     return lines.join('\n');
   }
   if (n) { fresh(n); return ''; }
-  const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...[...REMOTE].sort().map(x => '  remotes/origin/' + x)];
+  const local = [...br].sort().map(x => (x === g.branch ? '* ' : '  ') + x), remote = ['  remotes/origin/HEAD -> origin/main', ...REMOTE.filter(onGH).sort().map(x => '  remotes/origin/' + x)];
   return (u.includes('-a') ? [...local, ...remote] : u.includes('-r') ? remote.map(l => l.replace('remotes/', '')) : local).join('\n');
 }
 // git add, restore och checkout på filer: gits fel för en sökväg git inte känner till, annars ''. add tar det som finns i mappen
@@ -2185,7 +2198,7 @@ function start() {
 function fresh() {
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
-    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main']), base: structuredClone(WORLD), index: structuredClone(WORLD), stash: [], pushed: SEEDLOG.length, commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
+    typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main']), gone: new Set(), base: structuredClone(WORLD), index: structuredClone(WORLD), stash: [], pushed: SEEDLOG.length, commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
   log.replaceChildren();
   applyShell();
 }
@@ -2688,6 +2701,7 @@ const OUT = {
   'git push': a => a.includes('-u') || a.includes('--set-upstream')
     ? `remote: Create a pull request for '${a.at(-1)}' on GitHub by visiting:\nremote:      https://github.com/du/projekt/pull/new/${a.at(-1)}\nTo github.com:du/projekt.git\n * [new branch]      ${a.at(-1)} -> ${a.at(-1)}\nbranch '${a.at(-1)}' set up to track 'origin/${a.at(-1)}'.`
     : 'To github.com:du/projekt.git\n   8b1d0e4..3f9c2a1  main -> main',
+  'git fetch': '',
   'git pull': 'Updating 3f9c2a1..7c8d9e0\nFast-forward\n index.html | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)',
   'git clone': a => `Cloning into '${a.find(t => t.includes('/')).split('/').at(-1).replace(/\.git$/, '')}'...\nremote: Enumerating objects: 42, done.\nReceiving objects: 100% (42/42), 18.20 KiB | 1.82 MiB/s, done.`,
   'git branch': a => a.some(t => /^-[dD]$|^--delete$/.test(t)) ? a.slice(2).filter(t => !t.startsWith('-')).map(b => `Deleted branch ${b} (was 3f9c2a1).`).join('\n')
@@ -3599,7 +3613,7 @@ function gitWorld(u) {
 }
 // Går blockets git att köra i världen som den är nu? Grenarna provkörs på en kopia, clone vill ha en ledig mapp.
 function gitOk(b) {
-  const g = {branch: S.branch, branches: new Set(S.branches), commits: S.commits, pushed: S.pushed, ps: S.ps}, here = look(S.fs, S.cwd, S.ps).node;
+  const g = {branch: S.branch, branches: new Set(S.branches), gone: new Set(S.gone), commits: S.commits, pushed: S.pushed, ps: S.ps}, here = look(S.fs, S.cwd, S.ps).node;
   try {
     for (const st of b.steps) {
       const u = tokenize(st[0].raw, S.ps), args = u.slice(2).filter(t => !t.startsWith('-'));

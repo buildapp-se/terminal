@@ -464,6 +464,17 @@ assert.ok(canon(tokenize('Stop-Process -Id 4821 -Force', true), true, true).incl
   assert.strictEqual(git('git -C budget push'), undefined);
   assert.throws(() => gitRefs(tokenize('git status'), g, false), /not a git repository/);
   assert.strictEqual(gitRefs(tokenize('git init'), g, false), undefined);
+  // push --delete: grenen försvinner på GitHub och ur branch -a, en gång; main vägrar GitHub, okänd gren ger gits fel
+  const rb = POOLS.b[0], d = {branch: 'main', branches: new Set(['main'])}, gd = s => gitRefs(tokenize(s), d);
+  assert.ok(gd('git branch -a').includes('remotes/origin/' + rb));
+  assert.strictEqual(gd(`git push origin --delete ${rb}`), `To github.com:du/projekt.git\n - [deleted]         ${rb}`);
+  assert.ok(!gd('git branch -a').includes('remotes/origin/' + rb) && gd('git branch -a').includes('remotes/origin/main'));
+  assert.throws(() => gd(`git push -d origin ${rb}`), new RegExp(`unable to delete '${rb}': remote ref does not exist\\nerror: failed to push some refs`));
+  assert.throws(() => gd(`git switch ${rb}`), /invalid reference/);
+  assert.throws(() => gd(`git merge origin/${rb}`), /not something we can merge/);
+  assert.throws(() => gd('git push origin --delete main'), /remote rejected\] main \(refusing to delete the current branch/);
+  assert.strictEqual(gd('git push origin main'), undefined);
+  assert.throws(() => gitRefs(tokenize('git fetch --prune'), d, false), /not a git repository/);
   // reset: HEAD~n och origin/main räknas bakåt, längre än historiken ger gits fel
   const h = {commits: [{id: 'aaaaaaa'}, {id: 'bbbbbbb'}, {id: '3f9c2a1'}], pushed: 1};
   assert.deepStrictEqual(['HEAD', 'HEAD~', 'HEAD~1', 'HEAD^^', 'HEAD~2', 'origin/main', 'bbbbbbb'].map(r => back(r, h)), [0, 1, 1, 2, 2, 2, 1]);
