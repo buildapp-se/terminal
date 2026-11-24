@@ -76,3 +76,9 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [x] `[P3]` Två `<section>` utan rubrik (W3C-varning, rad 261 och 268 i levererad HTML). Fixat 2026-10-28: redigeraren och panelen är `<div>`, de är fönsterytor, inte avsnitt.
 - [ ] `[P3]` Renderblockerande förfrågningar kostar cirka 550 ms LCP på Slow 4G (troligen Google Fonts-CSS).
 - [x] `[P3]` Personlig gmail som författaradress på 15 commits i den publika historiken. Accepterat av Patrik 2026-10-28: historiken skrivs inte om. Nya commits går via noreply.
+
+## UX-granskning 2026-11-24 (ux-audit, lokal server, 390 och 1440 px)
+
+- [x] `[P3]` `integritet.html`: "< tillbaka till spelet" var 17 px hög (Fitts). Fixat 2026-11-24: 45 px med padding, samma placering; skriptet pass på sidan.
+- [ ] `[P2]` Telefon (390 px), terminalen i en runda: Bits pratbubbla täcker de tre nedersta loggraderna, så felet man nyss fick (t.ex. "hejsan : The term 'hejsan' is not recognized ...") syns inte medan bubblan visas, och ägget med 0000 klipper sista raden. Samma som "Kvar" under Mobil ovan. Kräver ett val om var Bit bor på telefon (loggen smalare med plats för Bit, bubblan ovanför loggen över brunnen, eller kortare visningstid), därför inte gjort.
+- Zeigarnik (skriptet varnar: text i `#cmd` försvinner vid omladdning): avsiktligt, en omladdning börjar om rundan, så ett halvskrivet kommando har inget att höra till.

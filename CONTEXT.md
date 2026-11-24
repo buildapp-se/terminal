@@ -144,7 +144,7 @@ Webbläsartest: Playwright från `C:/dev/fackligastudier/node_modules/playwright
 - Headers (automated): 2026-10-27, pass, 6 of 6 on buildapp.se/terminal, Observatory B+ on buildapp.se
 - Secrets: 2026-10-28, pass, gitleaks 0 findings in 101 commits
 - Actions: 2026-10-28, n/a, no GitHub Actions workflows
-- UX (automated): 2026-10-28, needs-review, 6 of 6 script checks pass on buildapp.se/terminal (no --interact); screenshot review not done
+- UX: 2026-11-24, warn, 6 of 7 script checks pass on / with --interact (Zeigarnik warn, intentional: reload restarts the round), integritet.html 6 of 6 after the back-link fix (was needs-review, 6 of 6 without --interact, 2026-10-28); top finding: on 390 px Bit's speech bubble covers the last three log lines, including the error just made
 - WCAG 2.2 AA (automated): 2026-10-28, needs-review, axe 4.14.0 0 violations on buildapp.se/terminal (mobile, one page); manual keyboard pass not done
 - OG image: 2026-10-28, pass, 1200x630 PNG, 58 kB, https://buildapp.se/terminal/og.png
 - Markup: 2026-10-28, pass, W3C 0 HTML errors on / and integritet.html, 0 broken links (GET); 3 CSS errors on / are validator gaps for valid Baseline CSS (field-sizing, container-type, @container); 2 "section lacks heading" warnings
