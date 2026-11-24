@@ -2,9 +2,9 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: underhåll (PS-tabellerna samlade, OUT/sample/gitWorld/changes/petTip in i pure och testade), sedan restlistan i BACKLOG
+nextAction: Patrik granskar utkast-PR #1 (PS-tabellerna samlade, typsnitten utan blockering); sedan OUT/sample/gitWorld/changes/petTip in i pure och testade, sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-11-02
+reviewedAt: 2026-11-24
 ---
 **2026-11-02:** kontaktadressen är nu `kontakt@buildapp.se` (förut `kontakt@orgutveckling.se`). Integritetstexten version 1.3.
 
@@ -58,3 +58,8 @@ OWASP-granskning (Gemini 3.8 Flash, granskad av Claude): highscores, quizresulta
 
 - `node terminal.test.js`: rättningen, alla svar i `TASKS` mot sig själva, låtsasskalet i båda skalen, testagenternas fynd.
 - Webbläsare: Playwright i Chromium, Firefox och WebKit mot en lokal server (se `CONTEXT.md`).
+- `node tools/typecheck.mjs`: `tsc` strict över hela skriptet (radnumren gäller `index.html`).
+
+## Session: backloggsvep 2026-11-24 (gren `sweep/2026-11-24`, worktree `C:\dev\terminal-sweep-1124`), klar
+
+Typkontroll utan byggsteg (BACKLOG P2): `tools/typecheck.mjs`, `tsconfig.json`, `tools/globals.d.ts`. 107 fel rättade i `index.html`, inga beteendeändringar. `noImplicitAny` kvar som P3 (cirka 1 400 platser). Skriptet flyttades inte till `terminal.js`, så utkast-PR #1 (kandidatgranskningen 2026-11-04) går fortfarande att slå ihop; den krockar bara där båda ändrat samma rad. Verifierat: typkontrollen, `terminal.test.js`, `stallcheck.js` (fs, git, stop, båda skalen) och ett röktest i Chromium mot både gamla och nya sidan.

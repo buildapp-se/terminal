@@ -28,6 +28,9 @@ Den gamla adressen `buildapp.se/ai/terminal.html` togs bort, ingen vidarebefordr
 - Den rena logiken står mellan `pure:start` och `pure:end` och testas av
   `terminal.test.js` (`node terminal.test.js`), som också kör varje svar i `TASKS` mot sig
   självt och kräver en förklaring i `GLOSS` för varje del av varje svar (hjälpkortet).
+  `node tools/typecheck.mjs` typkontrollerar hela skriptet med `tsc` (`strict: true`, utan `noImplicitAny` än) utan
+  byggsteg: skriptet plockas ut ur `index.html` med samma radnummer och görs till en modul, så att spelets globala
+  namn (`screen`) inte krockar med DOM:ens. Typer skrivs som JSDoc i `index.html`.
   `stallcheck.js` (lokal server på 8766, Playwright ur fackligastudier) leker med slumpade kommandon
   i alla paket och skal och larmar om blocken slutar komma. Fångade 2026-10-17 att `spawn` fastnade i
   hemmappen när de nyss använda uppgifterna var de enda som gick där; sista fasen tar nu alla uppgifter.

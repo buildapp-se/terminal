@@ -534,7 +534,7 @@ function tokenize(s, ps = false) {
   while (i < s.length) {
     const ch = s[i];
     if (/\s/.test(ch)) { push(); i++; continue; }
-    if (ps && !has && (ch === '"' || ch === "'") && (!out.length || ['&&', ';', '||'].includes(out.at(-1)))) out.push('Write-Output');
+    if (ps && !has && (ch === '"' || ch === "'") && (!out.length || ['&&', ';', '||'].includes(out[out.length - 1]))) out.push('Write-Output');
     if (ch === "'") {
       const j = s.indexOf("'", i + 1);
       if (j < 0) throw new Error("'");
@@ -557,8 +557,9 @@ function tokenize(s, ps = false) {
 
 // Delar på && ; || till separata kommandon
 function segments(tokens) {
+  /** @type {(string[] & {op?: string})[]} */
   const segs = [[]];
-  for (const t of tokens) if (t === '&&' || t === ';' || t === '||') segs.push(Object.assign([], {op: t})); else segs.at(-1).push(t);
+  for (const t of tokens) if (t === '&&' || t === ';' || t === '||') segs.push(Object.assign([], {op: t})); else segs[segs.length - 1].push(t);
   return segs.filter(s => s.length);
 }
 
@@ -583,6 +584,7 @@ function canon(seg, ps = false, keep = false) {
   flush();
   return out;
 }
+/** @param {string[]} stage */
 function canonStage([cmd, ...rest]) {
   if (cmd === 'find') return [cmd, ...rest.map(path)]; // find har långa flaggor med ett streck, -name
   if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map(t => (/^-(c|command)$/i.test(t) ? '-Command' : t))];
@@ -687,6 +689,7 @@ function psparam(cmd, name) {
   return hits.length === 1 ? hits[0] : hits.length ? '' : null;
 }
 // Normalform för PowerShell: små bokstäver, alias utbytta, parametrar med namn, positionella på sina platser
+/** @param {string[]} stage */
 function canonPSStage([c, ...rest], keep = false) {
   const [cmd, ...pre] = (PSALIAS[c.toLowerCase()] || c.toLowerCase()).split(' ');
   if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest.map(t => t.replace(/\\/g, '/'))]); // git, npm, curl.exe: rättas som i bash
@@ -762,6 +765,7 @@ function complete(fs, cwd, line, ps, cmds) {
 }
 
 // Bit, terminaldjuret: äter en bit per löst steg och växer vid varje tvåpotens, 1, 2, 4, 8 och så vidare (Patrik 2026-10-17). Varje stadium lär ut något om bitar.
+/** @type {[number, string, string][]} */
 const PET_STAGES = [
   [0, 'Ägg', 'Ett ägg. Det kläcks när du löser ditt första steg.'],
   [1, 'Bit', '1 bit: en etta eller en nolla, på eller av. Allt i datorn är byggt av sådana, även jag.'],
@@ -1119,6 +1123,8 @@ function parts(raw, ps = false) {
 // En mapp är ett objekt, en fil en sträng. Roten är hemmappen ~, rundan börjar i ~/projekt.
 const LOGRADER = n => Array.from({length: n}, (_, i) => `2026-10-17 12:${String(i).padStart(2, '0')} ` +
   (i % 7 === 6 ? 'ERROR kunde inte nå databasen' : `INFO GET /${['', 'om', 'spel', 'api/poang'][i % 4]} 200`)).join('\n');
+/** @typedef {{[name: string]: string | Dir}} Dir */
+/** @type {Dir} */
 const WORLD = {
   projekt: {
     'README.md': '# projekt\nVälkommen! Titta runt med ls och cd.\nNågot ligger gömt här. Dolda mappar syns bara om du ber om dem.',
@@ -1234,7 +1240,7 @@ function findstrArgs(a) {
   const opt = o => a.some(t => t.toLowerCase() === o), phrase = a.find(t => /^\/c:/i.test(t))?.slice(3), rest = a.filter(t => !t.startsWith('/'));
   const [pat, ...files] = phrase === undefined ? rest : [phrase, ...rest];
   const re = pat === undefined ? null : new RegExp((phrase === undefined ? pat.split(' ').filter(Boolean) : [pat]).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), opt('/i') ? 'i' : '');
-  return {re, files, hit: l => re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
+  return {re, files, hit: l => !!re && re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
 }
 // Avslutar kommandot (rättningens form) node med PID 4821, den som håller port 3000? Ger då skalets fel för när processen
 // redan är borta, annars ''. kill -0 frågar bara om processen lever. Världen minns det i env['?killed'], en runda i taget.
@@ -1475,7 +1481,7 @@ function fake(fs, cwd, key, ps, env = {}) {
   if (script) {
     const {node, real} = get(c.slice(2));
     if (typeof node !== 'string') throw new Error(`${c} : The term '${c}' is not recognized as the name of a cmdlet, function, script file, or operable program.\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again.`);
-    const name = real.at(-1), ext = name.match(/\.(\w+)$/)?.[1]?.toLowerCase();
+    const name = real[real.length - 1], ext = name.match(/\.(\w+)$/)?.[1]?.toLowerCase();
     if (ext === 'ps1') throw new Error(`${c} : File ${where(real, true)} cannot be loaded because running scripts is disabled on this system. For more information, see about_Execution_Policies at https:/go.microsoft.com/fwlink/?LinkID=135170.`);
     const how = {sh: `bash ${name} i Git Bash`, py: `python ${name}`, js: `node ${name}`}[ext];
     return ok([`# PowerShell kör inte .${ext ?? ''}-filer själv. Windows öppnar ${name} med programmet som hör till ändelsen, som när du dubbelklickar.${how ? ` Kör den med ${how}.` : ''}`]);
@@ -1534,7 +1540,7 @@ function fake(fs, cwd, key, ps, env = {}) {
         const re = filt && globRe(filt, true), hid = has('-hidden'), all = hid || has('-force'), out = [];
         const pick = ([n, v]) => (all || !PSHIDDEN.has(n)) && (!hid || PSHIDDEN.has(n)) && !(has('-file') && typeof v !== 'string') && !(has('-directory') && typeof v === 'string') && (!re || re.test(n));
         const walk = (n, here) => {
-          const items = Object.entries(n).filter(pick).sort(([a, x], [b, y]) => (typeof x === 'string') - (typeof y === 'string') || a.localeCompare(b));
+          const items = Object.entries(n).filter(pick).sort(([a, x], [b, y]) => +(typeof x === 'string') - +(typeof y === 'string') || a.localeCompare(b));
           out.push(...(has('-name') ? items.map(([k]) => [...here.slice(real.length), k].join('\\')) : psTable(here, items)));
           if (has('-recurse')) for (const [k, v] of Object.entries(n).sort(([a], [b]) => a.localeCompare(b))) if (typeof v === 'object' && (all || !PSHIDDEN.has(k))) walk(v, [...here, k]);
         };
@@ -1821,8 +1827,9 @@ The item at ${full(a0)} has children and the Recurse parameter was not specified
 
 // Rör: första kommandot körs mot filsystemet, resten filtrerar dess rader. Ett filter vi inte kan ger null, som förut.
 function piped(fs, cwd, key, ps, env = {}) {
+  /** @type {string[][]} */
   const stages = [[]];
-  for (const t of key) t === '|' ? stages.push([]) : stages.at(-1).push(t);
+  for (const t of key) t === '|' ? stages.push([]) : stages[stages.length - 1].push(t);
   const [first, ...rest] = stages, c = ps ? PSOP[first[0]] || first[0] : first[0];
   const n = flags => +(flags.find(f => /^-(n|first|last)=\d+$/.test(f))?.split('=')[1] ?? flags.find(f => /^-\d+$/.test(f))?.slice(1) ?? 10);
   const table = rows => ['', ...rows.map(([k, v]) => `${k.padEnd(8)} : ${v}`), ''];
@@ -1921,7 +1928,7 @@ function quizQuestion(items, it, kind) {
   // Felsvaren som liknar rätt svar mest först: samma kommando, samma ifyllda ord, kedja mot kedja. Annars avslöjar ett namn svaret.
   const toks = c => c.split(/[ |;"]+/), args = c => toks(c).slice(1).filter(t => t && !t.startsWith('-')), mine = args(it.cmd);
   const chain = c => / && | [|] |; /.test(c);
-  const score = x => (word(x.cmd) === word(it.cmd)) + args(x.cmd).some(t => mine.includes(t)) + 2 * (chain(x.cmd) === chain(it.cmd));
+  const score = x => Number(word(x.cmd) === word(it.cmd)) + Number(args(x.cmd).some(t => mine.includes(t))) + 2 * Number(chain(x.cmd) === chain(it.cmd));
   for (const x of ok.map(x => [score(x), x]).sort((a, b) => b[0] - a[0]).map(a => a[1])) if (wrong.length < 3 && !wrong.some(w => w[field] === x[field] || clash(w, x))) wrong.push(x);
   const options = shuffle([it, ...wrong]);
   return {kind, it, ask: kind === 'vilket' ? it.text : it.cmd, options: options.map(x => x[field]), answer: options.indexOf(it), why: it.why};
@@ -2040,9 +2047,9 @@ const OVER = [
   ' ██████  ██   ██ ██      ██ ███████      ██████    ████   ███████ ██   ██'].join('\n');
 
 // ---------- lagring ----------
-const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k) ?? 'null') ?? d; } catch { return d; } };
 // Topplistan ligger i webbläsaren och kan vara trasig: en dålig post får inte krascha menyn
-const scoresLoad = () => [].concat(load(HS, [])).filter(s => Number.isFinite(s?.s) && PACKS[s.p]);
+const scoresLoad = () => [load(HS, [])].flat().filter(s => Number.isFinite(s?.s) && PACKS[s.p]);
 const shName = sh => ({ps: 'PowerShell', bash: 'bash'})[sh] ?? ''; // poster från före 2026-10-17 saknar skalet
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const HS = 'term-highscores', SOUND = 'term-sound', SHELL = 'term-shell';
@@ -2116,7 +2123,7 @@ const toLane = (el, lane, n) => { el.style.left = `calc(${lane * 100 / n}% + 4px
 function relane() {
   const n = laneCount(), old = S.lanes;
   if (n === old || S.blocks.some(b => b.landed)) return;
-  const fall = [...S.blocks].sort((a, c) => c.y - a.y), taken = [...Array(n)].map(() => []), plan = [];
+  const fall = [...S.blocks].sort((a, c) => c.y - a.y), taken = [...Array(n)].map(() => /** @type {any[]} */ ([])), plan = [];
   for (const b of fall) { toLane(b.el, 0, n); b.h = b.el.offsetHeight; } // ny bredd kan ge nya radbrytningar
   for (const b of fall) {
     const near = Math.min(n - 1, Math.floor((b.lane + .5) * n / old)), free = l => taken[l].every(o => b.y + b.h + 8 < o.y || o.y + o.h + 8 < b.y);
@@ -2866,13 +2873,14 @@ function explain(u, bad, msgs) {
   if (c === 'git' && sub?.startsWith('-')) return msgs.push(`unknown option: ${sub}\n${MISSING.git}`);
   if (c === 'git' && sub && !GIT.has(sub)) return msgs.push(`git: '${sub}' is not a git command. See 'git --help'.`);
   if (!S.ps && u.length === 1 && MISSING[c]) return msgs.push(MISSING[c]);
+  /** @type {string[] | null} */
   let near = null, most = -1;
   for (const b of S.blocks) for (const a of b.steps[b.step] || []) {
     const tk = tokenize(a.raw, S.ps);
     const hits = u.filter(t => tk.includes(t)).length;
     if ((S.ps ? psCmd(tk[0]) === psCmd(c) : tk[0] === c) && hits > most) { near = tk; most = hits; }
   }
-  const flagOk = t => /^-[A-Za-z]+$/.test(t) && [...t.slice(1)].every(l => near.some(n => /^-[A-Za-z]+$/.test(n) && n.includes(l)));
+  const flagOk = t => /^-[A-Za-z]+$/.test(t) && [...t.slice(1)].every(l => near?.some(n => /^-[A-Za-z]+$/.test(n) && n.includes(l)));
   const wrong = near ? u.slice(1).filter(t => !near.includes(t) && !flagOk(t) && !near.includes(ANY)) : u.slice(1);
   const mi = u.findIndex(t => /^-[a-z]*m$/.test(t));
   if (c === 'git' && sub === 'commit' && mi > 0 && u.slice(mi + 2).some(t => !t.startsWith('-'))) msgs.push('# meddelandet har mellanslag: sätt citattecken runt det, git commit -m "fixa menyn"');
@@ -2887,6 +2895,7 @@ function run(raw) {
   if (S.vim) return vimSay(raw);
   if (S.agent && !raw.trimStart().startsWith('!')) return agentSay(raw);
   const line = S.agent ? raw.trimStart().slice(1) : raw; // ! kör skalet, som i Claude Code
+  /** @type {(string[] & {op?: string})[]} */
   let segs;
   try { const tk = tokenize(line, S.ps), bad = syntax(tk, S.ps); if (bad) throw Object.assign(new Error(bad), {syntax: true}); segs = segments(tk); }
   catch (e) {
@@ -2897,7 +2906,7 @@ function run(raw) {
 
   if (WIPE.test(line.trim())) { echo(raw, new Set()); return crash(); }
   const who = segs.length === 1 && segs[0].length === 1 && segs[0][0].toLowerCase();
-  if (!S.agent && Object.hasOwn(AGENTS, who)) { echo(raw, new Set()); return enterAgent(who); }
+  if (!S.agent && who && Object.hasOwn(AGENTS, who)) { echo(raw, new Set()); return enterAgent(who); }
   if (egg(segs.length === 1 ? segs[0] : [], raw)) return;
   const andor = S.ps && segs.find(g => g.op === '&&' || g.op === '||')?.op;
   if (andor) {
@@ -3233,7 +3242,8 @@ function sync() {
 }
 cmd.addEventListener('input', sync);
 // Tab: bash fyller i så långt det är entydigt och listar träffarna vid andra Tab. PowerShell bläddrar bland träffarna.
-let tabbed = null;
+/** @type {any} */
+let tabbed = null; // {out} efter en ifyllnad, {base, list, i, out} medan PowerShell bläddrar
 function tab() {
   if (!S || S.agent || S.vim) return;
   const v = cmd.value;
@@ -3254,15 +3264,15 @@ function tab() {
 document.addEventListener('selectionchange', () => document.activeElement === cmd && sync());
 cmd.addEventListener('focus', () => { term.classList.remove('blur'); sync(); });
 cmd.addEventListener('blur', () => term.classList.add('blur'));
-term.addEventListener('click', e => { if (!e.target.closest('button, input') && !getSelection().toString()) cmd.focus(); });
-document.addEventListener('keydown', e => { if (document.activeElement !== cmd && !e.target.closest?.('input, textarea') && !(e.key === ' ' && e.target.closest?.('button')) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
+term.addEventListener('click', e => { if (!/** @type {Element} */ (e.target).closest('button, input') && !getSelection()?.toString()) cmd.focus(); });
+document.addEventListener('keydown', e => { const t = /** @type {Element} */ (e.target); if (document.activeElement !== cmd && !t.closest?.('input, textarea') && !(e.key === ' ' && t.closest?.('button')) && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) cmd.focus(); }); // Ctrl+C ska kopiera markeringen, inte flytta fokus
 
 screen.addEventListener('click', e => {
   const t = e.target.closest('button');
   if (!t) return;
   if (t.dataset.pack) setPack(t.dataset.pack);
   if (t.dataset.shell && !t.disabled) { setShell(t.dataset.shell); if (mode === 'shell') menu(); }
-  if (t.dataset.ljud !== undefined && t.dataset.ljud !== ljud) { const u = new URL(location.href); t.dataset.ljud ? u.searchParams.set('ljud', t.dataset.ljud) : u.searchParams.delete('ljud'); location.href = u; return; }
+  if (t.dataset.ljud !== undefined && t.dataset.ljud !== ljud) { const u = new URL(location.href); t.dataset.ljud ? u.searchParams.set('ljud', t.dataset.ljud) : u.searchParams.delete('ljud'); location.href = u.href; return; }
   if (t.dataset.snd) { setSound(t.dataset.snd === '1'); screen.querySelectorAll('[data-snd]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.snd === '1') === soundOn)); }
   if (t.dataset.lv) setLevel(+t.dataset.lv);
   if (t.dataset.qa) mode === 'boss' ? bossAnswer(+t.dataset.qa) : quizAnswer(+t.dataset.qa);
@@ -3276,6 +3286,7 @@ screen.addEventListener('click', e => {
 // ---------- quizläget ----------
 // Samma uppgifter som spelet, i lugn takt: flerval åt båda hållen och para ihop. Bästa resultatet per paket och skal sparas.
 const QUIZ = 'term-quiz';
+/** @type {any} */
 let Q = null;
 const quizBest = (pack, ps) => load(QUIZ, {})[`${pack}-${ps ? 'ps' : 'bash'}`];
 function askHTML(q) {
@@ -3569,7 +3580,7 @@ const VIEWS = {
   explorer: () => {
     const here = (S?.cwd ?? ['projekt']).join('/'), ps = S?.ps ?? isPS();
     const rows = (n, path, depth) => Object.keys(n).filter(k => k !== '.git' && k !== '.hemligt')
-      .sort((x, y) => (typeof n[y] === 'object') - (typeof n[x] === 'object') || x.localeCompare(y, 'sv')).flatMap(k => {
+      .sort((x, y) => +(typeof n[y] === 'object') - +(typeof n[x] === 'object') || x.localeCompare(y, 'sv')).flatMap(k => {
         const pth = [...path, k].join('/'), dir = typeof n[k] === 'object', open = dir && openDirs.has(pth);
         return [`<button type="button" class="row${open ? ' open' : ''}${pth === here || pth === edFile ? ' sel' : ''}" data-path="${esc(pth)}" style="padding-left:${depth * 8}px"><span class="tw">${dir ? CHEV : ''}</span>${dir ? '' : fileIcon(k)}<span>${esc(k)}</span>${pth === here ? '<span class="d">du står här</span>' : ''}</button>`,
           ...(open ? rows(n[k], [...path, k], depth + 1) : [])];
@@ -3610,7 +3621,7 @@ function openSide(name, toggle = false) {
   $('#sidet').textContent = title;
   $('#sideb').innerHTML = html;
   side.hidden = false;
-  document.querySelectorAll('.activity>button').forEach(b => b.classList.toggle('on', b.dataset.do === name));
+  document.querySelectorAll('.activity>button').forEach(b => b.classList.toggle('on', b.getAttribute('data-do') === name));
   resized();
 }
 function closeSide() {
@@ -3769,6 +3780,7 @@ function resized() {
 
 // ---------- påskägg: vim, sl, sudo ----------
 // vim: allt du skriver går till vim tills du skriver :q!. Blocken faller under tiden, det är fällan.
+/** @param {string[]} seg */
 function egg([c0, ...rest], raw) {
   const arg = rest.join(' ');
   if (S.ps) {
@@ -3883,7 +3895,7 @@ function reboot(st) {
   crashEl.className = 'crash';
   crashEl.innerHTML = `<div id="crashlog"></div><label>&gt; <input id="crashin" autocomplete="off" spellcheck="false" aria-label="Skriv kommando"></label>`;
   document.body.append(crashEl);
-  const logEl = crashEl.querySelector('#crashlog'), inp = crashEl.querySelector('#crashin');
+  const logEl = /** @type {HTMLElement} */ (crashEl.querySelector('#crashlog')), inp = /** @type {HTMLInputElement} */ (crashEl.querySelector('#crashin'));
   const line = (t, c = '') => logEl.insertAdjacentHTML('beforeend', `<div class="${c}">${esc(t)}</div>`);
   const steps = SETUP(st.ps);
   line(steps[st.step][1]);
@@ -3930,7 +3942,7 @@ function boss() {
   if (mode !== 'play' || S.agent?.busy) return;
   const x = S.boss = bossQuestion();
   if (!x) return;
-  S.asked.add(x.key ?? x.it.text);
+  S.asked.add(x.key ?? /** @type {any} */ (x).it.text);
   mode = 'boss';
   plainPrompt();
   try { snd()?.stop(); } catch {}
@@ -4035,8 +4047,9 @@ function agentSay(raw) {
 const say = t => setTimeout(() => out(t, 'cmt'));
 function lit(name) {
   for (const b of document.querySelectorAll(`[data-do="${name}"]`)) {
-    if (!b.parentElement.matches('.activity, .tabs, .ptabs')) continue;
-    b.parentElement.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
+    const p = b.parentElement;
+    if (!p?.matches('.activity, .tabs, .ptabs')) continue;
+    p.querySelectorAll('.on').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
   }
 }
@@ -4198,6 +4211,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
   close: () => say(`# Det här fönstret stänger du inte med krysset. Skriv exit${S ? ' för att avsluta rundan' : ''}.`),
 };
 // [text, kortkommando, data-do eller en kommentar som skrivs i terminalen]
+/** @type {Record<string, any[]>} */
 const MENUS = {
   File: [['Ny runda', 'Enter', 'start'], ['Spara', 'Ctrl+S', 'save'], ['Öppna mapp…', '', 'explorer'], 0, ['Avsluta', 'exit', 'quit']],
   Edit: [['Ångra', 'Ctrl+Z', '# Ctrl+Z ångrar inte i terminalen. rm har ingen papperskorg.'], ['Kopiera', 'Ctrl+C', '# Markera text och tryck Ctrl+C. Utan markering betyder Ctrl+C avbryt, som i en riktig terminal.'], 0, ['Sök', 'Ctrl+F', 'search']],
@@ -4222,19 +4236,19 @@ function closeMenu() {
   document.querySelectorAll('[data-menu][aria-expanded=true]').forEach(b => b.setAttribute('aria-expanded', 'false'));
 }
 document.addEventListener('click', e => {
-  const m = e.target.closest('[data-menu]'), it = e.target.closest('[data-item]'), d = e.target.closest('[data-do]');
+  const t = /** @type {Element} */ (e.target), m = t.closest('[data-menu]'), it = t.closest('[data-item]'), d = t.closest('[data-do]');
   if (m) return m.getAttribute('aria-expanded') === 'true' ? closeMenu() : openMenu(m);
   closeMenu();
-  const act = it?.dataset.item ?? d?.dataset.do;
+  const act = it?.getAttribute('data-item') ?? d?.getAttribute('data-do');
   if (!act) return;
   act.startsWith('#') ? say(act) : DO[act](!!d?.closest('.activity'));
-  if (!$('#q') || !e.target.closest('#side')) cmd.focus();
+  if (!$('#q') || !/** @type {Element} */ (e.target).closest('#side')) cmd.focus();
 });
 document.addEventListener('keydown', e => {
   const hard = (e.key === 'F5' && (e.ctrlKey || e.shiftKey)) || (e.key.toLowerCase() === 'r' && e.ctrlKey && e.shiftKey);
   if (hard) try { localStorage.removeItem(CRASH); } catch {}
 }, true);
-document.addEventListener('mouseover', e => { const m = e.target.closest('[data-menu]'); if (m && !pop.hidden && m.getAttribute('aria-expanded') !== 'true') openMenu(m); });
+document.addEventListener('mouseover', e => { const m = /** @type {Element} */ (e.target).closest('[data-menu]'); if (m && !pop.hidden && m.getAttribute('aria-expanded') !== 'true') openMenu(m); });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!pop.hidden) { closeMenu(); cmd.focus(); }

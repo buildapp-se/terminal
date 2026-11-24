@@ -9,3 +9,6 @@ _musik/
 
 # Agenternas worktrees (Claude Code)
 .claude/
+
+# Typkontrollens utplockade skript (tools/typecheck.mjs)
+.typecheck/

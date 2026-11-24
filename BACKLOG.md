@@ -32,7 +32,8 @@ Flyttat från `buildapp-se/ai` 2026-10-17.
 - [x] Paket Cloudflare & Firebase (15 uppgifter 2026-10-17: wrangler login/dev/deploy/tail/secret put, d1 execute --remote, rollback) och Firebase (login, use, deploy --only hosting, emulators:start).
 - [ ] Programspråk som egna paket (Python-REPL, JS-konsol, SQL).
 - [ ] Delad topplista mellan vänner. Kräver backend och ny integritetstext; bara om ni faktiskt tävlar.
-- [ ] `[P2]` Typkontroll utan byggsteg (2026-10-18): projektet saknar TypeScript, i strid med regeln om `strict: true` i varje JS-projekt. Flytta skriptet ur `index.html` till `terminal.js`, lägg `jsconfig.json` med `checkJs` och `strict: true`, typa med JSDoc och kör `npx tsc --noEmit` som kontroll. Räkna med hundratals anmärkningar i första körningen.
+- [x] `[P2]` Typkontroll utan byggsteg (2026-10-18, byggd 2026-11-24): `node tools/typecheck.mjs` plockar ut skriptet ur `index.html` (radnumren behålls) och kör `tsc` 5.9.3 med `strict: true` och `checkJs` (`tsconfig.json`, globala namn i `tools/globals.d.ts`). Skriptet ligger kvar i `index.html`: en flytt till `terminal.js` hade krockat med varje öppen ändring av sidan, och testet läser redan sidan. Första körningen gav 107 fel utöver de implicita any; alla rättade med JSDoc-typer, `+`/`Number()` för boolesk aritmetik och `getAttribute` i stället för `dataset` på `Element`. Inga beteendeändringar; `terminal.test.js`, `stallcheck.js` (fs, git, stop i båda skalen) och ett röktest i Chromium (Tab, menyer, krasch, topplista) gröna.
+- [ ] `[P3]` Typkontroll steg 2: `noImplicitAny` och `useUnknownInCatchVariables` är avslagna i `tsconfig.json`. Med dem på ger första körningen cirka 1 400 anmärkningar, nästan alla parametrar utan JSDoc-typ. Slå på per avsnitt (börja med `pure`) när avsnittet ändå ändras.
 
 ## Testagenternas fynd (2026-10-17)
 

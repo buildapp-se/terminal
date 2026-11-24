@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    // Nästa steg: noImplicitAny kräver JSDoc på cirka 1 400 ställen (BACKLOG)
+    "noImplicitAny": false,
+    // Skriptet kastar bara Error, och fångade fel läses som e.message
+    "useUnknownInCatchVariables": false,
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "skipLibCheck": true
+  },
+  "files": [".typecheck/index.html.js", "tools/globals.d.ts"]
+}
