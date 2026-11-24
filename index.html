@@ -613,8 +613,8 @@ function canonStage([cmd, ...rest]) {
   }
   // kill -s SIGKILL, -s 9 och -s KILL är samma signal
   const fl = flags.map(f => (cmd === 'kill' ? f.replace(/^-s=(?:SIG)?(\w+)$/i, (_, s) => '-s=' + (SIGS[s] || s.toUpperCase())) : f)).filter(f => !NOOP[cmd]?.test(f));
-  // git push origin main är git push när du står på main, som i spelet. Med -u, --force och liknande är det något annat.
-  if (cmd === 'git' && /^(push|pull)$/.test(pos[0]) && pos[1] === 'origin' && (pos.length === 2 || (pos.length === 3 && pos[2] === 'main')) && fl.every(f => /^-C=/.test(f))) pos.length = 1;
+  // git push origin main är git push när du står på main, som i spelet, och push origin HEAD skickar grenen du står på. Med -u, --force och liknande är det något annat.
+  if (cmd === 'git' && /^(push|pull)$/.test(pos[0]) && pos[1] === 'origin' && (pos.length === 2 || (pos.length === 3 && (pos[2] === 'main' || (pos[0] === 'push' && /^head$/i.test(pos[2]))))) && fl.every(f => /^-C=/.test(f))) pos.length = 1;
   return [cmd, ...pos, ...fl.sort()];
 }
 

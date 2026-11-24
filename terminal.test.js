@@ -374,7 +374,7 @@ sh('cat notes.txt | sort > sorterad.txt');
 assert.ok(typeof sh.fs.projekt['sorterad.txt'] === 'string' && sh.fs.projekt['sorterad.txt'].length, '> efter en pipe skriver filen');
 
 // Speltestarens fynd: likvärdiga former godkänns, men inte allt som liknar
-eq('git push origin main', 'git push'); eq('git pull origin main', 'git pull'); eq('git push origin', 'git push'); eq('git push', 'git push origin main');
+eq('git push origin main', 'git push'); eq('git pull origin main', 'git pull'); eq('git push origin', 'git push'); eq('git push', 'git push origin main'); eq('git push origin HEAD', 'git push'); eqp('git push origin HEAD', 'git push'); ne('git pull origin HEAD', 'git pull');
 eq('git -C budget push origin main', 'git -C budget push');
 ne('git push -u origin main', 'git push'); ne('git push --force', 'git push'); ne('git push origin main --force', 'git push');
 ne('git push origin dark-mode', 'git push'); ne('git push upstream main', 'git push'); ne('git push -u origin main', 'git push -u origin dark-mode');

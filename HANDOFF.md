@@ -63,3 +63,7 @@ OWASP-granskning (Gemini 3.8 Flash, granskad av Claude): highscores, quizresulta
 ## Session: backloggsvep 2026-11-24 (gren `sweep/2026-11-24`, worktree `C:\dev\terminal-sweep-1124`), klar
 
 Typkontroll utan byggsteg (BACKLOG P2): `tools/typecheck.mjs`, `tsconfig.json`, `tools/globals.d.ts`. 107 fel rättade i `index.html`, inga beteendeändringar. `noImplicitAny` kvar som P3 (cirka 1 400 platser). Skriptet flyttades inte till `terminal.js`, så utkast-PR #1 (kandidatgranskningen 2026-11-04) går fortfarande att slå ihop; den krockar bara där båda ändrat samma rad. Verifierat: typkontrollen, `terminal.test.js`, `stallcheck.js` (fs, git, stop, båda skalen) och ett röktest i Chromium mot både gamla och nya sidan.
+
+## Session: djuppass 2026-11-24 (gren `deep/2026-11-24`, worktree `C:\dev\terminal-deep-1124`), pågår
+
+Omfång: P3 och oprioriterade BACKLOG-rader som går att verifiera utan Patrik, sedan mutationstest och UX-granskning av buildapp.se/terminal/. Rör inte PS-tabellerna, typsnitten eller `OUT`-testerna (utkast-PR #1 äger dem).
