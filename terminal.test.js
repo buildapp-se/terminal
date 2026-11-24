@@ -476,7 +476,9 @@ sh.bad('taskkill /PID 999', /^Error: ERROR: The process "999" not found\.$/); sh
 sh.bad('taskkill /F /PID 1204', /Access is denied/);
 // Port 3000: kommandona som avslutar node 4821, och världen efteråt (env['?killed'] sätts av run)
 const kk = (s, ps) => kills(canon(tokenize(s, ps), ps), ps);
-for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"']) assert.ok(kk(s, false), `${s} avslutar node`);
+for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"', 'pkill node', 'pkill -9 nod', 'pkill -f server.js', 'killall node', 'killall -9 node']) assert.ok(kk(s, false), `${s} avslutar node`);
+for (const s of ['pkill server.js', 'pkill bash', 'killall nod', 'pkill -f', 'killall node.exe']) assert.strictEqual(kk(s, false), '', `${s} avslutar inte node`);
+assert.strictEqual(kk('killall node', false), 'node: no process found'); assert.strictEqual(kk('pkill node', true), '', 'pkill finns inte i PowerShell');
 for (const s of ['Stop-Process -Id 4821', 'kill 4821', 'spps 4821', 'Stop-Process -Name node', 'taskkill /PID 4821 /F', 'taskkill /f /im node.exe', 'npx kill-port 3000']) assert.ok(kk(s, true), `${s} avslutar node`);
 for (const [s, ps] of [['kill 5102', false], ['kill -0 4821', false], ['taskkill /PID 4821', true], ['Stop-Process -Id 5102', true], ['lsof -i :3000', false]]) assert.strictEqual(kk(s, ps), '', `${s} avslutar inte node`);
 assert.strictEqual(kk('kill -9 4821', false), 'bash: kill: (4821) - No such process'); assert.strictEqual(kk('Stop-Process -Id 4821', true), 'Stop-Process : Cannot find a process with the process identifier 4821.');

@@ -1251,6 +1251,12 @@ function kills(k, ps) {
   if (cl === 'stop-process' && ps) return low.includes('4821') ? 'Stop-Process : Cannot find a process with the process identifier 4821.'
     : low.includes('-name=node') ? 'Stop-Process : Cannot find a process with the name "node". Verify the process name and call the cmdlet again.' : '';
   if (cl === 'taskkill' && ps) return !low.includes('/f') ? '' : after('/pid') === '4821' ? 'ERROR: The process "4821" not found.' : after('/im') === 'node.exe' ? 'ERROR: The process "node.exe" not found.' : '';
+  // pkill letar mönstret i processnamnet (-f: i hela kommandoraden) och är tyst när inget hittas; killall vill ha hela namnet
+  if (!ps && (cl === 'pkill' || cl === 'killall')) {
+    const hay = cl === 'pkill' && low.includes('-f') ? 'node server/server.js' : 'node';
+    return !a.some(t => !t.startsWith('-') && (cl === 'killall' ? t === 'node' : hay.includes(t))) ? ''
+      : cl === 'killall' ? 'node: no process found' : '# (inget svar: pkill hittade ingen node och säger då ingenting, bara $? blir 1)';
+  }
   return !ps && c === 'kill' && low.includes('4821') && !low.includes('-s=0') ? 'bash: kill: (4821) - No such process' : '';
 }
 function winExe(fs, cwd, c, a, gone = false) {
@@ -2740,7 +2746,7 @@ const OUT = {
   'get-nettcpconnection': () => (nodeGone() ? "Get-NetTCPConnection : No MSFT_NetTCPConnection objects found with property 'LocalPort' equal to '3000'.  Verify the value of the property and retry."
     : '\nLocalAddress LocalPort RemoteAddress RemotePort State  OwningProcess\n------------ --------- ------------- ---------- -----  -------------\n::           3000      ::            0          Listen 4821\n'),
   'kill-port': 'Process on port 3000 killed',
-  'kill': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'sed': a => a.includes('-n') ? LOGRADER(30).split('\n').slice(9, 20).join('\n') : '', 'tsc': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
+  'kill': '', 'pkill': '', 'killall': '', 'stop-process': '', 'powershell': '', 'powershell.exe': '', 'sed': a => a.includes('-n') ? LOGRADER(30).split('\n').slice(9, 20).join('\n') : '', 'tsc': '', 'tar': a => a.some(t => /v/.test(t) && /^-?x/.test(t)) ? 'backup/\nbackup/notes.txt\nbackup/app.js' : '',
   'cd': '', 'set-location': '', 'ii': '', 'rg': (a, ps) => grepOut(a, ps), 'curl.exe': a => OUT.curl(a),
   'wget': a => `--2026-10-17 14:20:01--  ${a.find(t => t.startsWith('http'))}\nResolving example.com... 93.184.215.14\nHTTP request sent, awaiting response... 200 OK\nLength: 1256 (1.2K) [application/json]\nSaving to: '${a.find(t => t.startsWith('http')).split('/').at(-1) || 'index.html'}'\n\n100%[===================>]   1.23K  --.-KB/s    in 0s`,
   'top': () => 'top - 14:20:01 up 3 days,  2:11,  1 user,  load average: 0.42, 0.38, 0.31\n  PID USER      %CPU %MEM COMMAND\n' + (nodeGone() ? '' : ' 4821 du         1.2  0.8 node\n') + ' 5102 du         0.0  0.1 bash\n# (top uppdateras tills du trycker q)',
