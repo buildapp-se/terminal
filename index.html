@@ -696,7 +696,8 @@ function psparam(cmd, name) {
 /** @param {string[]} stage */
 function canonPSStage([c, ...rest], keep = false) {
   const [cmd, ...pre] = (PSALIAS[c.toLowerCase()] || c.toLowerCase()).split(' ');
-  if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest.map(t => t.replace(/\\/g, '/'))]); // git, npm, curl.exe: rättas som i bash
+  // git, npm, curl.exe: rättas som i bash. findstr "\<ord" är ett mönster med findstr:s escape, ingen sökväg
+  if (!isCmdlet(cmd)) return canonStage([cmd.replace(/\.exe$/, ''), ...rest.map(t => (/^findstr(\.exe)?$/.test(cmd) && /\\[<>.*^$[\\]/.test(t) ? t : t.replace(/\\/g, '/')))]);
   // rm a, b är en lista: orden kring kommatecknet blir ett värde, a,b
   const toks = [...pre, ...rest].reduce((o, t) => (o.length && (o.at(-1).endsWith(',') || t.startsWith(',')) ? (o[o.length - 1] += t, o) : (o.push(t), o)), []), pos = [], named = {}, flags = [];
   for (let i = 0; i < toks.length; i++) {
@@ -1256,11 +1257,20 @@ const TASKLIST = [['System Idle Process', 0, 'Services', 0, '8 K'], ['System', 4
 const NETSTAT = [['TCP', '0.0.0.0:135', '0.0.0.0:0', 'LISTENING', 1204], ['TCP', '0.0.0.0:445', '0.0.0.0:0', 'LISTENING', 4], ['TCP', '192.168.1.42:52144', '140.82.112.25:443', 'ESTABLISHED', 6120],
   ['TCP', '[::]:135', '[::]:0', 'LISTENING', 1204], ['TCP', '[::]:3000', '[::]:0', 'LISTENING', 4821], ['UDP', '0.0.0.0:5353', '*:*', '', 6120]];
 // findstr: orden i mönstret är alternativ (findstr "fel varning" hittar båda), /c:"text" är en hel fras. /i, /v, /n, /s.
-// ponytail: mönstret jämförs som text, findstr:s egna små reguljära uttryck (. * ^ $) kan spelet inte
+// findstr:s egna små reguljära uttryck: . * ^ $ [klass] \< \> och \x. Som i Windows (avläst 2026-11-24): utan /l och /r är orden
+// reguljära om det första ordet har ett sådant tecken ("b.c xyz" ja, "xyz b.c" nej), /c:"fras" är text om inte /r står med.
+const FINDSTR_META = /[.*^$[\\]/;
+/** @param {string} p */
+const findstrRe = p => p.replace(/\\[<>]|\\.|\[\^?[^\]]*\]|[.*^$]|[^.*^$[\\]+/g, m => m === '\\<' ? '(?<![\\p{L}\\p{N}_])' : m === '\\>' ? '(?![\\p{L}\\p{N}_])'
+  : m[0] === '\\' ? m[1].replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') : /^[.*^$[]/.test(m) ? m : m.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'));
 function findstrArgs(a) {
   const opt = o => a.some(t => t.toLowerCase() === o), phrase = a.find(t => /^\/c:/i.test(t))?.slice(3), rest = a.filter(t => !t.startsWith('/'));
   const [pat, ...files] = phrase === undefined ? rest : [phrase, ...rest];
-  const re = pat === undefined ? null : new RegExp((phrase === undefined ? pat.split(' ').filter(Boolean) : [pat]).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), opt('/i') ? 'i' : '');
+  const words = pat === undefined ? [] : phrase === undefined ? pat.split(' ').filter(Boolean) : [pat];
+  const rx = !opt('/l') && (opt('/r') || (phrase === undefined && FINDSTR_META.test(words[0] ?? '')));
+  const lit = w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let re = null;
+  if (pat !== undefined) try { re = new RegExp(words.map(rx ? findstrRe : lit).join('|'), opt('/i') ? 'iu' : 'u'); } catch { re = new RegExp(words.map(lit).join('|'), opt('/i') ? 'iu' : 'u'); }
   return {re, files, hit: l => !!re && re.test(l) !== opt('/v'), n: opt('/n'), s: opt('/s')};
 }
 // Avslutar kommandot (rättningens form) node med PID 4821, den som håller port 3000? Ger då skalets fel för när processen

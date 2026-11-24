@@ -590,6 +590,11 @@ assert.strictEqual(sh.out('findstr mjölk notes.txt'), 'köp mjölk'); assert.st
 assert.strictEqual(sh.out('findstr "mjölk mormor" notes.txt'), 'köp mjölk\nring mormor', 'orden är alternativ'); assert.strictEqual(sh.out('findstr /c:"köp mjölk" notes.txt'), 'köp mjölk');
 assert.strictEqual(sh.out('findstr /s import *.py'), 'spel\\spel.py:import random'); assert.ok(/inga träffar/.test(sh('findstr zzz notes.txt').note));
 sh.bad('findstr x nope.txt', /FINDSTR: Cannot open nope.txt/); sh.bad('findstr', /FINDSTR: Bad command line/);
+// findstr:s egna reguljära uttryck, utskrifterna avlästa i Windows findstr 2026-11-24 (k$ på en fil med CRLF)
+for (const [c, want] of [['findstr "^r" notes.txt', 'ring mormor'], ['findstr "k$" notes.txt', 'köp mjölk'], ['findstr "m.*r" notes.txt', 'ring mormor'], ['findstr "\\<dig" notes.txt', 'lär dig terminalen'],
+  ['findstr "r.ng xyz" notes.txt', 'ring mormor'], ['findstr /r /c:"g.m" notes.txt', 'ring mormor'], ['findstr /v "[aeiou]r" notes.txt', 'köp mjölk']]) assert.strictEqual(sh.out(c), want, c);
+for (const c of ['findstr "xyz r.ng" notes.txt', 'findstr /c:"g.m" notes.txt', 'findstr /l "^r" notes.txt']) assert.ok(/inga träffar/.test(sh(c).note), `${c}: text, inget reguljärt uttryck`);
+assert.strictEqual(sh.out('Get-Content notes.txt | findstr "^l"'), 'lär dig terminalen', 'findstr i en pipe');
 assert.strictEqual(sh.out('where.exe node'), 'C:\\Program Files\\nodejs\\node.exe'); assert.strictEqual(sh.out('where.exe npm'), 'C:\\Program Files\\nodejs\\npm\nC:\\Program Files\\nodejs\\npm.cmd');
 assert.ok(/WindowsApps\\python\.exe$/.test(sh.out('where.exe python')), 'Microsoft Stores python syns också');
 sh.bad('where.exe nope', /INFO: Could not find files for the given pattern\(s\)\./); assert.strictEqual(sh.out('where.exe node nope'), 'C:\\Program Files\\nodejs\\node.exe\nINFO: Could not find "nope".');
