@@ -4416,7 +4416,7 @@ cmd.addEventListener('keydown', e => {
   } else if (e.ctrlKey && k === 'c' && !cmd.value.slice(cmd.selectionStart, cmd.selectionEnd)) {
     e.preventDefault(); echo(cmd.value, new Set(), '^C'); cmd.value = '';
   } else if (e.ctrlKey && k === 'l') { e.preventDefault(); log.replaceChildren(); }
-  else if (k === 'Tab') { e.preventDefault(); tab(); }
+  else if (k === 'Tab' && !e.shiftKey) { e.preventDefault(); tab(); } // Shift+Tab lämnar raden, annars når tangentbordet aldrig knapparna (läge, paket, menyerna)
   else return;
   sync();
 });
