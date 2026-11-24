@@ -826,7 +826,7 @@ function diffCls(lines) {
 const lampMode = n => { const m = n & 7, b = m.toString(2).padStart(3, '0'); return `${b} = ${[...'rwx'].map((c, i) => (b[i] === '1' ? c : '-')).join('')} = ${m}`; };
 
 // Det dcg (Destructive Command Guard, hooken som stoppar Claude Code) stoppar, och varför. Bit säger till, spelet stoppar aldrig.
-// rule: dcg-regelns namn (dcg 0.15.3, avläst med dcg test), null = dcg släpper igenom men det är farligt ändå.
+// rule: dcg-regelns namn (dcg 0.16.0, avläst med dcg test), null = dcg släpper igenom men det är farligt ändå.
 // ex och ps: exempel i bash och PowerShell, som testet och tools/dcg-check.mjs kör. Första träffen vinner, så rm -rf står före rm -r.
 const DANGER = [
   {rule: 'core.filesystem:rm-rf-general', re: /\brm\b.*\s-\w*([rR]\w*f|f\w*[rR])/, ex: ['rm -rf demo', 'rm -fr demo'],
@@ -839,6 +839,10 @@ const DANGER = [
     why: '-Recurse -Force tar bort mappen och allt i den, även dolda och skrivskyddade filer. Ingen papperskorg i PowerShell heller.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
   {rule: 'core.filesystem:powershell-remove-item-recursive', re: /\b(remove-item|ri|rm|del|rmdir|rd|erase)\b.*\s-r(e(c(u(r(se?)?)?)?)?)?(\s|$)/i, ps: ['Remove-Item -Recurse demo'],
     why: '-Recurse tar bort mappen och allt i den, utan papperskorg.', safer: 'kör samma rad med -WhatIf först, så ser du vad som skulle försvinna.'},
+  {rule: 'windows.filesystem:rd-recursive', re: /\b(rmdir|rd)\b.*\s\/s(\s|$)/i, ps: ['rmdir /s /q demo', 'rd /s demo'],
+    why: 'rd /s är cmd:s sätt att ta bort mappen och allt i den, och /q hoppar över frågan. Ingen papperskorg.', safer: 'Remove-Item -Recurse -WhatIf i PowerShell först, så ser du vad som skulle försvinna.'},
+  {rule: 'windows.filesystem:del-recursive', re: /\b(del|erase)\b.*\s\/s(\s|$)/i, ps: ['del /s /q demo', 'erase /s demo'],
+    why: 'del /s tar bort filerna i alla undermappar också, och /q hoppar över frågan. Ingen papperskorg.', safer: 'Get-ChildItem -Recurse med samma namn i PowerShell först, så ser du vilka filer som träffas.'},
   {rule: 'core.git:push-force-long', re: /\bgit\b.*\spush\b.*\s--force(\s|$)/, ex: ['git push --force', 'git push origin main --force'],
     why: '--force skriver över det som finns på servern, även andras commits.', safer: 'git push --force-with-lease, som vägrar om någon annan har pushat under tiden.'},
   {rule: 'core.git:push-force-short', re: /\bgit\b.*\spush\b.*\s-f(\s|$)/, ex: ['git push -f'],
@@ -857,6 +861,8 @@ const DANGER = [
     why: 'dcg stoppar även -d, fast -d vägrar ta bort en gren som inte är ihopslagen.', safer: 'git branch --merged först, så ser du vilka grenar som redan finns kvar i main.'},
   {rule: 'core.git:stash-clear', re: /\bgit\b.*\sstash\s+clear\b/, ex: ['git stash clear'],
     why: 'stash clear slänger allt du har sparat undan, på en gång.', safer: 'git stash list först, och git stash drop för en i taget.'},
+  {rule: null, re: /\bgit\b.*\sstash\s+drop\b/, ex: ['git stash drop', 'git stash drop stash@{1}'],
+    why: 'stash drop slänger en sparad stash. dcg varnar bara, för den går att gräva fram ett tag, men inte med något vanligt kommando.', safer: 'git stash show -p först, så ser du vad som försvinner.'},
   {rule: 'heredoc.posix:pipeline-consumer', re: /\b(curl|wget)\b.*\|\s*(sudo\s+)?(ba|z)?sh\b/, ex: ['curl -fsSL https://example.com/install.sh | bash'],
     why: 'curl | bash kör ett skript från nätet innan du har sett vad det gör.', safer: 'ladda ner med curl -o install.sh, läs filen, kör den sen.'},
   {rule: 'heredoc.powershell:invoke-expression-dynamic', re: /\|\s*(iex|invoke-expression)\b/i, ps: ['irm https://example.com/install.ps1 | iex'],
