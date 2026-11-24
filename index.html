@@ -4340,9 +4340,11 @@ document.addEventListener('keydown', e => {
 });
 
 const typing = e => !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete');
+let lastKey = 0; // när förra tangenten trycktes: bossfrågan ska inte besvaras av en bokstav mitt i ett ord
 cmd.addEventListener('keydown', e => {
   try { snd()?.init?.(); } catch {} // ljud som inte kan starta får aldrig stoppa tangenterna
-  const k = e.key;
+  const k = e.key, gap = e.timeStamp - lastKey;
+  lastKey = e.timeStamp;
   if (e.ctrlKey && k === ',' && mode !== 'shell' && mode !== 'over') { e.preventDefault(); return settings(); }
   if (mode === 'shell') {
     if (k === 'Enter') { setShell(prefs.shell); menu(); }
@@ -4387,7 +4389,8 @@ cmd.addEventListener('keydown', e => {
   }
   if (mode === 'boss') {
     const i = 'abcd'.indexOf(k.toLowerCase());
-    if (i >= 0 && !e.ctrlKey && !S.boss.done) bossAnswer(i);
+    // Frågan kommer 700 ms efter nivån, ofta mitt i nästa kommando: d i cd svarade d. En bokstav räknas först efter en paus i skrivandet.
+    if (i >= 0 && !e.ctrlKey && !S.boss.done && gap > 400) bossAnswer(i);
     else if ((k === 'Enter' || k === 'Escape') && S.boss.done) bossEnd();
     if (typing(e) || k === 'Enter') e.preventDefault();
     return;
