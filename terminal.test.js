@@ -363,6 +363,10 @@ eq('git branch -d -D fix-login', 'git branch -dD fix-login');
 eq('git commit -m "- fixa"', 'git commit -m "{any}"');
 sh = shell(true);
 assert.match(sh.out('Select-String ERROR app.log | Measure-Object'), /Count\s+: 4\b/, 'Select-String räknar bara träffar');
+// Select-Object som PowerShell 5.1 med 1..10: -Skip före -First, med -Last räknas -Skip från slutet
+for (const [s, want] of [['-Skip 1', 'lär dig terminalen\nring mormor'], ['-Skip 1 -First 1', 'lär dig terminalen'], ['-Last 2 -Skip 1', 'köp mjölk\nlär dig terminalen'],
+  ['-First 2', 'köp mjölk\nlär dig terminalen'], ['-Last 1', 'ring mormor'], ['-SkipLast 1', 'köp mjölk\nlär dig terminalen'], ['-Skip 9', '']])
+  assert.strictEqual(sh.out('Get-Content notes.txt | Select-Object ' + s), want, s);
 for (const c of ['ii', 'start', 'Invoke-Item', 'Start-Process']) sh.bad(c, e => !/undefined/.test(e.message) && /cmdlet (Invoke-Item|Start-Process) /.test(e.message));
 assert.ok(complete(sh.fs, ['projekt'], 'cat .e', true).line.includes('.env'), 'Tab i PowerShell hittar .env');
 sh = shell(false);

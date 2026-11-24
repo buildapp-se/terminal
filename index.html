@@ -1875,8 +1875,14 @@ function piped(fs, cwd, key, ps, env = {}) {
   const hs = l => parseFloat(l) * ({K: 1, M: 1024, G: 1048576}[l.match(/^[\d.]+([KMG])/)?.[1]] ?? 1);
   for (const [f, ...fl] of rest) {
     const word = fl.find(t => !isFlag(t));
-    if (f === 'head' || (f === 'select-object' && fl.some(x => x.startsWith('-first')))) lines = lines.slice(0, n(fl));
-    else if (f === 'tail' || (f === 'select-object' && fl.some(x => x.startsWith('-last')))) lines = lines.slice(-n(fl));
+    // Select-Object: -Skip före -First, med -Last räknas -Skip från slutet (avläst i PowerShell 5.1 med 1..10)
+    const sel = (/** @type {string} */ k) => { const x = fl.find(t => t.startsWith(`-${k}=`)); return x === undefined ? undefined : +x.split('=')[1]; };
+    if (f === 'select-object' && ['first', 'last', 'skip', 'skiplast'].some(k => sel(k) !== undefined)) {
+      const skip = sel('skip') ?? 0, last = sel('last'), end = lines.length - (last === undefined ? sel('skiplast') ?? 0 : skip);
+      lines = last === undefined ? lines.slice(skip, Math.max(skip, end)).slice(0, sel('first') ?? Infinity) : lines.slice(Math.max(0, end - last), Math.max(0, end));
+    }
+    else if (f === 'head') lines = lines.slice(0, n(fl));
+    else if (f === 'tail') lines = lines.slice(-n(fl));
     else if (f === 'sort') { lines = [...lines].sort((a, b) => fl.includes('-h') ? hs(a) - hs(b) : a.localeCompare(b)); if (fl.includes('-r')) lines.reverse(); }
     else if (f === 'wc') lines = [String(lines.length)];
     else if (f === 'grep' && word) { const re = mkre(word, fl.includes('-i')); lines = lines.filter(l => re.test(l) !== fl.includes('-v')); if (fl.includes('-c')) lines = [String(lines.length)]; }
