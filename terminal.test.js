@@ -389,6 +389,9 @@ const peq = (a, b) => assert.ok(same(pkey(a), pkey(b)), a + '  borde godkännas 
 eq('powershell -command "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
 eq('powershell -c "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
 ne('powershell -Conmanmad "Stop-Process -Id 4821"', 'powershell -Command "Stop-Process -Id 4821"');
+eq('powershell -Command "Stop-Process -Id 4821 -Force"', 'powershell -Command "Stop-Process -Id 4821"');
+eq('powershell -c "spps 4821"', 'powershell -Command "Stop-Process -Id 4821"');
+ne('powershell -Command "Stop-Process -Id 4822"', 'powershell -Command "Stop-Process -Id 4821"');
 peq('python .\\spel.py', 'python spel.py'); peq('git -C budget\\ push', 'git -C budget push');
 eq('gh pr merge --repo Elwyndaz/forskning 8 --merge', 'gh pr merge 8 --repo=Elwyndaz/forskning --merge');
 eq('npx wrangler d1 execute db --local --file schema.sql', 'npx wrangler d1 execute db --local --file=schema.sql');
@@ -572,7 +575,7 @@ sh.bad('taskkill /PID 999', /^Error: ERROR: The process "999" not found\.$/); sh
 sh.bad('taskkill /F /PID 1204', /Access is denied/);
 // Port 3000: kommandona som avslutar node 4821, och världen efteråt (env['?killed'] sätts av run)
 const kk = (s, ps) => kills(canon(tokenize(s, ps), ps), ps);
-for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"', 'pkill node', 'pkill -9 nod', 'pkill -f server.js', 'killall node', 'killall -9 node']) assert.ok(kk(s, false), `${s} avslutar node`);
+for (const s of ['kill 4821', 'kill -9 4821', 'kill -KILL 4821', 'npx kill-port 3000', 'powershell -Command "Stop-Process -Id 4821"', 'powershell -c "spps 4821 -Force"', 'pkill node', 'pkill -9 nod', 'pkill -f server.js', 'killall node', 'killall -9 node']) assert.ok(kk(s, false), `${s} avslutar node`);
 for (const s of ['pkill server.js', 'pkill bash', 'killall nod', 'pkill -f', 'killall node.exe']) assert.strictEqual(kk(s, false), '', `${s} avslutar inte node`);
 assert.strictEqual(kk('killall node', false), 'node: no process found'); assert.strictEqual(kk('pkill node', true), '', 'pkill finns inte i PowerShell');
 for (const s of ['Stop-Process -Id 4821', 'kill 4821', 'spps 4821', 'Stop-Process -Name node', 'taskkill /PID 4821 /F', 'taskkill /f /im node.exe', 'npx kill-port 3000']) assert.ok(kk(s, true), `${s} avslutar node`);

@@ -589,7 +589,9 @@ function canon(seg, ps = false, keep = false) {
 /** @param {string[]} stage */
 function canonStage([cmd, ...rest]) {
   if (cmd === 'find') return [cmd, ...rest.map(path)]; // find har långa flaggor med ett streck, -name
-  if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map(t => (/^-(c|command)$/i.test(t) ? '-Command' : t))];
+  // Raden efter -Command rättas som PowerShell, så Stop-Process -Id 4821 -Force och spps 4821 godkänns där också
+  const psCmd = /** @param {string} t */ t => { try { return canon(tokenize(t, true), true).join(' '); } catch { return t; } };
+  if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map((t, i) => (/^-(c|command)$/i.test(t) ? '-Command' : /^-(c|command)$/i.test(rest[i - 1] ?? '') ? psCmd(t) : t))];
   const vals = VALS[cmd] || '', pos = [], flags = [], long = LONGFLAG[cmd] || {};
   // Likvärdiga skrivsätt till en form: --lines=10 och -n10 blir -n 10, head -10 blir -n 10, kill -9 blir -s 9, ps -aux blir ps aux
   rest = rest.flatMap(t => {
