@@ -4205,9 +4205,11 @@ bash finns på Linux och Mac, och i Git Bash på Windows. PowerShell är Windows
 Sök (Ctrl+P) hittar kommandot för det du vill göra. Skriv "radera mapp" eller "commit".
 Svårt att hitta ~, | eller $ på tangentbordet? Help, Svåra tecken. ~ är AltGr + ¨ och sedan mellanslag.`;
 
+// S finns även i menyn (fri lek) och efter rundan, så det är läget som säger om en runda pågår
+const inRound = () => ['play', 'pause', 'boss'].includes(mode);
 const DO = {
-  start: () => (['play', 'pause', 'boss'].includes(mode) ? say('# Rundan kör redan. Buggarna också.') : start()),
-  quit: () => (S ? gameOver() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
+  start: () => (inRound() ? say('# Rundan kör redan. Buggarna också.') : start()),
+  quit: () => (inRound() ? gameOver() : mode === 'quiz' ? menu() : say('# Ingen runda att avsluta. I en riktig terminal skriver du exit.')),
   save: () => say('# Sparat. Skämt: terminalen har inget att spara. Topplistan sparas av sig själv.'),
   explorer: icon => openSide('explorer', icon),
   bitbar: () => { bitClosed = !bitClosed; placePet(); },
@@ -4295,7 +4297,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
   terminal: () => mode === 'sheet' && closeSettings(),
   min: () => (mode === 'play' ? pause(true) : say('# Minimerat. Fast inte, det här är en webbsida.')),
   max: () => DO.fullscreen(),
-  close: () => say(`# Det här fönstret stänger du inte med krysset. Skriv exit${S ? ' för att avsluta rundan' : ''}.`),
+  close: () => say(`# Det här fönstret stänger du inte med krysset. Skriv exit${inRound() ? ' för att avsluta rundan' : ''}.`),
 };
 // [text, kortkommando, data-do eller en kommentar som skrivs i terminalen]
 /** @type {Record<string, any[]>} */
