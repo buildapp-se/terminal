@@ -4273,6 +4273,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
   debug: () => {
     sheet('debug', `<pre id="dbglog"><span class="cmt"># Här ändrar man variabler medan programmet körs. Prova S.score</span></pre><label class="dbg">&gt; <input id="dbg" autocomplete="off" spellcheck="false" aria-label="Skriv i Debug Console"></label>`);
     const inp = $('#dbg'), log = $('#dbglog'), vals = () => Object.fromEntries(statRows());
+    if (!inp) return; // sheet() öppnar inget under quizet och bossfrågan
     const say = (t, cls = '') => log.insertAdjacentHTML('beforeend', `\n<span class="${cls}">${esc(t)}</span>`);
     inp.focus();
     inp.addEventListener('keydown', e => {
