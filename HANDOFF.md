@@ -2,7 +2,7 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Patrik granskar utkast-PR #1 (PS-tabellerna samlade; typsnittsraden finns redan på main sedan 2026-11-25, identisk); sedan OUT/sample/gitWorld/changes/petTip in i pure och testade, sedan restlistan i BACKLOG
+nextAction: Patrik granskar utkast-PR #1 (PS-tabellerna samlade; typsnittsraderna krockar sedan 2026-11-25, main har typsnittet från egen server: ta main:s version); sedan OUT/sample/gitWorld/changes/petTip in i pure och testade, sedan restlistan i BACKLOG
 blockers: []
 reviewedAt: 2026-11-25
 ---
@@ -87,3 +87,7 @@ Omfång: det som den första buggjakten inte gick igenom: sällsynta flöden (me
 Omfång: mät spelet och integritetssidan live (390 px med 4x CPU och Slow 4G, 1440 px), axe i båda bredderna, metadata, billiga fixar. Typsnittsraden tas med exakt samma ändring som utkast-PR #1, så att PR:en fortfarande går att slå ihop utan konflikt där (provat med `git merge-tree`: bara den gamla HANDOFF-konflikten).
 
 Gjort och live: typsnittsmallen utan blockering och en Consolas-reserv i JetBrains Monos mått (`JBM fb`, uppmätt 1 200 mot 1 199,7 px på 100 tecken), stats.json-ytan, sökvägsraden och prompten med höjd innan skriptet kört (annars CLS 0,1244 på 1440 px när sidan målas tidigare), Open Graph på integritetssidan, favicon med mått. Siffror före och efter i BACKLOG under "Fartpass 2026-11-25" och Speed i `CONTEXT.md`. Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, skripten i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\speed-terminal\` (`measure.cjs` med axe, `prescript2.cjs`, `smoke.cjs`) lokalt och live. Kvar: spelets LCP på telefon styrs av det inbäddade skriptet (BACKLOG P3).
+
+## Session: scenariojakt 2026-11-25 (gren `scen/2026-11-25`, worktree `C:\dev\_wt\terminal-1125c`), klar
+
+Omfång: realistiska flöden i flera steg (två flikar, gårdagens sparade läge i stor mängd, en vecka hoptryckt med redigeraren, bredbyte mitt i rundan, lagring som försvinner), sedan typsnittet från egen server. Gjort: Bit tappade bitar med två flikar öppna, osparad text ur förra rundan sparades in i nästa, trasigt `term-crash` låste sidan, JetBrains Mono från egen server (siffror i BACKLOG under "Scenariojakt 2026-11-25"). Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, skripten i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\scen-terminal\` lokalt (röda före, gröna efter) och `fontcheck.cjs` live. Utkast-PR #1 krockar nu på typsnittsraderna i båda sidorna: ta main:s version.
