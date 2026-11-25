@@ -534,8 +534,14 @@ const SIGS = {1: 'HUP', 2: 'INT', 9: 'KILL', 15: 'TERM'};
 function tokenize(s, ps = false) {
   const escape = ps ? '`' : '\\';
   const out = [];
-  let cur = '', has = false, i = 0;
-  const push = () => { if (has) out.push(cur); cur = ''; has = false; };
+  let cur = '', has = false, i = 0, cuts = [];
+  // PowerShell: echo 12,5 är en lista och skriver 12 och 5 på var sin rad, echo "12,5" är text (avläst i 5.1). Bara kommatecken utan citat delar.
+  const listed = () => ['echo', 'write', 'write-output'].includes(out[out.findLastIndex(t => ['&&', ';', '||', '|'].includes(t)) + 1]?.toLowerCase());
+  const push = () => {
+    if (has && cuts.length && out.length && listed()) out.push(...[0, ...cuts].map((c, j) => cur.slice(c, [...cuts, cur.length][j]).replace(/^,/, '')).filter(Boolean));
+    else if (has) out.push(cur);
+    cur = ''; has = false; cuts = [];
+  };
   while (i < s.length) {
     const ch = s[i];
     if (/\s/.test(ch)) { push(); i++; continue; }
@@ -554,6 +560,7 @@ function tokenize(s, ps = false) {
     if (ch === escape && i + 1 < s.length) { cur += s[i + 1]; has = true; i += 2; continue; }
     const op = ['&&', '||', '>>', '|', ';', '>'].find(o => s.startsWith(o, i));
     if (op) { push(); out.push(op); i += op.length; continue; }
+    if (ps && ch === ',') cuts.push(cur.length);
     cur += ch; has = true; i++;
   }
   push();

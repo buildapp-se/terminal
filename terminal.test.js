@@ -646,3 +646,7 @@ assert.strictEqual(lineParts('echo "oavslutat citat').join(''), 'echo "oavslutat
   assert.strictEqual(b.out('echo hej -x'), 'hej -x'); assert.strictEqual(b.out('echo "-5 grader"'), '-5 grader');
   assert.strictEqual(p.out('echo -5'), '-5'); assert.strictEqual(p.out('echo -x hej'), '-x\nhej'); assert.strictEqual(p.out('echo "-5 grader"'), '-5 grader');
   assert.strictEqual(p.out('Write-Output hej'), 'hej'); }
+// PowerShell: komma utan citat gör en lista, en rad per del (avläst i 5.1: echo 12,5 skriver 12 och 5); med citat är det text
+{ const p = shell(true), b = shell(false);
+  assert.strictEqual(p.out('echo 12,5'), '12\n5'); assert.strictEqual(p.out('echo "12,5"'), '12,5'); assert.strictEqual(p.out('echo hej, du'), 'hej\ndu');
+  assert.strictEqual(p.out(`Write-Output 'a,b',c`), 'a,b\nc'); assert.strictEqual(b.out('echo 12,5'), '12,5'); }
