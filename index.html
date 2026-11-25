@@ -17,16 +17,14 @@
 <meta property="og:locale" content="sv_SE">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"></noscript>
 <style>
 /* Färger från VS Code Dark Modern och dess terminal */
 :root{color-scheme:dark;--bg:#181818;--editor:#1F1F1F;--border:#2B2B2B;--fg:#CCCCCC;--dim:#9D9D9D;--faint:#808893;--accent:#0078D4;
   --green:#23D18B;--blue:#3B8EEA;--red:#F14C4C;--yellow:#E5C07B;--comment:#6A9955;
   --key:#9CDCFE;--str:#CE9178;--num:#B5CEA8;--brace:#FFD700;
   --ui:"Segoe WPC","Segoe UI",system-ui,-apple-system,sans-serif;--mono:'JetBrains Mono','JBM fb',Consolas,Menlo,monospace}
+/* JetBrains Mono (OFL, fonts/OFL.txt) från egen server: latin-delen ur Google Fonts, variabel vikt */
+@font-face{font-family:'JetBrains Mono';src:url(fonts/jetbrains-mono-latin.woff2) format('woff2');font-weight:100 800;font-display:swap;unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 /* Consolas skalad till JetBrains Monos bredd och radhöjd (uppmätt 1 200 mot 1 199,7 px på 100 tecken, 26 px rad): ingen hoppande layout när typsnittet kommer */
 @font-face{font-family:'JBM fb';src:local('Consolas');size-adjust:109.13%;ascent-override:93.5%;descent-override:27.5%;line-gap-override:0%}
 @font-face{font-family:'JBM fb';font-weight:700;src:local('Consolas Bold');size-adjust:109.13%;ascent-override:93.5%;descent-override:27.5%;line-gap-override:0%}
