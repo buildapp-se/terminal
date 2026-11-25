@@ -2,9 +2,9 @@
 schemaVersion: 1
 status: active
 currentGoal: Spelet ./terminal som eget projekt på buildapp.se/terminal/
-nextAction: Patrik granskar utkast-PR #1 (PS-tabellerna samlade, typsnitten utan blockering); sedan OUT/sample/gitWorld/changes/petTip in i pure och testade, sedan restlistan i BACKLOG
+nextAction: Patrik granskar utkast-PR #1 (PS-tabellerna samlade; typsnittsraden finns redan på main sedan 2026-11-25, identisk); sedan OUT/sample/gitWorld/changes/petTip in i pure och testade, sedan restlistan i BACKLOG
 blockers: []
-reviewedAt: 2026-11-24
+reviewedAt: 2026-11-25
 ---
 **2026-11-02:** kontaktadressen är nu `kontakt@buildapp.se` (förut `kontakt@orgutveckling.se`). Integritetstexten version 1.3.
 
@@ -82,6 +82,8 @@ Omfång: spela som eleven gör (390 och 1440 px, båda skalen, alla paket, quize
 
 Omfång: det som den första buggjakten inte gick igenom: sällsynta flöden (menyraden, DO-åtgärderna i alla lägen, inställningar, game over, integritetssidan), andra besöket med sparat läge, nät som inte svarar, länkar och siffror som ska stämma. Gjort: Bits hälsning efter tre dagar syntes aldrig, topplistans datum var UTC, "Plats 0" för 0 p, Avsluta i menyn kraschade och sparade rundan två gånger efter game over, Debug Console kastade under quiz och bossfråga, README:s antal, och den parkerade `echo` med streck (utom `echo 12,5` i PowerShell). Verifierat: `terminal.test.js` (nya tester röda före), `tools/typecheck.mjs`, `stallcheck.js` (fs, git, stop i båda skalen), Playwright i Chromium lokalt (`walk.js`, `return.js`, `menus.js`, `dos.js`, `echo.js` i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\hunt2-terminal\`). Detaljer i BACKLOG.
 
-## Session: fart-, a11y- och metadatapass 2026-11-25 (gren `speed/2026-11-25`, worktree `C:\dev\_wt\terminal-1125s`), pågår
+## Session: fart-, a11y- och metadatapass 2026-11-25 (gren `speed/2026-11-25`, worktree `C:\dev\_wt\terminal-1125s`), klar
 
-Omfång: mät spelet och integritetssidan live (390 px med 4x CPU och Slow 4G, 1440 px), axe i båda bredderna, metadata, billiga fixar. Typsnittsraden tas med exakt samma ändring som utkast-PR #1, så att PR:en fortfarande går att slå ihop utan konflikt där.
+Omfång: mät spelet och integritetssidan live (390 px med 4x CPU och Slow 4G, 1440 px), axe i båda bredderna, metadata, billiga fixar. Typsnittsraden tas med exakt samma ändring som utkast-PR #1, så att PR:en fortfarande går att slå ihop utan konflikt där (provat med `git merge-tree`: bara den gamla HANDOFF-konflikten).
+
+Gjort och live: typsnittsmallen utan blockering och en Consolas-reserv i JetBrains Monos mått (`JBM fb`, uppmätt 1 200 mot 1 199,7 px på 100 tecken), stats.json-ytan, sökvägsraden och prompten med höjd innan skriptet kört (annars CLS 0,1244 på 1440 px när sidan målas tidigare), Open Graph på integritetssidan, favicon med mått. Siffror före och efter i BACKLOG under "Fartpass 2026-11-25" och Speed i `CONTEXT.md`. Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, skripten i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\speed-terminal\` (`measure.cjs` med axe, `prescript2.cjs`, `smoke.cjs`) lokalt och live. Kvar: spelets LCP på telefon styrs av det inbäddade skriptet (BACKLOG P3).

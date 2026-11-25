@@ -74,7 +74,7 @@ Rapporten kontrollerades mot koden; det mesta åtgärdat samma dag (se `HANDOFF.
 - [x] `[P2]` Klickytor under 44 px enligt UX-skriptet (Fitts), vilka element är inte listade; skärmbildsgenomgången inte gjord. Fixat 2026-10-28: på 390 px var det sökrutan, panelflikarna, kugghjulet, skalvalet, kommandoraden och statusradens knappar; under 700 px är titel-, flik- och statusraden 44 px, sökrutan har genomskinlig kant och `#cmd` en högre osynlig yta. Skalvalet minst 24 px även på dator.
 - [x] `[P3]` Ingen `<main>`-landmärke (landmark-one-main). Fixat 2026-10-28: `.work` är `<main>` med dold `<h1>`.
 - [x] `[P3]` Två `<section>` utan rubrik (W3C-varning, rad 261 och 268 i levererad HTML). Fixat 2026-10-28: redigeraren och panelen är `<div>`, de är fönsterytor, inte avsnitt.
-- [ ] `[P3]` Renderblockerande förfrågningar kostar cirka 550 ms LCP på Slow 4G (troligen Google Fonts-CSS).
+- [x] `[P3]` Renderblockerande förfrågningar kostar cirka 550 ms LCP på Slow 4G (troligen Google Fonts-CSS). Fixat 2026-11-25 (fartpasset): typsnittsmallen laddas med `media="print"` och `onload` (samma rad som utkast-PR #1, så PR:en slås fortfarande ihop utan konflikt i sidorna), plus en Consolas-reserv (`JBM fb`) i JetBrains Monos bredd och radhöjd. Live, 390 px med Slow 4G och 4x CPU, median av 3 före och 5 efter: spelet FCP 1 616 till 988 ms, LCP 1 820 till 1 628 ms, renderblockerande 1 till 0; integritetssidan LCP 1 404 till 764 ms och CLS 0,2284 till 0 (rubriken och listorna bröts om när typsnittet kom). 1440 px: spelet LCP 216 till 152 ms, integritet 144 till 88 ms.
 - [x] `[P3]` Personlig gmail som författaradress på 15 commits i den publika historiken. Accepterat av Patrik 2026-10-28: historiken skrivs inte om. Nya commits går via noreply.
 
 ## UX-granskning 2026-11-24 (ux-audit, lokal server, 390 och 1440 px)
@@ -99,4 +99,11 @@ Gått igenom: första och andra besöket med sparad topplista, quizresultat, Bit
 - [x] `[P2]` File > Avsluta och Terminal > Döda terminal i menyn kastade TypeError (S finns i menyns fria lek), och efter game over sparade de rundan en gång till i topplistan. Fixat: `inRound()` (`menus.js`, rött före).
 - [x] `[P3]` DEBUG CONSOLE under quizet eller bossfrågan kastade TypeError. Fixat (`dos.js`: alla DO-åtgärder i sex lägen, båda skalen, två bredder).
 - [x] `[P3]` README.md sa 139 uppgifter i fyra paket med gamla namn; nu 141 i sex.
+## Fartpass 2026-11-25 (Playwright i Chromium, live, 390 px med Slow 4G och 4x CPU, 1440 px)
+
+- [x] `[P2]` Med typsnittet ur vägen målades spelet innan det stora skriptet kört, och då saknade stats.json-ytan, sökvägsraden och prompten höjd: live 1440 px gav en körning CLS 0,1244 (panelen hoppade från 84 till 291 px). Fixat: `#code:empty` 200 px, `&nbsp;` i `#crumbs`, `.prompt` minst en rad. Rutorna (panel, logg, kommandorad, statusrad, brunn) är nu lika med och utan skript på båda bredderna (`prescript2.cjs`: FAIL 7 live före, PASS efter). Live CLS efter: 0 på 390 px, 0,0034 på 1440 px.
+- [x] `[P3]` integritet.html saknade Open Graph-taggar; nu samma bild och format som spelet. Titelradens favicon har `width`/`height`.
+- [ ] `[P3]` Spelets LCP på 390 px (1 628 ms live) är menytexten som skriptet skriver: 380 kB inline-skript (131 kB gzip) som tolkas och körs på 4x CPU. Bara ett utbrutet och uppskjutet skript sänker den, och det krockar med varje öppen ändring av `index.html`; inte gjort.
+- Inte åtgärdbart här: GitHub Pages sätter `max-age=600` på HTML och `max-age=14400` på js och png, och sidan har inga hashade filer. axe 4.14.0: 0 överträdelser på båda sidorna och båda bredderna, före och efter.
+
 - [ ] `[P3]` Okänd adress under buildapp.se/terminal/ ger GitHub Pages engelska 404-sida. Gäller hela buildapp.se (ingen 404.html i buildapp-se.github.io heller), så det är ett beslut för webbplatsen, inte spelet.
