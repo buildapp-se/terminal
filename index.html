@@ -237,6 +237,7 @@ kbd{font:inherit;color:var(--yellow)}
   .cmdcenter{height:44px;border:9px solid transparent;border-radius:15px;background-clip:padding-box;box-shadow:inset 0 0 0 1px #3C3C3C}
   .status button{align-self:stretch}.opt{min-height:44px}#cmd{inset:-13px 0}}
 @media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
+@media (pointer:coarse){#cmd{font-size:16px}} /* iOS Safari zoomar in vid fokus på fält under 16 px; texten i #cmd är genomskinlig (#mirror visar den), så inget syns ändras */
 </style>
 </head>
 <body>
@@ -3702,7 +3703,7 @@ const VIEWS = {
     return ['Explorer', `<div class="sec open"><span class="tw">${CHEV}</span>hemmapp (~)</div>${rows(S?.fs ?? WORLD, [], 1).join('')}
       <p class="note">Två mappar syns inte här. Dolda saker hittar du med ${ps ? 'Get-ChildItem -Force' : 'ls -a'}.</p>`];
   },
-  search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" spellcheck="false" aria-label="Sök kommandon">
+  search: () => ['Search', `<input id="q" class="q" placeholder="Sök kommandon" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Sök kommandon">
     ${S && mode === 'pause' ? '<p class="note">Du söker mitt i en runda, så blocken som faller nu ger 0 poäng.</p>' : '<p class="note">Skriv vad du vill göra, som "radera mapp" eller "commit".</p>'}<div id="hits"></div>`],
   scm: () => {
     const {staged, work: ch} = S ? repoChanges() : {staged: [], work: []}, log = S?.commits ?? [];
@@ -3778,7 +3779,7 @@ code.addEventListener('click', () => {
   if (editing || text === null) return;
   editing = {tab: edTab, text};
   code.removeAttribute('aria-hidden');
-  code.innerHTML = '<textarea class="edit" spellcheck="false" aria-label="Redigera filen. Ctrl+S sparar, Esc slutar."></textarea>';
+  code.innerHTML = '<textarea class="edit" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Redigera filen. Ctrl+S sparar, Esc slutar."></textarea>';
   const ta = code.firstChild;
   ta.value = text;
   ta.focus();
@@ -4008,7 +4009,7 @@ function reboot(st) {
   crashEl?.remove();
   crashEl = document.createElement('div');
   crashEl.className = 'crash';
-  crashEl.innerHTML = `<div id="crashlog"></div><label>&gt; <input id="crashin" autocomplete="off" spellcheck="false" aria-label="Skriv kommando"></label>`;
+  crashEl.innerHTML = `<div id="crashlog"></div><label>&gt; <input id="crashin" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Skriv kommando"></label>`;
   document.body.append(crashEl);
   const logEl = /** @type {HTMLElement} */ (crashEl.querySelector('#crashlog')), inp = /** @type {HTMLInputElement} */ (crashEl.querySelector('#crashin'));
   const line = (t, c = '') => logEl.insertAdjacentHTML('beforeend', `<div class="${c}">${esc(t)}</div>`);
@@ -4299,7 +4300,7 @@ Byggt med Claude Code. Inga riktiga filer kom till skada.`)}<p><a href="https://
   },
   // Debug Console på riktigt: läs värden som S.score, men den som själv skriver S.score = ... eller best = ... sätter igång fusklarmet
   debug: () => {
-    sheet('debug', `<pre id="dbglog"><span class="cmt"># Här ändrar man variabler medan programmet körs. Prova S.score</span></pre><label class="dbg">&gt; <input id="dbg" autocomplete="off" spellcheck="false" aria-label="Skriv i Debug Console"></label>`);
+    sheet('debug', `<pre id="dbglog"><span class="cmt"># Här ändrar man variabler medan programmet körs. Prova S.score</span></pre><label class="dbg">&gt; <input id="dbg" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Skriv i Debug Console"></label>`);
     const inp = $('#dbg'), log = $('#dbglog'), vals = () => Object.fromEntries(statRows());
     if (!inp) return; // sheet() öppnar inget under quizet och bossfrågan
     const say = (t, cls = '') => log.insertAdjacentHTML('beforeend', `\n<span class="${cls}">${esc(t)}</span>`);
