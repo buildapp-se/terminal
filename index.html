@@ -2240,6 +2240,7 @@ function start() {
 }
 // Ny värld: filsystemet, mappen, git och en tom logg. Spelet och quizet börjar båda här.
 function fresh() {
+  if (editing) stopEdit(); // osparad text hör till förra världen: Ctrl+S skrev annars in den i den nya
   well.querySelectorAll('.blk').forEach(e => e.remove());
   S = {pack: prefs.pack, ps: isPS(), fs: structuredClone(WORLD), cwd: ['projekt'], seen: new Set(), ran: new Set(), went: new Set(), start: prefs.level, level: prefs.level, score: 0, cleared: 0, streak: 0, charges: 0, errors: 0,
     typed: 0, time: 0, env: {}, branch: 'main', branches: new Set(['main']), gone: new Set(), base: structuredClone(WORLD), index: structuredClone(WORLD), stash: [], pushed: SEEDLOG.length, commits: SEEDLOG.map(([id, msg]) => ({id, msg})), blocks: [], spawnIn: .4, recent: [], seq: 0, asked: new Set(), lanes: laneCount(), H: well.clientHeight};
