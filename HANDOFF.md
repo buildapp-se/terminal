@@ -81,3 +81,7 @@ Omfång: spela som eleven gör (390 och 1440 px, båda skalen, alla paket, quize
 ## Session: andra buggjakten 2026-11-24 (gren `hunt2/2026-11-24`, worktree `C:\dev\_wt\terminal-1124k`), klar
 
 Omfång: det som den första buggjakten inte gick igenom: sällsynta flöden (menyraden, DO-åtgärderna i alla lägen, inställningar, game over, integritetssidan), andra besöket med sparat läge, nät som inte svarar, länkar och siffror som ska stämma. Gjort: Bits hälsning efter tre dagar syntes aldrig, topplistans datum var UTC, "Plats 0" för 0 p, Avsluta i menyn kraschade och sparade rundan två gånger efter game over, Debug Console kastade under quiz och bossfråga, README:s antal, och den parkerade `echo` med streck (utom `echo 12,5` i PowerShell). Verifierat: `terminal.test.js` (nya tester röda före), `tools/typecheck.mjs`, `stallcheck.js` (fs, git, stop i båda skalen), Playwright i Chromium lokalt (`walk.js`, `return.js`, `menus.js`, `dos.js`, `echo.js` i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\hunt2-terminal\`). Detaljer i BACKLOG.
+
+## Session: fart-, a11y- och metadatapass 2026-11-25 (gren `speed/2026-11-25`, worktree `C:\dev\_wt\terminal-1125s`), pågår
+
+Omfång: mät spelet och integritetssidan live (390 px med 4x CPU och Slow 4G, 1440 px), axe i båda bredderna, metadata, billiga fixar. Typsnittsraden tas med exakt samma ändring som utkast-PR #1, så att PR:en fortfarande går att slå ihop utan konflikt där.
