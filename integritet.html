@@ -6,13 +6,27 @@
 <title>Integritet | ./terminal</title>
 <meta name="description" content="Hur spelet ./terminal behandlar personuppgifter. Kort svar: inget skickas någonstans, topplistan och dina val sparas bara i din webbläsare.">
 <link rel="canonical" href="https://buildapp.se/terminal/integritet.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Integritet | ./terminal">
+<meta property="og:description" content="Hur spelet ./terminal behandlar personuppgifter. Kort svar: inget skickas någonstans, topplistan och dina val sparas bara i din webbläsare.">
+<meta property="og:url" content="https://buildapp.se/terminal/integritet.html">
+<meta property="og:image" content="https://buildapp.se/terminal/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="./terminal: kommandoblock faller i en mörk terminal, med figuren Bit och prompten git switch -c dark-mode">
+<meta property="og:locale" content="sv_SE">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap"></noscript>
 <style>
 :root{--bg:#1F1F1F;--fg:#CCCCCC;--dim:#9D9D9D;--line:#2B2B2B;--green:#6A9955;--yellow:#DCDCAA;--blue:#4FC1FF;--key:#9CDCFE;
-  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace}
+  --mono:'JetBrains Mono','JBM fb',ui-monospace,SFMono-Regular,Consolas,monospace}
+/* Consolas skalad till JetBrains Monos bredd och radhöjd (uppmätt 1 200 mot 1 199,7 px på 100 tecken, 26 px rad): ingen hoppande layout när typsnittet kommer */
+@font-face{font-family:'JBM fb';src:local('Consolas');size-adjust:109.13%;ascent-override:93.5%;descent-override:27.5%;line-gap-override:0%}
+@font-face{font-family:'JBM fb';font-weight:700;src:local('Consolas Bold');size-adjust:109.13%;ascent-override:93.5%;descent-override:27.5%;line-gap-override:0%}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font:15px/1.65 var(--mono);padding:24px 16px 48px}
 main{max-width:72ch;margin:0 auto}
