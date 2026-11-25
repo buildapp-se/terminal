@@ -94,6 +94,7 @@ html.alarm::after{content:'';position:fixed;inset:0;z-index:99;pointer-events:no
 .crumbs{flex:none;padding:2px 16px;color:var(--dim);font-size:12px}
 .code{flex:1;min-height:0;overflow:auto;align-content:start;display:grid;grid-template-columns:50px 1fr;font:13px/19px var(--mono);padding:2px 0 8px;white-space:pre}
 .code .ln{color:var(--faint);text-align:right;padding-right:22px}
+#code:empty{min-height:200px} /* stats.json (10 rader à 19 px plus padding) innan skriptet har kört: panelen under hoppar inte 207 px */
 .k{color:var(--key)}.s{color:var(--str)}.n{color:var(--num)}.br{color:var(--brace)}
 
 .panel{flex:1;display:flex;flex-direction:column;min-height:0;border-top:1px solid var(--border);background:var(--bg)}
@@ -110,7 +111,7 @@ body:not(.play) .mob .pz{display:none} /* smal skärm saknar Esc och aktivitetsf
 .term{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 20px 6px;font:14px/1.4 var(--mono);cursor:text}
 .well{position:relative;flex:1;min-height:120px;overflow:hidden}
 .log{flex:none;height:9.8em;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;white-space:pre-wrap;word-break:break-word}
-.prompt{flex:none;display:flex;flex-wrap:wrap;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+.prompt{flex:none;display:flex;flex-wrap:wrap;white-space:pre-wrap;overflow-wrap:anywhere;min-width:0;min-height:1lh} /* en rad redan innan skriptet fyllt prompten: annars hoppar loggen upp */
 .u{color:var(--green);font-weight:700}.p{color:var(--blue);font-weight:700}
 .agent{color:#D97757;font-weight:700}
 .sl{position:absolute;left:0;bottom:30%;z-index:5;margin:0;font:13px/1.15 var(--mono);color:var(--fg);white-space:pre;pointer-events:none;animation:sl 3.2s linear forwards}
@@ -269,7 +270,7 @@ kbd{font:inherit;color:var(--yellow)}
     <main class="work"><h1 class="sr">./terminal</h1>
       <div class="editor">
         <div class="tabs"><button type="button" class="tab on" data-do="stats"><b>{}</b> stats.json</button><button type="button" class="tab" data-do="readme"><span class="ic" style="color:#519ABA">M&#8595;</span> README.md</button><button type="button" class="tab preview" data-do="file" hidden></button></div>
-        <div class="crumbs" id="crumbs" aria-hidden="true"></div>
+        <div class="crumbs" id="crumbs" aria-hidden="true">&nbsp;</div>
         <div class="code" id="code" aria-hidden="true"></div>
       </div>
       <div class="sash" id="sash" role="separator" aria-orientation="horizontal" aria-label="Dra för att ändra terminalens höjd, eller använd pil upp och ner" tabindex="0"></div>
