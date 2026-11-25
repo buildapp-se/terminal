@@ -2666,6 +2666,8 @@ function petTip(u) {
 function petFeed(n, u) {
   if (!n) return;
   const before = pet.shown ?? petStage(pet.bits);
+  const stored = load(PET, null)?.bits; // en annan flik kan ha matat Bit sedan sidan laddades: lägg till, skriv inte över
+  if (Number.isSafeInteger(stored) && stored > pet.bits) pet.bits = stored;
   pet.bits += n; pet.last = isoDay();
   const now = pet.shown = Math.min(petStage(pet.bits), before + 1); // hoppar den flera stadier visas nästa vid nästa måltid
   save(PET, pet);
@@ -3990,6 +3992,7 @@ function crash() {
 }
 // Efter kraschen: en svart skärm som vill bli ominstallerad, ett kommando i taget
 function reboot(st) {
+  st = {ps: !!st?.ps, step: SETUP(false)[st?.step] ? st.step : 0}; // sparat steg ur localStorage: trasigt eller utanför listan börjar om, annars låser kraschen sidan
   mode = 'crash';
   crashEl?.remove();
   crashEl = document.createElement('div');
