@@ -3622,7 +3622,12 @@ function gitWorld(u) {
     if (sub === 'list') return S.stash.map((e, i) => `stash@{${i}}: ${e.on}`).join('\n');
     if (sub === 'pop' || sub === 'apply') {
       if (!S.stash.length) return 'error: No stash entries found.';
-      for (const [p, v] of S.stash[0].files) place(S.fs, p, v); // ponytail: skriver över, riktiga git slår ihop och kan ge konflikt
+      // Ostagad ändring i en fil som stashen också har: git vägrar och stashen ligger kvar (avläst i git 2.55, sökvägen från repots rot). Andra ändringar får vara kvar.
+      const dirty = new Set(repoChanges(R).work.filter(c => c[1] !== 'U').map(([p]) => [...R, ...p].join('/')));
+      const hit = S.stash[0].files.map(([p]) => p).filter(p => dirty.has(p.join('/')));
+      if (hit.length) throw new Error(['error: Your local changes to the following files would be overwritten by merge:', ...hit.map(p => '        ' + p.slice(R.length).join('/')),
+        'Please commit your changes or stash them before you merge.', 'Aborting', OUT['git status'](), 'The stash entry is kept in case you need it again.'].join('\n'));
+      for (const [p, v] of S.stash[0].files) place(S.fs, p, v); // ponytail: skriver över; riktig git slår ihop en stagad fil och kan ge konflikt
       if (sub === 'pop') S.stash.shift();
       return OUT['git status']() + (sub === 'pop' ? `\nDropped refs/stash@{0} (${Math.random().toString(16).slice(2, 12)})` : '');
     }
