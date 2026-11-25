@@ -2063,6 +2063,9 @@ function pathspec(sub, files, cwd, fs, index, ps) {
   const bad = files.find(f => { const p = resolve(cwd, f); return look(index, p, ps).node === undefined && (sub !== 'add' || look(fs, p, ps).node === undefined); });
   return bad === undefined ? '' : sub === 'add' ? `fatal: pathspec '${bad}' did not match any files` : `error: pathspec '${bad}' did not match any file(s) known to git`;
 }
+// Dagens datum som ÅÅÅÅ-MM-DD i spelarens tid. toISOString ger UTC: i Sverige blev en runda strax efter midnatt gårdagens.
+/** @param {Date} [t] */
+const isoDay = (t = new Date()) => `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
 // Tabellerna slås upp med det spelaren skriver. Utan prototyp blir toString och constructor vanliga okända ord.
 for (const o of [PACKS, POOLS, VALS, LONGFLAG, ...Object.values(LONGFLAG), NOOP, SIGS, PSDROP, PSALIAS, PSPARAMALIAS, ...Object.values(PSPARAMALIAS), PSPARAMS, PSPOS, GLOSS, POOLNAME, NUMS, POOLOF, PROGS, FSKIND, PSOP, PSCMD]) Object.setPrototypeOf(o, null);
 /* pure:end */
@@ -2649,7 +2652,7 @@ function petTip(u) {
 function petFeed(n, u) {
   if (!n) return;
   const before = pet.shown ?? petStage(pet.bits);
-  pet.bits += n; pet.last = new Date().toISOString().slice(0, 10);
+  pet.bits += n; pet.last = isoDay();
   const now = pet.shown = Math.min(petStage(pet.bits), before + 1); // hoppar den flera stadier visas nästa vid nästa måltid
   save(PET, pet);
   if (S) S.fed = (S.fed || 0) + n;
@@ -3169,7 +3172,7 @@ function menu() {
     <p${quizKind ? ' hidden' : ''}>Lös vilket block som helst. ${isPS() ? '<span class="hot">;</span> mellan kommandon' : '<span class="hot">&&</span> eller flera argument (<span class="hot">mkdir a b</span>)'} rensar flera på en gång och ger kombo. Klicka på ett block för hjälp. 10 rätt i rad ger en <span class="hot">clear</span> som tömmer brunnen. Missade block visar svaret och kan fortfarande rensas för halva poängen.</p>
     ${matchMedia('(pointer:coarse)').matches ? '<p class="hot">Spelas bäst med tangentbord.</p>' : ''}
     <h2># topplista</h2>
-    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${esc(s.l)}</td><td>${esc(s.c)} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${shName(s.sh)}</td><td class="dim">${new Date(s.d).toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
+    ${scores.length ? `<table class="scores">${scores.map((s, i) => `<tr><td>${i + 1}.</td><td>${fmt(s.s)} p</td><td>nivå ${esc(s.l)}</td><td>${esc(s.c)} CPM</td><td class="dim">${esc(PACKS[s.p]?.name ?? '')}</td><td class="dim">${shName(s.sh)}</td><td class="dim">${new Date(s.d + 'T12:00').toLocaleDateString('sv-SE', {day: 'numeric', month: 'short'})}</td></tr>`).join('')}</table>` : '<p class="dim">Inga resultat än.</p>'}
     </div></div>`;
   screen.hidden = false;
   stats();
@@ -3252,7 +3255,7 @@ function setPack(k) {
 function gameOver() {
   mode = 'over';
   document.body.className = '';
-  const entry = {s: S.score, l: S.level, c: cpm(), p: S.pack, sh: S.ps ? 'ps' : 'bash', d: new Date().toISOString().slice(0, 10)};
+  const entry = {s: S.score, l: S.level, c: cpm(), p: S.pack, sh: S.ps ? 'ps' : 'bash', d: isoDay()};
   const scores = scoresLoad();
   if (S.score > 0) { scores.push(entry); scores.sort((a, b) => b.s - a.s); save(HS, scores.slice(0, 10)); }
   const place = !S.score ? 0 : scores.indexOf(entry) + 1;
@@ -3264,7 +3267,7 @@ function gameOver() {
   screen.innerHTML = `<p class="dim">The terminal process "${S.ps ? 'C:&#92;WINDOWS&#92;System32&#92;WindowsPowerShell&#92;v1.0&#92;powershell.exe' : '/usr/bin/bash'}" terminated with exit code: 1.</p>
     <pre class="logo over" aria-label="Game over">${OVER}</pre>
     <p><span class="hot">${fmt(S.score)} p</span> · nivå ${S.level} · ${cpm()} CPM · ${S.cleared} block · ${S.errors} fel</p>
-    <p class="${place === 1 ? 'hot' : 'dim'}">${place === 1 && S.score > 0 ? 'Nytt rekord!' : place <= 10 ? `Plats ${place} på din topplista.` : 'Utanför topp 10.'}</p>
+    <p class="${place === 1 ? 'hot' : 'dim'}">${place === 1 && S.score > 0 ? 'Nytt rekord!' : !place ? 'Rundor utan poäng hamnar inte på topplistan.' : place <= 10 ? `Plats ${place} på din topplista.` : 'Utanför topp 10.'}</p>
     <div class="actions"><button data-act="start"><kbd>Enter</kbd> spela igen</button><button data-act="share"><kbd>d</kbd> dela</button><button data-act="menu"><kbd>Esc</kbd> meny</button></div>
     <p id="shared" class="cmt"></p>`;
   screen.hidden = false;
@@ -4438,9 +4441,9 @@ if (prefs.shell) { applyShell(); menu(); } else { askShell(); applyShell(); }
 showEditor('stats');
 resized();
 if (editor.offsetHeight) editor.style.height = editor.offsetHeight + 'px';
-if (pet.last && Date.now() - Date.parse(pet.last) > 3 * 864e5) petSay('Där är du! Jag har saknat dig. Lite terminal varje vecka håller kommandona i fingrarna.', 'nytt');
 wideBit.addEventListener('change', placePet);
-placePet();
+placePet(); // före hälsningen: placePet döljer pratbubblan, och panelen finns först efteråt
+if (pet.last && Date.now() - Date.parse(pet.last) > 3 * 864e5) petSay('Där är du! Jag har saknat dig. Lite terminal varje vecka håller kommandona i fingrarna.', 'nytt');
 if (load(CRASH, null)) reboot(load(CRASH, null)); // kraschen sitter kvar efter vanlig F5
 sync();
 cmd.focus();

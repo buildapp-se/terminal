@@ -7,8 +7,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 // Hela sidans skript ska gå att tolka, inte bara den rena delen: ett syntaxfel utanför den stoppar spelet helt
 new Function(html.slice(html.indexOf('<script>') + 8, html.lastIndexOf('</script>')));
 const src = html.slice(html.indexOf('/* pure:start'), html.indexOf('/* pure:end */'));
-const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts} =
-  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts};')();
+const {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts, isoDay} =
+  new Function(src + '; return {TASKS, PACKS, POOLS, tokenize, segments, units, canon, same, fill, parts, fake, WORLD, makeQuiz, clash, NEAR, syntax, maxLvFor, lvOf, complete, PET_STAGES, petStage, binStr, binParts, lampSum, lampMode, kills, udiff, diffStat, diffCls, gitRefs, back, pathspec, DANGER, danger, STEPTEXT, chainParts, lineParts, isoDay};')();
 
 const key = s => canon(tokenize(s));
 const eq = (a, b) => assert.ok(same(key(a), key(b)), `${a}  borde godkännas som  ${b}`);
@@ -633,3 +633,9 @@ for (const task of TASKS) for (const ps of task[5] ? [false, true] : [false]) {
 assert.deepStrictEqual(lineParts('git commit -m "fel text"  x'), ['git', ' ', 'commit', ' ', '-m', ' ', '"fel text"', '  ', 'x']);
 assert.deepStrictEqual(lineParts(`echo 'a b' > "c d"`), ['echo', ' ', "'a b'", ' ', '>', ' ', '"c d"']);
 assert.strictEqual(lineParts('echo "oavslutat citat').join(''), 'echo "oavslutat citat', 'inget tecken försvinner');
+
+// Topplistans datum är spelarens dag: 00.30 i Sverige den 25 november är 23.30 UTC den 24 (toISOString gav 24)
+{ const tz = process.env.TZ; process.env.TZ = 'Europe/Stockholm';
+  assert.strictEqual(isoDay(new Date('2026-11-24T23:30:00Z')), '2026-11-25');
+  assert.strictEqual(isoDay(new Date('2026-03-01T12:00:00Z')), '2026-03-01');
+  if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz; }
