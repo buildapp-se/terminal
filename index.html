@@ -595,6 +595,7 @@ function canonStage([cmd, ...rest]) {
   // Raden efter -Command rättas som PowerShell, så Stop-Process -Id 4821 -Force och spps 4821 godkänns där också
   const psCmd = /** @param {string} t */ t => { try { return canon(tokenize(t, true), true).join(' '); } catch { return t; } };
   if (/^(powershell|pwsh)$/i.test(cmd)) return [cmd.toLowerCase(), ...rest.map((t, i) => (/^-(c|command)$/i.test(t) ? '-Command' : /^-(c|command)$/i.test(rest[i - 1] ?? '') ? psCmd(t) : t))];
+  if (cmd === 'echo') return [cmd, ...rest.map(path)]; // echo -x hej skriver -x hej: ordningen är texten, flaggorna sorteras inte sist
   const vals = VALS[cmd] || '', pos = [], flags = [], long = LONGFLAG[cmd] || {};
   // Likvärdiga skrivsätt till en form: --lines=10 och -n10 blir -n 10, head -10 blir -n 10, kill -9 blir -s 9, ps -aux blir ps aux
   rest = rest.flatMap(t => {
@@ -705,7 +706,8 @@ function canonPSStage([c, ...rest], keep = false) {
   const toks = [...pre, ...rest].reduce((o, t) => (o.length && (o.at(-1).endsWith(',') || t.startsWith(',')) ? (o[o.length - 1] += t, o) : (o.push(t), o)), []), pos = [], named = {}, flags = [];
   for (let i = 0; i < toks.length; i++) {
     const t = toks[i], n = toks[i + 1];
-    if (/^-[a-z]/i.test(t)) {
+    // Write-Output tar okända namn som text (echo -x hej skriver -x och hej), bara -NoEnumerate och -InputObject är parametrar
+    if (/^-[a-z]/i.test(t) && !(cmd === 'write-output' && psparam(cmd, t.slice(1).toLowerCase().split(':')[0]) === null)) {
       const [raw, v] = t.slice(1).toLowerCase().split(/:(.*)/);
       const k = psparam(cmd, raw) || raw;
       if (v !== undefined) named[k] = psval(v, keep);
@@ -1461,8 +1463,10 @@ function fake(fs, cwd, key, ps, env = {}) {
   const op = ps ? PSOP[c] || c : c;
   if (!ps && PSONLY.has(op)) return null;
   // Flaggor börjar med streck och en bokstav (eller är -5). "- [ ] ny punkt" är text, även om citattecknen är borta här.
-  const flags = rest.filter(isFlag);
-  let args = rest.filter(t => !isFlag(t)); // cd - är ett argument
+  // echo skriver streck som text (echo -5 skriver -5): i bash är bara inledande -n, -e och -E flaggor, i PowerShell bara -NoEnumerate
+  const text = t => op === 'echo' && !(ps && /^-noenumerate$/i.test(t));
+  const flags = rest.filter(t => isFlag(t) && !text(t));
+  let args = rest.filter(t => !isFlag(t) || text(t)); // cd - är ett argument
   // bash byter jokertecken mot filnamnen innan kommandot körs. Utan träff står mönstret kvar, som på riktigt.
   if (!ps && !['find', 'grep', 'export'].includes(op)) args = args.flatMap(a => (isGlob(a) && glob(fs, cwd, a, ps).length ? glob(fs, cwd, a, ps) : [a]));
   const a0 = args[0];
@@ -1643,7 +1647,12 @@ function fake(fs, cwd, key, ps, env = {}) {
       if (pager) lines.push(`# ${op} visar en sida i taget: mellanslag bläddrar, q stänger. Här får du hela filen på en gång.`);
       return ok(lines);
     }
-    case 'echo': return ok(ps ? args : [args.join(' ')]); // Write-Output skriver varje ord på egen rad
+    case 'echo': { // Write-Output skriver varje ord på egen rad
+      if (ps) return ok(args);
+      let i = 0;
+      while (/^-[neE]+$/.test(args[i] ?? '')) i++;
+      return ok([args.slice(i).join(' ')]);
+    }
     case 'host': return ok([args.join(' ')]);
     case 'set': case 'add': case 'out': {
       const text = op === 'out' ? '' : args.slice(1).join(' '), append = op === 'add' || (op === 'out' && has('-append')), {node} = get(a0);

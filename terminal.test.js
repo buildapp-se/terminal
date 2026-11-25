@@ -639,3 +639,10 @@ assert.strictEqual(lineParts('echo "oavslutat citat').join(''), 'echo "oavslutat
   assert.strictEqual(isoDay(new Date('2026-11-24T23:30:00Z')), '2026-11-25');
   assert.strictEqual(isoDay(new Date('2026-03-01T12:00:00Z')), '2026-03-01');
   if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz; }
+
+// echo med streck skriver texten (avläst i Git Bash och Windows PowerShell 5.1); förut sorterades flaggorna sist och försvann
+{ const b = shell(false), p = shell(true);
+  assert.strictEqual(b.out('echo -5'), '-5'); assert.strictEqual(b.out('echo -x hej'), '-x hej'); assert.strictEqual(b.out('echo -n hej'), 'hej');
+  assert.strictEqual(b.out('echo hej -x'), 'hej -x'); assert.strictEqual(b.out('echo "-5 grader"'), '-5 grader');
+  assert.strictEqual(p.out('echo -5'), '-5'); assert.strictEqual(p.out('echo -x hej'), '-x\nhej'); assert.strictEqual(p.out('echo "-5 grader"'), '-5 grader');
+  assert.strictEqual(p.out('Write-Output hej'), 'hej'); }
