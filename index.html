@@ -177,8 +177,8 @@ html.crt body{text-shadow:0 0 3px currentColor}.err{color:var(--red)}.add{color:
 .actions button:hover,.lvl button:hover{text-decoration:underline}
 kbd{font:inherit;color:var(--yellow)}
 
-.status{height:22px;flex:none;display:flex;align-items:center;border-top:1px solid var(--border);color:var(--fg);font-size:12px}
-.status>span,.status>button{display:flex;align-items:center;gap:4px;height:100%;padding:0 8px;white-space:nowrap}
+.status{min-height:22px;flex:none;display:flex;flex-wrap:wrap;align-items:center;border-top:1px solid var(--border);color:var(--fg);font-size:12px} /* wrap: vid 200 % text på telefon blir det två rader i stället för sidledsscroll */
+.status>span,.status>button{display:flex;align-items:center;gap:4px;align-self:stretch;padding:0 8px;white-space:nowrap}
 .status .remote{background:var(--accent);color:#fff;padding:0 10px}
 .status .sp{margin-left:auto}
 .status>button:hover{background:#2A2D2E}
@@ -233,10 +233,11 @@ kbd{font:inherit;color:var(--yellow)}
 @media (max-height:760px),(max-width:700px){.editor,.sash{display:none}}
 @media (max-width:700px){.side{position:fixed;inset:35px 0 22px;width:auto;z-index:20}.side-h .x{display:block}.activity,.menu,.winctl,.status .hide,.ptabs>button:not(.on):not(:first-child),.pright{display:none}.term{padding:0 10px 6px;font-size:13px}.mob{display:flex}.cmdcenter{flex-basis:auto;padding:0 12px}}
 @media (max-width:700px){ /* klickytor minst 44 px på telefon (Fitts); sökrutan ser ut som förut tack vare genomskinlig kant */
-  .titlebar,.ptabs{height:44px}.status{height:45px}.side{inset:44px 0 45px}.ptabs>button{line-height:44px}.mob button{width:44px;height:44px}
+  .titlebar,.ptabs{height:44px}.status{min-height:45px}.side{inset:44px 0 45px}.ptabs>button{line-height:44px}.mob button{width:44px;height:44px}
   .cmdcenter{height:44px;border:9px solid transparent;border-radius:15px;background-clip:padding-box;box-shadow:inset 0 0 0 1px #3C3C3C}
   .status button{align-self:stretch}.opt{min-height:44px}#cmd{inset:-13px 0}}
-@media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss{animation:none}}
+@media (prefers-reduced-motion:reduce){.pet,.pet *{animation:none!important}.sl{animation:none;left:16px}.blk{transition:none}.line.bad,.blk.miss,.msg.new{animation:none}}
+@media (forced-colors:active){.sash:focus-visible{outline:2px solid}} /* fokus syns annars bara som bakgrund, och den tas bort i forced colors */
 @media (pointer:coarse){#cmd{font-size:16px}} /* iOS Safari zoomar in vid fokus på fält under 16 px; texten i #cmd är genomskinlig (#mirror visar den), så inget syns ändras */
 </style>
 </head>

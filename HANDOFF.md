@@ -99,3 +99,9 @@ Omfång: öppna P3 och oprioriterade BACKLOG-rader som spelaren märker, utan Pa
 ## Session: webbläsarpass 2026-11-25 (gren `xb/2026-11-25`, worktree `C:\dev\_wt\terminal-1125x`), klar
 
 Omfång: spelets flöden i WebKit (Playwright 1.64.1, iPhone 13-profilen) och Firefox 1440 px mot Chromium. Inga funktionella skillnader mellan motorerna. Gjort: kommandoraden 16 px på pekskärm (iOS zoomar fält under 16 px; texten syns ändå i 13 px via `#mirror`), `autocapitalize`/`autocorrect` av i de fyra andra skrivfälten. iOS är inte testat, bara WebKit på Windows. Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, skripten i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\xb-terminal\` (`ios.cjs` röd live före, grön efter). Detaljer i BACKLOG under "Webbläsarpass 2026-11-25".
+
+## Session: preferens- och språkpass 2026-11-25 (gren `prefs/2026-11-25`, worktree `C:\dev\_wt\terminal-1125t`), klar
+
+Omfång: svensk text i sidorna (stavning, särskrivning, decimalkomma, tusentalsavgränsare, tankstreck), sedan mörkt läge, reducerad rörelse, 200 % textzoom på 1280 och 390 px och forced colors med headless Playwright. Skripten i `C:\Users\patri\AppData\Local\Temp\aifabriken-lanes\prefs-terminal\`.
+
+Gjort: integritetstexten 1.4 (Google Fonts-raden var fel sedan typsnittet flyttade till egen server), statusraden och integritetssidan utan sidledsscroll vid 200 % text på 390 px, draglistens fokus syns i forced colors, Bits nya loggrader glider inte in med reducerad rörelse. Den svenska texten hade inga fel att rätta. Verifierat: `terminal.test.js`, `tools/typecheck.mjs`, `prefs.cjs` (9 FAIL före, 26 PASS efter), `status.cjs` (statusraden oförändrad mot live vid vanlig storlek). Detaljer i BACKLOG under "Preferens- och språkpass 2026-11-25".
