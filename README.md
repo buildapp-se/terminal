@@ -8,7 +8,7 @@ Ett gratis webbläsarspel som lär ut bash, PowerShell och git i en låtsas-VS C
 
 ## Vad som finns
 
-- 139 uppgifter i fyra paket: Filer & mappar, Git & GitHub, Som Claude Code och När agenten stannar, plus Allt.
+- 141 uppgifter i sex paket: Filer & mappar, Git & GitHub, Terminalvett, Vad Claude gör, Vibe-kodaren och Cloudflare & Firebase, plus Allt.
 - bash eller PowerShell, med ett låtsasfilsystem där `ls`, `cd`, `cat`, `mkdir` och `git status` fungerar.
 - Bit, terminaldjuret i sidopanelen, som växer i tvåpotenser, lär ut bitar och varnar för farliga kommandon.
 - Kedjor, kombos med `&&`, agentläge (`claude`), quizläge och fri lek i menyn.
